@@ -6,8 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+<<<<<<< feat/error-boundry
+    "lint": "eslint",
+    "test": "vitest run",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+=======
     "test": "vitest",
     "lint": "eslint"
+>>>>>>> main
   },
   "dependencies": {
     "@stellar/freighter-api": "^6.0.1",
@@ -18,18 +25,37 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^8.6.18",
+    "@storybook/addon-interactions": "^8.6.18",
+    "@storybook/react-vite": "^8.6.18",
+    "@storybook/testing-library": "^0.1.0",
     "@tailwindcss/postcss": "^4",
+<<<<<<< feat/error-boundry
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^15.0.0",
+    "@testing-library/user-event": "^14.6.1",
+=======
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+>>>>>>> main
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react-swc": "^4.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+<<<<<<< feat/error-boundry
+    "jsdom": "^22.0.0",
+    "tailwindcss": "^4",
+    "tsconfig-paths": "^4.0.0",
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^4.0.0",
+    "vitest": "^1.5.0"
+=======
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.7"
+>>>>>>> main
   }
 }
