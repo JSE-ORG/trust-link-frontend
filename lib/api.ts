@@ -3,13 +3,23 @@ import { Dispute, Escrow } from "@/types";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function getEscrow(id: string): Promise<Escrow> {
-  const res = await fetch(`${API_URL}/escrows/${id}`, {
+  const primaryRes = await fetch(`${API_URL}/escrow/${id}`, {
     cache: 'no-store',
   });
-  if (!res.ok) {
+
+  if (primaryRes.ok) {
+    return primaryRes.json();
+  }
+
+  const fallbackRes = await fetch(`${API_URL}/escrows/${id}`, {
+    cache: 'no-store',
+  });
+
+  if (!fallbackRes.ok) {
     throw new Error('Failed to fetch escrow');
   }
-  return res.json();
+
+  return fallbackRes.json();
 }
 
 export async function getDispute(id: string, token?: string): Promise<Dispute> {
@@ -26,6 +36,26 @@ export async function getDispute(id: string, token?: string): Promise<Dispute> {
     throw new Error('Failed to fetch dispute');
   }
   return res.json();
+}
+
+export async function getAdminDisputes(token?: string): Promise<Dispute[]> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}/disputes?status=OPEN,UNDER_REVIEW`, {
+    cache: 'no-store',
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch disputes');
+  }
+
+  const disputes = (await res.json()) as Dispute[];
+  return disputes.filter(
+    (dispute) => dispute.status === 'OPEN' || dispute.status === 'UNDER_REVIEW'
+  );
 }
 
 export async function resolveDispute(id: string, resolution: 'RELEASE_TO_VENDOR' | 'REFUND_BUYER', token?: string): Promise<Dispute> {
