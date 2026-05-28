@@ -3,6 +3,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --primary: #1B2A6B;
+  --accent: #7B68EE;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --destructive: #EF4444;
+  --muted: #9CA3AF;
+  --muted-bg: #F3F4F6;
+  --border: #E5E7EB;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --muted: #6B7280;
+    --muted-bg: #1F2937;
+    --border: #374151;
+  }
+}
+
+@keyframes timeline-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--warning) 0%, transparent);
+  }
 }
 
 @theme inline {
