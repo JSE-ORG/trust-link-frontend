@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TrustLink",
   description: "The Web2 experience. The Web3 guarantee.",
+  themeColor: "#1B2A6B",
 };
 
 export default function RootLayout({
