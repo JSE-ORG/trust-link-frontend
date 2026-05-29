@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import { getVendorEscrows } from "@/lib/api";
 import type { Escrow } from "@/types";
-
+import EmptyVendorState from "./EmptyVendorState";
 export default function VendorDashboardList({ loading = false }: { loading?: boolean }) {
   const [escrows, setEscrows] = useState<Escrow[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -53,17 +53,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
   }
 
   if (escrows.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-800">
-        <p className="text-zinc-500 dark:text-zinc-400">No escrows found.</p>
-        <Link 
-          href="/" 
-          className="mt-4 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
-        >
-          Go Home
-        </Link>
-      </div>
-    );
+    return <EmptyVendorState />;
   }
 
   return (
