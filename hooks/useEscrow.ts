@@ -1,50 +1,43 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Escrow } from "@/types";
+"use client";
+
+import useSWR from "swr";
 import { getEscrow } from "@/lib/api";
+import { Escrow } from "@/types";
 
 interface UseEscrowOptions {
-  pollingInterval?: number;
+  refreshInterval?: number;
+  initialData?: Escrow;
 }
 
-export function useEscrow(id: string, options: UseEscrowOptions = {}) {
-  const [data, setData] = useState<Escrow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const { pollingInterval } = options;
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+/**
+ * Hook to fetch and manage escrow data.
+ * @param escrowId - The ID of the escrow to fetch
+ * @param options - SWR options including refreshInterval (defaults to 30s)
+ * @returns { escrow, isLoading, error, refetch }
+ */
+export function useEscrow(escrowId: string | null | undefined, options: UseEscrowOptions = {}) {
+  const { refreshInterval = 30000, initialData } = options;
 
-  const fetchData = useCallback(async () => {
-    try {
-      const result = await getEscrow(id);
-      setData(result);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("An unknown error occurred"));
-    } finally {
-      setIsLoading(false);
+  const { data, error, isLoading, mutate } = useSWR<Escrow>(
+    escrowId ? `/escrows/${escrowId}` : null,
+    async () => {
+      if (!escrowId) throw new Error("Escrow ID is required");
+      return getEscrow(escrowId);
+    },
+    {
+      refreshInterval,
+      fallbackData: initialData,
+      revalidateOnFocus: true,
+      dedupingInterval: 2000,
     }
-  }, [id]);
+  );
 
-  const refetch = useCallback(() => {
-    setIsLoading(true);
-    return fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    setIsLoading(true);
-    fetchData();
-
-    if (pollingInterval) {
-      timerRef.current = setInterval(fetchData, pollingInterval);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [fetchData, pollingInterval]);
-
-  return { data, isLoading, error, refetch };
+  return {
+    escrow: data,
+    isLoading,
+    error,
+    refetch: mutate,
+  };
 }
+
+export default useEscrow;

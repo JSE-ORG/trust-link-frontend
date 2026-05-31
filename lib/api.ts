@@ -88,3 +88,18 @@ export async function getVendorEscrows(token?: string): Promise<Escrow[]> {
   }
   return res.json();
 }
+
+export async function createDispute(escrowId: string, data: { reason: string; description: string; evidence: string[] }): Promise<Dispute> {
+  const res = await fetch(`${API_URL}/escrows/${escrowId}/dispute`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to raise dispute: ${err}`);
+  }
+  return res.json();
+}
