@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
+import { useWallet } from "@/components/providers/WalletProvider";
 import { getVendorEscrows } from "@/lib/api";
 import type { Escrow } from "@/types";
 
@@ -11,11 +12,11 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
   const [escrows, setEscrows] = useState<Escrow[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [selectedEscrow, setSelectedEscrow] = useState<Escrow | null>(null);
+  const { jwt } = useWallet();
 
   const loadItems = async () => {
     try {
-      const token = window.localStorage.getItem("wallet.jwt") || undefined;
-      const data = await getVendorEscrows(token);
+      const data = await getVendorEscrows(jwt || undefined);
       setEscrows(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to load vendor escrows."));
@@ -23,8 +24,9 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
   };
 
   useEffect(() => {
+    if (!jwt) return;
     loadItems();
-  }, []);
+  }, [jwt]);
 
   const handleShipmentSuccess = (escrowId: string) => {
     setEscrows((current) =>
