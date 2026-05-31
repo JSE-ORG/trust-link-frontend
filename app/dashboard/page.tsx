@@ -5,19 +5,20 @@ import { useRouter } from "next/navigation";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import DashboardSection from "@/components/dashboard/DashboardSection";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useWallet } from "@/components/providers/WalletProvider";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { jwt } = useWallet();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const storedJwt = window.localStorage.getItem("wallet.jwt");
-    if (!storedJwt) {
+    if (!jwt) {
       router.push("/");
     } else {
       setIsChecking(false);
     }
-  }, [router]);
+  }, [jwt, router]);
 
   if (isChecking) {
     return (

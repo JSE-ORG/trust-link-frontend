@@ -1,72 +1,106 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getPublicKey, signTransaction, isConnected, isFreighterInstalled, connectFreighter } from "@/lib/stellar/freighter";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import {
+  getPublicKey,
+  signTransaction as freighterSignTransaction,
+  isFreighterInstalled,
+} from "@/lib/stellar/freighter";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import { jwtDecode } from "jwt-decode";
 
+export type WalletStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "not-installed"
+  | "error";
+
 interface WalletContextType {
   publicKey: string | null;
+  jwt: string | null;
   token: string | null;
+  isConnected: boolean;
   connect: () => Promise<void>;
   disconnect: () => void;
+  signTransaction: (transaction: string, networkPassphrase: string) => Promise<string>;
   isLoading: boolean;
   error: string | null;
+  status: WalletStatus;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [jwt, setJwt] = useState<string | null>(null);
+  const [status, setStatus] = useState<WalletStatus>("disconnected");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const authenticate = useCallback(async (pubKey: string) => {
-    try {
+  const authenticate = useCallback(
+    async (pubKey: string) => {
       const challengeXdr = await getChallenge(pubKey);
-      const signedXdr = await signTransaction(challengeXdr, {
-        network: (process.env.NEXT_PUBLIC_STELLAR_NETWORK as any) || "TESTNET",
+      const signedXdr = await freighterSignTransaction(challengeXdr, {
+        network: process.env.NEXT_PUBLIC_STELLAR_NETWORK || "TESTNET",
       });
-      const jwt = await verifyChallenge(signedXdr);
-      setToken(jwt);
+      const token = await verifyChallenge(signedXdr);
+      setJwt(token);
       setError(null);
-    } catch (err: any) {
-      console.error("Authentication failed:", err);
-      setError(err.message || "Authentication failed");
-      setToken(null);
-    }
-  }, []);
+      setStatus("connected");
+      return token;
+    },
+    []
+  );
 
-  const connect = async () => {
+  const connect = useCallback(async () => {
     setIsLoading(true);
+    setStatus("connecting");
     setError(null);
+
     try {
-      if (!(await isConnected())) {
-        throw new Error("Freighter not found or not connected");
+      if (!(await isFreighterInstalled())) {
+        setStatus("not-installed");
+        throw new Error("Freighter is not installed");
       }
+
       const pubKey = await getPublicKey();
       setPublicKey(pubKey);
       await authenticate(pubKey);
     } catch (err: any) {
-      setError(err.message || "Failed to connect wallet");
+      const message = err?.message || "Failed to connect wallet";
+      setError(message);
+      if (message === "Freighter is not installed") {
+        setStatus("not-installed");
+      } else {
+        setStatus("error");
+      }
+      setJwt(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [authenticate]);
 
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     setPublicKey(null);
-    setToken(null);
+    setJwt(null);
     setError(null);
-  };
+    setStatus("disconnected");
+    setIsLoading(false);
+  }, []);
 
-  // Auto-reauthenticate if token expires
+  const signTransaction = useCallback(
+    async (transaction: string, networkPassphrase: string) => {
+      return freighterSignTransaction(transaction, networkPassphrase);
+    },
+    []
+  );
+
   useEffect(() => {
-    if (!token || !publicKey) return;
+    if (!jwt || !publicKey) return;
 
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded: any = jwtDecode(jwt);
       const expirationTime = decoded.exp * 1000;
       const now = Date.now();
       const timeLeft = expirationTime - now;
@@ -76,7 +110,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Refresh 1 minute before expiration
       const timeout = setTimeout(() => {
         authenticate(publicKey);
       }, Math.max(0, timeLeft - 60000));
@@ -84,24 +117,29 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       return () => clearTimeout(timeout);
     } catch (err) {
       console.error("Token decode failed:", err);
-      setToken(null);
+      setJwt(null);
     }
-  }, [token, publicKey, authenticate]);
+  }, [jwt, publicKey, authenticate]);
 
-  return (
-    <WalletContext.Provider
-      value={{
-        publicKey,
-        token,
-        connect,
-        disconnect,
-        isLoading,
-        error,
-      }}
-    >
-      {children}
-    </WalletContext.Provider>
+  const isConnected = Boolean(publicKey && jwt);
+
+  const value = useMemo(
+    () => ({
+      publicKey,
+      jwt,
+      token: jwt,
+      isConnected,
+      connect,
+      disconnect,
+      signTransaction,
+      isLoading,
+      error,
+      status,
+    }),
+    [publicKey, jwt, isConnected, connect, disconnect, signTransaction, isLoading, error, status]
   );
+
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 export function useWallet() {
