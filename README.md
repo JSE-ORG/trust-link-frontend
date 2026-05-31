@@ -189,9 +189,13 @@ const { hash } = await fundEscrow({
 Real-time shipment status is polled from the backend and rendered as a visual timeline:
 
 ```typescript
-// TrackingTimeline.tsx
-const { tracking } = useTracking(escrowId);
-// Renders: ORDER_PLACED → PICKED_UP → IN_TRANSIT → DELIVERED
+import { useEscrow } from "@/hooks/useEscrow";
+
+const { data: escrow, isLoading, error, refetch } = useEscrow(escrowId, {
+  pollingInterval: 30_000,
+});
+
+// Tracking pages can revalidate escrow status while they are open.
 ```
 
 ---
