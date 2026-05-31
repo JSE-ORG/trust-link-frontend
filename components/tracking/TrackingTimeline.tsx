@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Escrow, EscrowStatus } from "@/types";
-import { getEscrow } from "@/lib/api";
 import { CheckCircle2, Circle, Clock, Package, Truck, Home } from "lucide-react";
+import { useEscrow } from "@/hooks/useEscrow";
 
 interface TrackingStage {
   id: string;
@@ -63,38 +63,26 @@ export default function TrackingTimeline({
   initialEscrow,
   loading = false,
 }: TrackingTimelineProps) {
-  const [escrow, setEscrow] = useState<Escrow>(initialEscrow);
-  const [error, setError] = useState<Error | null>(null);
+  const { escrow, isLoading, error: fetchError, refetch } = useEscrow(escrowId, {
+    initialData: initialEscrow,
+    refreshInterval: 30000,
+  });
+
+  const [localError, setLocalError] = useState<Error | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isRaisingDispute, setIsRaisingDispute] = useState(false);
-
-  // Poll for updates every 30 seconds
-  useEffect(() => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const updatedEscrow = await getEscrow(escrowId);
-        setEscrow(updatedEscrow);
-      } catch (err) {
-        console.error("Failed to poll escrow status:", err);
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(pollInterval);
-  }, [escrowId]);
 
   const handleConfirmDelivery = async () => {
     setIsConfirming(true);
     try {
-      // TODO: Implement API call to confirm delivery
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/escrows/${escrowId}/confirm`, {
         method: 'POST',
       });
       if (!response.ok) throw new Error('Failed to confirm delivery');
       
-      const updatedEscrow = await response.json();
-      setEscrow(updatedEscrow);
+      await refetch();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to confirm delivery'));
+      setLocalError(err instanceof Error ? err : new Error('Failed to confirm delivery'));
     } finally {
       setIsConfirming(false);
     }
@@ -105,9 +93,9 @@ export default function TrackingTimeline({
     window.location.href = `/dispute/${escrowId}`;
   };
 
-  if (error) throw error;
+  if (fetchError || localError) throw fetchError || localError;
 
-  if (loading) {
+  if (loading || (!escrow && isLoading)) {
     return (
       <div className="space-y-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         {[...Array(5)].map((_, index) => (
@@ -123,6 +111,9 @@ export default function TrackingTimeline({
     );
   }
 
+  // Fallback to initialEscrow if escrow is still loading or null
+  const activeEscrow = escrow || initialEscrow;
+
   const getCurrentStageIndex = (status: EscrowStatus): number => {
     if (status === "COMPLETED" || status === "RELEASED") return 4;
     if (status === "SHIPPED") return 2;
@@ -131,10 +122,10 @@ export default function TrackingTimeline({
     return 0;
   };
 
-  const currentStageIndex = getCurrentStageIndex(escrow.status);
-  const isShipped = escrow.status === "SHIPPED";
+  const currentStageIndex = getCurrentStageIndex(activeEscrow.status);
+  const isShipped = activeEscrow.status === "SHIPPED";
   const canConfirmDelivery = isShipped;
-  const canRaiseDispute = isShipped; // Assuming dispute window is open when shipped
+  const canRaiseDispute = isShipped; 
 
   return (
     <div className="space-y-6">
@@ -185,9 +176,9 @@ export default function TrackingTimeline({
                   >
                     {stage.description}
                   </p>
-                  {isCurrent && escrow.updatedAt && (
+                  {isCurrent && activeEscrow.updatedAt && (
                     <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-                      {new Date(escrow.updatedAt).toLocaleString()}
+                      {new Date(activeEscrow.updatedAt).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -235,7 +226,7 @@ export default function TrackingTimeline({
       )}
 
       {/* Dispute Status */}
-      {escrow.status === "DISPUTED" && (
+      {activeEscrow.status === "DISPUTED" && (
         <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-950">
           <h3 className="mb-2 text-lg font-semibold text-yellow-900 dark:text-yellow-100">
             Dispute in Progress

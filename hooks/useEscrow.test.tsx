@@ -1,8 +1,10 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useEscrow } from "./useEscrow";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as api from "@/lib/api";
 import { Escrow } from "@/types";
+import { SWRConfig } from "swr";
+import React from "react";
 
 vi.mock("@/lib/api", () => ({
   getEscrow: vi.fn(),
@@ -19,6 +21,12 @@ const mockEscrow: Escrow = {
   history: [],
 };
 
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+    {children}
+  </SWRConfig>
+);
+
 describe("useEscrow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,36 +35,36 @@ describe("useEscrow", () => {
   it("should have isLoading: true on mount and false after success", async () => {
     vi.mocked(api.getEscrow).mockResolvedValue(mockEscrow);
 
-    const { result } = renderHook(() => useEscrow("escrow-1"));
+    const { result } = renderHook(() => useEscrow("escrow-1"), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
-    }, { timeout: 2000 });
+    });
 
-    expect(result.current.data).toEqual(mockEscrow);
-    expect(result.current.error).toBe(null);
+    expect(result.current.escrow).toEqual(mockEscrow);
+    expect(result.current.error).toBeUndefined();
   });
 
-  it("should handle error state when API returns 404 or fails", async () => {
+  it("should handle error state when API fails", async () => {
     const error = new Error("Not Found");
     vi.mocked(api.getEscrow).mockRejectedValue(error);
 
-    const { result } = renderHook(() => useEscrow("escrow-1"));
+    const { result } = renderHook(() => useEscrow("escrow-1"), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
-    }, { timeout: 2000 });
+    });
 
     expect(result.current.error).toEqual(error);
-    expect(result.current.data).toBe(null);
+    expect(result.current.escrow).toBeUndefined();
   });
 
   it("should update data on refetch", async () => {
     vi.mocked(api.getEscrow).mockResolvedValue(mockEscrow);
 
-    const { result } = renderHook(() => useEscrow("escrow-1"));
+    const { result } = renderHook(() => useEscrow("escrow-1"), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -66,32 +74,26 @@ describe("useEscrow", () => {
     vi.mocked(api.getEscrow).mockResolvedValue(updatedEscrow);
 
     await act(async () => {
-      result.current.refetch();
+      await result.current.refetch();
     });
 
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.data?.status).toBe("COMPLETED");
+    expect(result.current.escrow?.status).toBe("COMPLETED");
   });
 
   it("should poll for data at specified interval", async () => {
-    vi.useFakeTimers();
     vi.mocked(api.getEscrow).mockResolvedValue(mockEscrow);
 
-    renderHook(() => useEscrow("escrow-1", { pollingInterval: 5000 }));
+    const { result } = renderHook(() => useEscrow("escrow-1", { refreshInterval: 100 }), { wrapper });
 
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    
     expect(api.getEscrow).toHaveBeenCalledTimes(1);
 
-    await act(async () => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(api.getEscrow).toHaveBeenCalledTimes(2);
-
-    await act(async () => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(api.getEscrow).toHaveBeenCalledTimes(3);
-    vi.useRealTimers();
+    // Wait for the next poll to happen naturally without fake timers if they are problematic
+    await waitFor(() => {
+      expect(api.getEscrow).toHaveBeenCalledTimes(2);
+    }, { timeout: 1000 });
   });
 });

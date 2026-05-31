@@ -32,3 +32,20 @@ export interface Dispute {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TrackingEvent {
+  id: string;
+  status: string;
+  location: string;
+  timestamp: string;
+  description: string;
+}
+
+export interface Tracking {
+  escrowId: string;
+  status: string;
+  carrier: string;
+  trackingNumber: string;
+  estimatedDelivery?: string;
+  events: TrackingEvent[];
+}

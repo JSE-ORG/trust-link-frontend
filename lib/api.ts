@@ -1,4 +1,4 @@
-import { Dispute, Escrow } from "@/types";
+import { Dispute, Escrow, Tracking } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -85,6 +85,31 @@ export async function getVendorEscrows(token?: string): Promise<Escrow[]> {
   });
   if (!res.ok) {
     throw new Error('Failed to fetch vendor escrows');
+  }
+  return res.json();
+}
+
+export async function createDispute(escrowId: string, data: { reason: string; description: string; evidence: string[] }): Promise<Dispute> {
+  const res = await fetch(`${API_URL}/escrows/${escrowId}/dispute`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to raise dispute: ${err}`);
+  }
+  return res.json();
+}
+
+export async function getTracking(escrowId: string): Promise<Tracking> {
+  const res = await fetch(`${API_URL}/escrows/${escrowId}/tracking`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch tracking details');
   }
   return res.json();
 }
