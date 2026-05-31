@@ -73,6 +73,26 @@ export async function createEscrow(data: EscrowInput): Promise<EscrowResponse> {
   return res.json();
 }
 
+export async function createDispute(formData: FormData, token?: string): Promise<Dispute> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}/dispute`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to submit dispute: ${err}`);
+  }
+
+  return res.json();
+}
+
 export async function getVendorEscrows(token?: string): Promise<Escrow[]> {
   const headers: HeadersInit = {};
   if (token) {
