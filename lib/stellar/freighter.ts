@@ -1,56 +1,55 @@
-declare global {
-  interface Window {
-    freighter?: {
-      connect: () => Promise<{ publicKey: string }>;
-      signTransaction: (transaction: string, networkPassphrase: string) => Promise<{ signedTransaction: string }>;
-    };
-  }
-}
-
-export interface FreighterConnection {
-  publicKey: string;
-}
+import {
+  isConnected,
+  getPublicKey,
+  signTransaction as freighterSignTransaction,
+  isAllowed,
+  setAllowed,
+} from "@stellar/freighter-api";
 
 export async function isFreighterInstalled(): Promise<boolean> {
-  return typeof window !== "undefined" && Boolean(window.freighter);
+  return typeof window !== "undefined" && Boolean((window as any).freighter);
 }
 
-export async function connectFreighter(): Promise<FreighterConnection> {
-  if (!window.freighter) {
+export async function connectFreighter(): Promise<string> {
+  if (!(await isFreighterInstalled())) {
     throw new Error("Freighter not installed");
   }
 
-  return window.freighter.connect();
+  if (!(await isAllowed())) {
+    await setAllowed();
+  }
+
+  const publicKey = await getPublicKey();
+  if (!publicKey) {
+    throw new Error("Failed to get public key from Freighter");
+  }
+
+  return publicKey;
 }
 
 export async function signTransaction(
-  transaction: string,
-  networkPassphrase: string
+  xdr: string,
+  network: "PUBLIC" | "TESTNET" | string
 ): Promise<string> {
-  if (!window.freighter) {
+  if (!(await isFreighterInstalled())) {
     throw new Error("Freighter not installed");
   }
 
-  const result = await window.freighter.signTransaction(transaction, networkPassphrase);
-  return result.signedTransaction;
-} 
+  // Freighter's signTransaction takes (xdr, { network })
+  const { signedTransaction, error } = await freighterSignTransaction({
+    xdr,
+    network,
+  });
 
-export async function getPublicKey(): Promise<string> {
-  // Reuse connectFreighter to retrieve the public key
-  const connection = await connectFreighter();
-  return connection.publicKey;
+  if (error) {
+    throw new Error(error);
+  }
+
+  if (!signedTransaction) {
+    throw new Error("Failed to sign transaction");
+  }
+
+  return signedTransaction;
 }
 
-export async function isConnected(): Promise<boolean> {
-  if (!window.freighter) {
-    return false;
-  }
-  // Some versions expose isConnected, fallback to true if absent
-  // @ts-ignore
-  if (typeof (window.freighter as any).isConnected === 'function') {
-    // @ts-ignore
-    return (window.freighter as any).isConnected();
-  }
-  return true;
-}
-
+export { isConnected, getPublicKey };
