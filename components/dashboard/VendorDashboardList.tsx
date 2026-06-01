@@ -40,7 +40,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, index) => (
-          <div key={index} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div key={index} className="rounded-3xl border border-border bg-background p-6 shadow-sm">
             <Skeleton className="mb-4 h-5 w-1/3" />
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
@@ -54,11 +54,11 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
 
   if (escrows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-800">
-        <p className="text-zinc-500 dark:text-zinc-400">No escrows found.</p>
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border py-16 text-center">
+        <p className="text-muted">No escrows found.</p>
         <Link 
           href="/" 
-          className="mt-4 rounded-full bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+          className="mt-4 rounded-full bg-muted-bg px-4 py-2 text-sm font-semibold text-foreground transition hover:opacity-80"
         >
           Go Home
         </Link>
@@ -70,11 +70,11 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     <>
       <div className="space-y-4">
         {escrows.map((escrow) => (
-          <div key={escrow.id} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div key={escrow.id} className="rounded-3xl border border-border bg-background p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-base font-semibold text-zinc-950 dark:text-zinc-100">{escrow.item}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-base font-semibold text-foreground">{escrow.item}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
                   <span>Buyer: {escrow.buyerId ? `${escrow.buyerId.slice(0, 4)}...${escrow.buyerId.slice(-4)}` : 'Unknown'}</span>
                   <span>•</span>
                   <span>Amount: {escrow.amount} USDC</span>
@@ -83,13 +83,13 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <span className="rounded-full bg-muted-bg px-3 py-1 text-xs font-medium text-foreground">
                   {escrow.status}
                 </span>
                 <div className="flex gap-2">
                   <Link
                     href={`/escrow/${escrow.id}`}
-                    className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-white dark:hover:bg-zinc-900"
+                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted-bg"
                   >
                     View
                   </Link>
@@ -97,7 +97,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
                     type="button"
                     onClick={() => setSelectedEscrow(escrow)}
                     disabled={escrow.status !== "FUNDED"}
-                    className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                    className="rounded-full bg-foreground text-background px-4 py-2 text-sm font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Mark Shipped
                   </button>

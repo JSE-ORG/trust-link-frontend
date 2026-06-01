@@ -171,15 +171,15 @@ export default function EscrowCreateForm() {
       </Form>
 
       {resultUrl && (
-        <div className="mt-6 p-4 border rounded-lg bg-white dark:bg-zinc-900 shadow">
-          <h3 className="text-lg font-medium mb-2">Your Escrow Link</h3>
+        <div className="mt-6 p-4 border border-border rounded-lg bg-background shadow-lg">
+          <h3 className="text-lg font-medium mb-2 text-foreground">Your Escrow Link</h3>
           <div className="flex items-center space-x-2">
-            <Input readOnly value={resultUrl} className="flex-1" />
-            <Button onClick={copyToClipboard} variant="outline" size="icon">
+            <Input readOnly value={resultUrl} className="flex-1 bg-muted-bg text-foreground border-border" />
+            <Button onClick={copyToClipboard} variant="outline" size="icon" className="border-border text-foreground hover:bg-muted-bg">
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center bg-white p-4 rounded-xl">
             <QRCode value={resultUrl} size={180} />
           </div>
         </div>

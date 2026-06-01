@@ -45,7 +45,7 @@ export default function EscrowLinkCard({ loading = false }: { loading?: boolean 
 
   if (loading || !link) {
     return (
-      <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
         <Skeleton className="mb-4 h-6 w-2/3" />
         <Skeleton className="mb-4 h-4 w-1/2" />
         <div className="space-y-3">
@@ -84,21 +84,21 @@ export default function EscrowLinkCard({ loading = false }: { loading?: boolean 
   };
 
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">{link.title}</h2>
-        <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+        <h2 className="text-lg font-semibold text-foreground">{link.title}</h2>
+        <span className="rounded-full bg-muted-bg px-3 py-1 text-sm text-foreground">
           {link.status}
         </span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Amount</p>
-          <p className="mt-1 text-base font-medium text-zinc-900 dark:text-zinc-100">{link.amount}</p>
+          <p className="text-sm text-muted">Amount</p>
+          <p className="mt-1 text-base font-medium text-foreground">{link.amount}</p>
         </div>
         <div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Expires</p>
-          <p className="mt-1 text-base font-medium text-zinc-900 dark:text-zinc-100">{link.expires}</p>
+          <p className="text-sm text-muted">Expires</p>
+          <p className="mt-1 text-base font-medium text-foreground">{link.expires}</p>
         </div>
       </div>
 

@@ -49,49 +49,13 @@ export default function Home() {
   const [currentStage, setCurrentStage] = useState<ShipmentStage>("IN_TRANSIT");
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--muted-bg)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        padding: "32px 16px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 480,
-          background: "var(--background)",
-          borderRadius: 16,
-          border: "1px solid var(--border)",
-          boxShadow: "0 4px 24px rgba(27,42,107,0.07)",
-          padding: "28px 24px 32px",
-        }}
-      >
-        <header style={{ marginBottom: 24 }}>
-          <p
-            style={{
-              margin: "0 0 4px",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
+    <div className="min-h-full bg-muted-bg flex items-start justify-center py-8 px-4">
+      <div className="w-full max-w-lg bg-background rounded-2xl border border-border shadow-xl dark:shadow-none p-7 sm:p-6 sm:pb-8">
+        <header className="mb-6">
+          <p className="m-0 mb-1 text-[12px] font-semibold tracking-widest uppercase text-muted">
             Order #TL-20250524-88F2
           </p>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: "var(--primary)",
-              lineHeight: 1.3,
-            }}
-          >
+          <h1 className="m-0 text-xl font-bold text-primary dark:text-accent leading-tight">
             Shipment Tracker
           </h1>
         </header>
@@ -101,54 +65,21 @@ export default function Home() {
           stages={DEMO_STAGES}
         />
 
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 20,
-            borderTop: "1px solid var(--border)",
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 10px",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
+        <div className="mt-8 pt-5 border-t border-border">
+          <p className="m-0 mb-2.5 text-[12px] font-semibold tracking-wider uppercase text-muted">
             Demo: advance stage
           </p>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
+          <div className="flex flex-wrap gap-2">
             {STAGE_ORDER.map((stage) => (
               <button
                 key={stage}
                 onClick={() => setCurrentStage(stage)}
                 aria-pressed={currentStage === stage}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  padding: "5px 12px",
-                  borderRadius: 20,
-                  border: "1.5px solid",
-                  cursor: "pointer",
-                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                  borderColor:
-                    currentStage === stage ? "var(--accent)" : "var(--border)",
-                  background:
-                    currentStage === stage
-                      ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                      : "transparent",
-                  color:
-                    currentStage === stage ? "var(--accent)" : "var(--muted)",
-                }}
+                className={`text-[12px] font-medium px-3 py-1.5 rounded-full border-1.5 transition-all cursor-pointer ${
+                  currentStage === stage
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border bg-transparent text-muted hover:border-accent/50"
+                }`}
               >
                 {stage.replace(/_/g, " ")}
               </button>
