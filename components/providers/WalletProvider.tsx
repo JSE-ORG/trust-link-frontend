@@ -7,6 +7,7 @@ import {
   isFreighterInstalled,
 } from "@/lib/stellar/freighter";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
+import { setApiToken } from "@/lib/api";
 import { jwtDecode } from "jwt-decode";
 
 export type WalletStatus =
@@ -46,6 +47,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       });
       const token = await verifyChallenge(signedXdr);
       setJwt(token);
+      setApiToken(token);
       setError(null);
       setStatus("connected");
       return token;
@@ -76,6 +78,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setStatus("error");
       }
       setJwt(null);
+      setApiToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +87,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const disconnect = useCallback(() => {
     setPublicKey(null);
     setJwt(null);
+    setApiToken(null);
     setError(null);
     setStatus("disconnected");
     setIsLoading(false);
@@ -118,6 +122,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Token decode failed:", err);
       setJwt(null);
+      setApiToken(null);
     }
   }, [jwt, publicKey, authenticate]);
 

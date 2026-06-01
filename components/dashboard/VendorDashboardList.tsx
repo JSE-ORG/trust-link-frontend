@@ -16,7 +16,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
 
   const loadItems = async () => {
     try {
-      const data = await getVendorEscrows(jwt || undefined);
+      const data = await getVendorEscrows();
       setEscrows(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to load vendor escrows."));

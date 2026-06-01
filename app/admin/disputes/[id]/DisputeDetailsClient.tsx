@@ -20,7 +20,7 @@ export function DisputeDetailsClient({ dispute }: DisputeDetailsClientProps) {
   const handleResolve = async (resolution: 'RELEASE_TO_VENDOR' | 'REFUND_BUYER') => {
     setIsResolving(true);
     try {
-      await resolveDispute(dispute.id, resolution, token || undefined);
+      await resolveDispute(dispute.id, resolution);
       router.push("/admin/disputes");
       router.refresh();
     } catch (error) {
