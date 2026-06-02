@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Home, PlusCircle, User, Truck, AlertCircle, Bell } from "lucide-react";
+import { Search, Home, PlusCircle, User, Truck, AlertCircle, Bell, BarChart3 } from "lucide-react";
 
 type Command = {
   label: string;
@@ -13,6 +13,7 @@ type Command = {
 
 const COMMANDS: Command[] = [
   { label: "Dashboard", route: "/dashboard", description: "Go to vendor dashboard", icon: <Home className="h-5 w-5" /> },
+  { label: "Analytics", route: "/dashboard/analytics", description: "View vendor performance analytics", icon: <BarChart3 className="h-5 w-5" /> },
   { label: "Create Escrow", route: "/create", description: "Start a new escrow transaction", icon: <PlusCircle className="h-5 w-5" /> },
   { label: "Profile", route: "/profile", description: "View your profile", icon: <User className="h-5 w-5" /> },
   { label: "Tracking", route: "/track", description: "Track your shipments", icon: <Truck className="h-5 w-5" /> },
@@ -45,7 +46,7 @@ export default function CommandPalette() {
       setTimeout(() => inputRef.current?.focus(), 0);
     } else {
       document.body.style.overflow = "auto";
-      setSearch("");
+      setTimeout(() => setSearch(""), 0);
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { ArrowLeft, Star, ShieldCheck, MapPin, History, Package } from "lucide-react";
+import { ArrowLeft, Star, ShieldCheck, MapPin, History, Package, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { formatUSDC } from "@/utils/currency";
 
@@ -73,6 +73,13 @@ export default function VendorProfilePage({ params }: { params: Promise<{ addres
                 <button className="rounded-full bg-[#1B2A6B] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#152052] transition">
                   Start Trade
                 </button>
+                <Link
+                  href="/dashboard/analytics"
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </Link>
               </div>
             </div>
 
