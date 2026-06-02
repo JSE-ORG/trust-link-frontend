@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, FormEvent, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ChevronLeft, ChevronRight, Upload, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createDispute } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -60,18 +61,19 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
 
     const isValid = await trigger(fieldsToValidate);
     if (isValid) {
-      setCurrentStep((prev) => Math.min(prev + 1, 4));
+      setCurrentStep((prev: number) => Math.min(prev + 1, 4));
     }
   };
 
   const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setCurrentStep((prev: number) => Math.max(prev - 1, 1));
   };
 
   const onSubmit = async (values: DisputeValues) => {
     setIsSubmitting(true);
     try {
       await createDispute(escrowId, values);
+      track("dispute_raised", { escrowId });
       toast.success("Dispute raised successfully");
       router.push(`/track/${escrowId}`);
     } catch (error: any) {
@@ -89,7 +91,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
   };
 
   const removeEvidence = (index: number) => {
-    const newEvidence = formData.evidence.filter((_, i) => i !== index);
+    const newEvidence = formData.evidence.filter((_: string, i: number) => i !== index);
     setValue("evidence", newEvidence, { shouldValidate: true });
   };
 
@@ -97,7 +99,13 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-      <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-900">
+      <div 
+        className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-900" 
+        role="progressbar" 
+        aria-valuenow={progressPercentage} 
+        aria-valuemin={0} 
+        aria-valuemax={100}
+      >
         <div
           className="h-full bg-[var(--accent)] transition-all duration-300 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
@@ -134,7 +142,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
               {REASON_CATEGORIES.map((reason) => (
                 <label
                   key={reason}
-                  className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:ring-offset-2 ${
                     formData.reason === reason
                       ? "border-[var(--accent)] bg-[var(--accent)]/5"
                       : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
@@ -166,7 +174,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
               <textarea
                 {...register("description")}
                 rows={6}
-                className="w-full p-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 bg-transparent focus:border-[var(--accent)] outline-none transition-all resize-none text-zinc-900 dark:text-zinc-100"
+                className="w-full p-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 bg-transparent focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 outline-none transition-all resize-none text-zinc-900 dark:text-zinc-100"
                 placeholder="Tell us what happened..."
               />
               <div className="flex justify-between items-center">
@@ -188,7 +196,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div
-                onDragOver={(e) => {
+                onDragOver={(e: React.DragEvent) => {
                   e.preventDefault();
                   setIsDragging(true);
                 }}
@@ -237,7 +245,8 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
                       <button
                         type="button"
                         onClick={() => removeEvidence(index)}
-                        className="absolute top-2 right-2 w-8 h-8 bg-white/90 dark:bg-black/90 rounded-full flex items-center justify-center text-[var(--destructive)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 w-8 h-8 bg-white/90 dark:bg-black/90 rounded-full flex items-center justify-center text-[var(--destructive)] shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-[var(--destructive)] transition-all"
+                        aria-label={`Remove evidence ${index + 1}`}
                       >
                         <X size={16} />
                       </button>
@@ -279,7 +288,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
                     Evidence
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {formData.evidence.map((_, i) => (
+                    {formData.evidence.map((_: string, i: number) => (
                       <div
                         key={i}
                         className="px-3 py-1 bg-white dark:bg-zinc-800 rounded-full border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold text-[var(--muted)] flex items-center gap-1"

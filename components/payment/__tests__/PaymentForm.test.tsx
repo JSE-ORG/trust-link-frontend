@@ -130,7 +130,15 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/lib/explorer", () => ({
-  getStellarExpertUrl: vi.fn().mockImplementation((hash) => `https://testnet.stellarexpert.io/contract/${hash}`),
+  getStellarExpertUrl: vi.fn().mockImplementation((hash, network) => {
+    const prefix = network === "mainnet" ? "public" : "testnet";
+    return `https://testnet.stellarexpert.io/contract/${hash}`;
+  }),
+}));
+
+vi.mock("@/components/providers/NetworkProvider", () => ({
+  useNetwork: vi.fn(() => ({ network: "testnet", isTestnet: true, isMainnet: false, toggleNetwork: vi.fn(), setNetwork: vi.fn() })),
+  NetworkProvider: ({ children }: any) => children,
 }));
 
 const defaultProps = {

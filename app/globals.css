@@ -14,14 +14,6 @@
   --border: #E5E7EB;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --muted: #6B7280;
-    --muted-bg: #1F2937;
-    --border: #374151;
-  }
-}
-
 @keyframes timeline-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
@@ -41,6 +33,7 @@
   --color-muted: var(--muted);
   --color-muted-bg: var(--muted-bg);
   --color-border: var(--border);
+  --color-destructive: var(--destructive);
 }
 
 @keyframes float {
@@ -56,6 +49,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --muted: #6B7280;
+    --muted-bg: #1F2937;
+    --border: #374151;
   }
 }
 
@@ -63,4 +59,36 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+[data-sonner-toast] {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  border-radius: 0.75rem;
+}
+
+[data-sonner-toast][data-styled="true"] {
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-sonner-toast][data-styled="true"] {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

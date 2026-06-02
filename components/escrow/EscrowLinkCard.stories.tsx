@@ -8,6 +8,12 @@ const meta: Meta<typeof EscrowLinkCard> = {
 
 export default meta;
 
+export const Default: StoryObj<typeof EscrowLinkCard> = {
+  args: {
+    loading: false,
+  },
+};
+
 export const Loading: StoryObj<typeof EscrowLinkCard> = {
   args: {
     loading: true,

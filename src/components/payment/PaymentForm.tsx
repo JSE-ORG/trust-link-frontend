@@ -6,6 +6,7 @@ import { signTransaction } from "@/lib/stellar/freighter";
 import { getStellarExpertUrl } from "@/lib/explorer";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useNetwork } from "@/components/providers/NetworkProvider";
 
 export interface PaymentFormProps {
   escrowId: string;
@@ -53,6 +54,7 @@ export default function PaymentForm({
   onPaymentSuccess,
 }: PaymentFormProps) {
   const { status: walletStatus } = useWallet();
+  const { network } = useNetwork();
   const [formState, setFormState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -151,7 +153,7 @@ export default function PaymentForm({
             Transaction: {truncateHash(txHash)}
           </p>
           <a
-            href={getStellarExpertUrl(txHash)}
+            href={getStellarExpertUrl(txHash, network)}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-block text-sm font-medium text-green-700 underline hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"

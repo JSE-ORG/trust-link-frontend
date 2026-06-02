@@ -6,6 +6,7 @@ import { resolveDispute } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/components/providers/WalletProvider";
 import { ExternalLink, CheckCircle, XCircle, AlertCircle, Calendar, Package, DollarSign, User } from "lucide-react";
+import { formatUSDC } from "@/utils/currency";
 
 interface DisputeDetailsClientProps {
   dispute: Dispute;
@@ -71,7 +72,7 @@ export function DisputeDetailsClient({ dispute }: DisputeDetailsClientProps) {
               <DollarSign className="w-5 h-5 text-zinc-400 mt-1" />
               <div>
                 <p className="text-sm text-zinc-500">Amount</p>
-                <p className="font-medium">{dispute.escrow.amount} USDC</p>
+                <p className="font-medium">{formatUSDC(dispute.escrow.amount)}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

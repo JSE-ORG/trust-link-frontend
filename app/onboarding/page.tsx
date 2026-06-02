@@ -41,7 +41,7 @@ function OnboardingContent() {
         </div>
 
         {status === "not-installed" && (
-          <div className="bg-warning/10 border border-warning/20 p-4 rounded-2xl text-warning text-sm font-medium flex items-center justify-center animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-warning/10 border border-warning/20 p-4 rounded-2xl text-warning text-sm font-medium flex items-center justify-center duration-500">
             <Download className="w-4 h-4 mr-2" />
             Freighter extension not detected. Please install it to continue.
           </div>
@@ -99,9 +99,5 @@ function OnboardingContent() {
 }
 
 export default function OnboardingPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>}>
-      <OnboardingContent />
-    </Suspense>
-  );
+  return <VendorOnboardingWizard />;
 }

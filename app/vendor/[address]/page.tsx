@@ -3,6 +3,7 @@
 import { use } from "react";
 import { ArrowLeft, Star, ShieldCheck, MapPin, History, Package } from "lucide-react";
 import Link from "next/link";
+import { formatUSDC } from "@/utils/currency";
 
 // Mock data generator for the vendor profile
 const getVendorMock = (address: string) => ({
@@ -114,7 +115,7 @@ export default function VendorProfilePage({ params }: { params: Promise<{ addres
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-zinc-900 dark:text-white">${tx.amount}</p>
+                  <p className="font-semibold text-zinc-900 dark:text-white">{formatUSDC(tx.amount)}</p>
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                     tx.status === 'completed' 
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'

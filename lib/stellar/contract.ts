@@ -2,6 +2,17 @@
 
 import { signTransaction } from "./freighter";
 
+/**
+ * Submits a payment transaction to the Stellar network
+ * @param {string} amount - The amount to send (in XLM)
+ * @param {string} destination - The destination Stellar address
+ * @returns {Promise<string>} The transaction hash
+ * @throws {Error} If destination address is empty or transaction fails
+ * @deprecated This is a simulated function for testing purposes
+ * @example
+ * const txHash = await submitPayment("100", "GXXXXXX...");
+ * console.log("Transaction submitted:", txHash);
+ */
 export async function submitPayment(amount: string, destination: string) {
   // In a real implementation, this would involve building a transaction
   // and using signTransaction(xdr, network)
@@ -50,8 +61,17 @@ export interface ContractInvocationResult {
 
 /**
  * Build a contract invocation transaction
- * @param options - Contract call options including contractId, method, args, and network
- * @returns Transaction XDR string ready to be signed
+ * @param {ContractCallOptions} options - Contract call options including contractId, method, args, and network
+ * @returns {string} Transaction XDR string ready to be signed
+ * @throws {Error} If contract ID is invalid, method name is missing, or source account is invalid
+ * @example
+ * const xdr = buildContractInvocation({
+ *   contractId: "CXXXXXX...",
+ *   method: "transfer",
+ *   args: [fromAddress, toAddress, amount],
+ *   sourceAccount: "GXXXXXX...",
+ *   network: "TESTNET"
+ * });
  */
 export function buildContractInvocation(options: ContractCallOptions): string {
   const {
@@ -109,8 +129,12 @@ export function buildContractInvocation(options: ContractCallOptions): string {
 
 /**
  * Validate a contract ID format
- * @param contractId - The contract ID to validate
- * @returns true if valid, false otherwise
+ * @param {string} contractId - The contract ID to validate
+ * @returns {boolean} True if valid, false otherwise
+ * @example
+ * if (isValidContractId("CXXXXXX...")) {
+ *   console.log("Valid contract ID");
+ * }
  */
 export function isValidContractId(contractId: string): boolean {
   return typeof contractId === "string" && contractId.startsWith("C");
@@ -118,8 +142,15 @@ export function isValidContractId(contractId: string): boolean {
 
 /**
  * Parse contract error response
- * @param error - The error from contract invocation
- * @returns Formatted error message
+ * @param {any} error - The error from contract invocation
+ * @returns {string} Formatted error message
+ * @example
+ * try {
+ *   await invokeContract();
+ * } catch (error) {
+ *   const message = parseContractError(error);
+ *   alert(message);
+ * }
  */
 export function parseContractError(error: any): string {
   if (typeof error === "string") {
@@ -139,8 +170,12 @@ export function parseContractError(error: any): string {
 
 /**
  * Extract result from contract response
- * @param response - The contract response
- * @returns Parsed result or null
+ * @param {any} response - The contract response
+ * @returns {any} Parsed result or null
+ * @example
+ * const response = await invokeContract();
+ * const result = parseContractResult(response);
+ * console.log("Contract returned:", result);
  */
 export function parseContractResult(response: any): any {
   if (!response) {
@@ -161,9 +196,14 @@ export function parseContractResult(response: any): any {
 
 /**
  * Validate contract method parameters
- * @param method - Method name
- * @param args - Method arguments
- * @returns true if valid, error message otherwise
+ * @param {string} method - Method name
+ * @param {any[]} args - Method arguments
+ * @returns {{ valid: boolean; error?: string }} Validation result with error message if invalid
+ * @example
+ * const validation = validateContractMethodCall("transfer", [from, to, amount]);
+ * if (!validation.valid) {
+ *   console.error(validation.error);
+ * }
  */
 export function validateContractMethodCall(
   method: string,
@@ -187,10 +227,14 @@ export function validateContractMethodCall(
 
 /**
  * Build a contract deployment transaction
- * @param wasmBuffer - Compiled contract WASM buffer
- * @param sourceAccount - Source account public key
- * @param network - Network to deploy to
- * @returns Transaction XDR string
+ * @param {Buffer} wasmBuffer - Compiled contract WASM buffer
+ * @param {string} sourceAccount - Source account public key
+ * @param {"TESTNET" | "PUBLIC"} network - Network to deploy to
+ * @returns {string} Transaction XDR string
+ * @throws {Error} If WASM buffer is empty or source account is invalid
+ * @example
+ * const wasmBuffer = fs.readFileSync("contract.wasm");
+ * const xdr = buildContractDeployment(wasmBuffer, "GXXXXXX...", "TESTNET");
  */
 export function buildContractDeployment(
   wasmBuffer: Buffer,
@@ -231,8 +275,13 @@ export function buildContractDeployment(
 
 /**
  * Check if a response indicates successful contract execution
- * @param response - Contract response
- * @returns true if successful
+ * @param {any} response - Contract response
+ * @returns {boolean} True if successful
+ * @example
+ * const response = await invokeContract();
+ * if (isContractSuccess(response)) {
+ *   console.log("Contract executed successfully");
+ * }
  */
 export function isContractSuccess(response: any): boolean {
   if (!response) {
