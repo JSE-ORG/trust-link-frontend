@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { WalletProvider } from "@/components/providers/WalletProvider";
-import I18nProvider from "@/components/providers/I18nProvider";
+import { AppProviders } from "@/components/providers/AppProviders";
+import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
@@ -32,6 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -42,18 +43,16 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <WalletProvider>
-          <I18nProvider>
-            {/* pb-20 on mobile gives room for the fixed BottomNav; md:pb-0 removes it on desktop */}
-            <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
-              {children}
-            </main>
-            <Footer />
-            <BottomNav />
-            <Toaster richColors position="top-right" />
-          </I18nProvider>
-        </WalletProvider>
-        <Toaster position="bottom-right" />
+        <AppProviders>
+          <Navbar />
+          {/* pb-20 on mobile gives room for the fixed BottomNav; md:pb-0 removes it on desktop */}
+          <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
+            {children}
+          </main>
+          <Footer />
+          <BottomNav />
+          <Toaster richColors position="top-right" closeButton />
+        </AppProviders>
       </body>
     </html>
   );
