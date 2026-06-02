@@ -143,3 +143,20 @@ export async function getTracking(escrowId: string): Promise<Tracking> {
   }
   return res.json();
 }
+
+export interface BuyerContactInput {
+  email?: string;
+  phone?: string;
+}
+
+export async function patchBuyerContact(escrowId: string, data: BuyerContactInput): Promise<void> {
+  const res = await fetch(`${API_URL}/escrow/${escrowId}/buyer-contact`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to save contact info: ${err}`);
+  }
+}

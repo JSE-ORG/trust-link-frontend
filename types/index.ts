@@ -50,3 +50,13 @@ export interface Tracking {
   estimatedDelivery?: string;
   events: TrackingEvent[];
 }
+
+export interface AppNotification {
+  id: string;
+  escrowId: string;
+  escrowItem: string;
+  type: EscrowStatus;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
