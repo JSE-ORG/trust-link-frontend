@@ -6,6 +6,7 @@ import { Escrow, EscrowStatus } from "@/types";
 import { CheckCircle2, Circle, Clock, Package, Truck, Home } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEscrow } from "@/hooks/useEscrow";
+import { ConfirmDeliveryButton } from "@/components/escrow/ConfirmDeliveryButton";
 import { track } from "@/lib/analytics";
 
 interface TrackingStage {
@@ -72,40 +73,6 @@ export default function TrackingTimeline({
   });
 
   const [localError, setLocalError] = useState<Error | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
-
-  useEffect(() => {
-    if (!escrow) {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        await refetch();
-      } catch (err) {
-        console.error("Failed to refresh escrow status:", err);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [escrowId, refetch]);
-
-  const handleConfirmDelivery = async () => {
-    setIsConfirming(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/escrows/${escrowId}/confirm`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error('Failed to confirm delivery');
-
-      await refetch();
-      track("delivery_confirmed", { escrowId });
-    } catch (err) {
-      setLocalError(err instanceof Error ? err : new Error("Failed to confirm delivery"));
-    } finally {
-      setIsConfirming(false);
-    }
-  };
 
   const handleRaiseDispute = () => {
     window.location.href = `/dispute/${escrowId}`;
@@ -141,8 +108,6 @@ export default function TrackingTimeline({
 
   const currentStageIndex = getCurrentStageIndex(activeEscrow.status);
   const isShipped = activeEscrow.status === "SHIPPED";
-  const canConfirmDelivery = isShipped;
-  const canRaiseDispute = isShipped;
 
   // Touch Swipe State
   const [swipeIndex, setSwipeIndex] = useState(currentStageIndex);
@@ -285,25 +250,22 @@ export default function TrackingTimeline({
       </div>
 
       {/* Action Buttons */}
-      {(canConfirmDelivery || canRaiseDispute) && (
+      {isShipped && (
         <div className="flex flex-col gap-3 sm:flex-row">
-          {canConfirmDelivery && (
-            <button
-              onClick={handleConfirmDelivery}
-              disabled={isConfirming}
-              className="flex-1 rounded-2xl bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-800"
-            >
-              {isConfirming ? t("tracking.confirming") : t("tracking.confirmDelivery")}
-            </button>
-          )}
-          {canRaiseDispute && (
-            <button
-              onClick={handleRaiseDispute}
-              className="flex-1 rounded-2xl border-2 border-red-600 bg-transparent px-6 py-3 font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-500 dark:text-red-500 dark:hover:bg-red-950"
-            >
-              {t("tracking.raiseDispute")}
-            </button>
-          )}
+          <ConfirmDeliveryButton
+            escrowId={escrowId}
+            onSuccess={() => {
+              setLocalError(null);
+              refetch();
+              track("delivery_confirmed", { escrowId });
+            }}
+          />
+          <button
+            onClick={handleRaiseDispute}
+            className="flex-1 rounded-2xl border-2 border-red-600 bg-transparent px-6 py-3 font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-500 dark:text-red-500 dark:hover:bg-red-950"
+          >
+            {t("tracking.raiseDispute")}
+          </button>
         </div>
       )}
 

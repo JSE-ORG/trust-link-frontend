@@ -178,6 +178,40 @@ export interface BuyerContactInput {
   phone?: string;
 }
 
+export interface VendorNotificationPreferences {
+  funded:    { email: boolean; sms: boolean };
+  shipped:   { email: boolean; sms: boolean };
+  delivered: { email: boolean; sms: boolean };
+  disputed:  { email: boolean; sms: boolean };
+  completed: { email: boolean; sms: boolean };
+}
+
+export async function getVendorNotificationPreferences(
+  token: string
+): Promise<VendorNotificationPreferences> {
+  const res = await fetch(`${API_URL}/vendor/notifications`, {
+    cache: 'no-store',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch notification preferences');
+  return res.json();
+}
+
+export async function patchVendorNotifications(
+  prefs: VendorNotificationPreferences,
+  token: string
+): Promise<void> {
+  const res = await fetch(`${API_URL}/vendor/notifications`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(prefs),
+  });
+  if (!res.ok) throw new Error('Failed to save notification preferences');
+}
+
 export async function patchBuyerContact(escrowId: string, data: BuyerContactInput): Promise<void> {
   const res = await fetch(`${API_URL}/escrow/${escrowId}/buyer-contact`, {
     method: 'PATCH',
