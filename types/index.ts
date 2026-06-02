@@ -11,6 +11,7 @@ export interface Escrow {
   createdAt: string;
   updatedAt: string;
   history: EscrowHistoryEvent[];
+  imageUrl?: string; // Optional escrow item image for display
 }
 
 export interface EscrowHistoryEvent {
@@ -49,4 +50,14 @@ export interface Tracking {
   trackingNumber: string;
   estimatedDelivery?: string;
   events: TrackingEvent[];
+}
+
+export interface AppNotification {
+  id: string;
+  escrowId: string;
+  escrowItem: string;
+  type: EscrowStatus;
+  message: string;
+  timestamp: string;
+  read: boolean;
 }

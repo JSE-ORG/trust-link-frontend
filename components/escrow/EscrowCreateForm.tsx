@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createEscrow, type EscrowInput } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 const shippingOptions = ["Same day", "1-3 days", "1 week", "Custom"] as const;
 
@@ -154,6 +155,7 @@ export default function EscrowCreateForm() {
       }
 
       setResultUrl(response.url);
+      track("link_created");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error creating the link.";
       setSubmitError(message);

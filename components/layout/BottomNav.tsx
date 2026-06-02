@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, MapPin, User } from "lucide-react";
+import { Bell, LayoutDashboard, MapPin, PlusCircle, User } from "lucide-react";
+import { useNotifications } from "@/components/providers/NotificationProvider";
 
-const NAV_ITEMS = [
+const STATIC_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/create", label: "Create Link", icon: PlusCircle },
   { href: "/tracking", label: "Track Order", icon: MapPin },
+  { href: "/notifications", label: "Inbox", icon: Bell },
   { href: "/profile", label: "Profile", icon: User },
 ] as const;
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { unreadCount } = useNotifications();
 
   return (
     <nav
@@ -20,21 +23,29 @@ export default function BottomNav() {
       role="navigation"
       aria-label="Mobile navigation"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {STATIC_NAV.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
+        const isBell = href === "/notifications";
         return (
           <Link
             key={href}
             href={href}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
+            className={`relative flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
               isActive
                 ? "text-blue-600 dark:text-blue-400"
                 : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
-            aria-label={label}
+            aria-label={isBell && unreadCount > 0 ? `${label}, ${unreadCount} unread` : label}
             aria-current={isActive ? "page" : undefined}
           >
-            <Icon className="h-5 w-5" />
+            <span className="relative">
+              <Icon className="h-5 w-5" />
+              {isBell && unreadCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </span>
             <span>{label}</span>
           </Link>
         );
