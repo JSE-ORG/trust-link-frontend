@@ -53,6 +53,22 @@ const nextConfig: NextConfig = {
         hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
+      // Common image hosting services for escrow item images
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.imgix.net",
+        pathname: "/**",
+      },
     ],
   },
 

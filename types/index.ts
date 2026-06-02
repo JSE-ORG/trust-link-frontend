@@ -11,6 +11,7 @@ export interface Escrow {
   createdAt: string;
   updatedAt: string;
   history: EscrowHistoryEvent[];
+  imageUrl?: string; // Optional escrow item image for display
 }
 
 export interface EscrowHistoryEvent {

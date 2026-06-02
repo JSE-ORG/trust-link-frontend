@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import { QRCodeCanvas } from "qrcode.react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ async function fetchEscrowLink() {
     expires: "May 31, 2026",
     escrowId: "1293",
     url: "https://trustlink.example.com/pay/1293",
+    imageUrl: undefined, // Optional: Add escrow item image URL here
   };
 }
 
@@ -28,6 +30,7 @@ export default function EscrowLinkCard({ loading = false }: { loading?: boolean 
     expires: string;
     escrowId: string;
     url: string;
+    imageUrl?: string;
   } | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
@@ -81,6 +84,20 @@ export default function EscrowLinkCard({ loading = false }: { loading?: boolean 
 
   return (
     <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      {/* Optional Escrow Item Image */}
+      {link.imageUrl && (
+        <div className="mb-4 overflow-hidden rounded-2xl">
+          <OptimizedImage
+            src={link.imageUrl}
+            alt={`Image of ${link.title}`}
+            width={600}
+            height={400}
+            className="h-48 w-full object-cover"
+            sizes="(max-width: 768px) 100vw, 600px"
+          />
+        </div>
+      )}
+
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">{link.title}</h2>
         <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">

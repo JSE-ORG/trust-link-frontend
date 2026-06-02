@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
 import { getVendorEscrows } from "@/lib/api";
@@ -100,14 +101,29 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
         {escrows.map((escrow) => (
           <div key={escrow.id} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-base font-semibold text-zinc-950 dark:text-zinc-100">{escrow.item}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  <span>Buyer: {escrow.buyerId ? `${escrow.buyerId.slice(0, 4)}...${escrow.buyerId.slice(-4)}` : 'Unknown'}</span>
-                  <span>•</span>
-                  <span>Amount: {escrow.amount} USDC</span>
-                  <span>•</span>
-                  <span>Created: {new Date(escrow.createdAt).toLocaleDateString()}</span>
+              <div className="flex gap-4">
+                {/* Optional Escrow Item Thumbnail */}
+                {escrow.imageUrl && (
+                  <div className="flex-shrink-0 overflow-hidden rounded-xl">
+                    <OptimizedImage
+                      src={escrow.imageUrl}
+                      alt={`${escrow.item} thumbnail`}
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 object-cover"
+                      sizes="80px"
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="text-base font-semibold text-zinc-950 dark:text-zinc-100">{escrow.item}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    <span>Buyer: {escrow.buyerId ? `${escrow.buyerId.slice(0, 4)}...${escrow.buyerId.slice(-4)}` : 'Unknown'}</span>
+                    <span>•</span>
+                    <span>Amount: {escrow.amount} USDC</span>
+                    <span>•</span>
+                    <span>Created: {new Date(escrow.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
