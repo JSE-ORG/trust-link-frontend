@@ -1,10 +1,7 @@
-export function getStellarExpertUrl(address: string): string {
-  const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet";
+export function getStellarExpertUrl(address: string, network?: string): string {
+  const net = network || process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet";
 
-  if (
-    network.toLowerCase() === "mainnet" ||
-    network.toLowerCase() === "public"
-  ) {
+  if (net.toLowerCase() === "mainnet" || net.toLowerCase() === "public") {
     return `https://stellar.expert/explorer/public/contract/${address}`;
   }
 

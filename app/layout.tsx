@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { NetworkProvider } from "@/components/providers/NetworkProvider";
 import { WalletProvider } from "@/components/providers/WalletProvider";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import I18nProvider from "@/components/providers/I18nProvider";
@@ -10,7 +11,6 @@ import Navbar from "@/components/layout/Navbar";
 import TestnetBanner from "@/components/layout/TestnetBanner";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from "sonner";
-import CommandPalette from "@/components/ui/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

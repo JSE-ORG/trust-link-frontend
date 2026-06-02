@@ -5,6 +5,7 @@ import { Shield, Copy, ExternalLink, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { truncateAddress } from "@/utils/truncateAddress";
 import { getStellarExpertUrl } from "@/lib/explorer";
+import { useNetwork } from "@/components/providers/NetworkProvider";
 
 interface TrustBadgeProps {
   contractAddress: string;
@@ -13,6 +14,7 @@ interface TrustBadgeProps {
 
 export function TrustBadge({ contractAddress, className }: TrustBadgeProps) {
   const [copied, setCopied] = useState(false);
+  const { network } = useNetwork();
 
   const handleCopy = async () => {
     try {
@@ -26,7 +28,7 @@ export function TrustBadge({ contractAddress, className }: TrustBadgeProps) {
     }
   };
 
-  const explorerUrl = getStellarExpertUrl(contractAddress);
+  const explorerUrl = getStellarExpertUrl(contractAddress, network);
 
   return (
     <div 

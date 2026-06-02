@@ -1,8 +1,9 @@
 "use client";
 
+import { useNetwork } from "@/components/providers/NetworkProvider";
+
 export default function TestnetBanner() {
-  const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet";
-  const isTestnet = network.toLowerCase() === "testnet";
+  const { isTestnet } = useNetwork();
 
   if (!isTestnet) return null;
 

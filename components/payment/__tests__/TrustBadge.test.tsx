@@ -2,7 +2,11 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { TrustBadge } from "../TrustBadge";
-import * as explorerUtils from "@/lib/explorer";
+import { NetworkProvider } from "@/components/providers/NetworkProvider";
+
+function renderWithProvider(ui: React.ReactElement) {
+  return render(<NetworkProvider>{ui}</NetworkProvider>);
+}
 
 // Mock the clipboard API
 const mockWriteText = vi.fn();
@@ -20,18 +24,19 @@ describe("TrustBadge", () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    localStorage.clear();
   });
 
   it("renders the trust copy and shield icon", () => {
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     expect(screen.getByText("Funds Protected by Smart Contract")).toBeInTheDocument();
     expect(screen.getByText("Escrow contract automatically handles release")).toBeInTheDocument();
   });
 
   it("renders the truncated contract address with a tooltip", () => {
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     const expectedTruncation = "CA4H...3R6J";
     const addressElement = screen.getByText(expectedTruncation);
@@ -40,14 +45,13 @@ describe("TrustBadge", () => {
   });
 
   it("calls navigator.clipboard.writeText and shows success state", async () => {
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     const copyButton = screen.getByLabelText("Copy address");
     fireEvent.click(copyButton);
     
     expect(mockWriteText).toHaveBeenCalledWith(contractAddress);
     
-    // Check for success icon (Check)
     await waitFor(() => {
       expect(screen.queryByTestId("copy-icon")).not.toBeInTheDocument();
     });
@@ -55,30 +59,28 @@ describe("TrustBadge", () => {
 
   it("links to correct testnet url", () => {
     vi.stubEnv("NEXT_PUBLIC_STELLAR_NETWORK", "testnet");
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     const link = screen.getByLabelText("View on Stellar Expert");
     expect(link).toHaveAttribute(
       "href", 
       `https://stellar.expert/explorer/testnet/contract/${contractAddress}`
     );
-    vi.unstubAllEnvs();
   });
 
   it("links to correct mainnet url", () => {
     vi.stubEnv("NEXT_PUBLIC_STELLAR_NETWORK", "mainnet");
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     const link = screen.getByLabelText("View on Stellar Expert");
     expect(link).toHaveAttribute(
       "href", 
       `https://stellar.expert/explorer/public/contract/${contractAddress}`
     );
-    vi.unstubAllEnvs();
   });
 
   it("is responsive with standard mobile flex layout classes", () => {
-    render(<TrustBadge contractAddress={contractAddress} />);
+    renderWithProvider(<TrustBadge contractAddress={contractAddress} />);
     
     const container = screen.getByText("Funds Protected by Smart Contract").closest('div');
     expect(container?.className).toContain('flex-col');

@@ -11,6 +11,7 @@ import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import { toast } from "sonner";
 import { jwtDecode } from "jwt-decode";
 import * as Sentry from "@sentry/nextjs";
+import { useNetwork } from "@/components/providers/NetworkProvider";
 
 interface WalletContextType {
   publicKey: string | null;
@@ -35,12 +36,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { network } = useNetwork();
+
+  const stellarNetworkLabel = network === "mainnet" ? "PUBLIC" : "TESTNET";
 
   const authenticate = useCallback(async (pubKey: string) => {
     try {
       const challengeXdr = await getChallenge(pubKey);
-      const stellarNetwork = process.env.NEXT_PUBLIC_STELLAR_NETWORK || "TESTNET";
-      const signedXdr = await freighterSignTransaction(challengeXdr, stellarNetwork);
+      const net = network === "mainnet" ? "PUBLIC" : "TESTNET";
+      const signedXdr = await freighterSignTransaction(challengeXdr, net);
       const jwt = await verifyChallenge(signedXdr);
       setToken(jwt);
       if (typeof window !== "undefined") {
@@ -52,7 +56,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       toast.error("Authentication failed");
       throw err;
     }
-  }, []);
+  }, [network]);
 
   // Check if Freighter is installed and restore session
   useEffect(() => {
@@ -130,17 +134,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     toast.success("Wallet disconnected");
   }, []);
 
-  const signTransaction = useCallback(async (xdr: string, network?: string) => {
+  const signTransaction = useCallback(async (xdr: string, networkOverride?: string) => {
     try {
-      const stellarNetwork = network || process.env.NEXT_PUBLIC_STELLAR_NETWORK || "TESTNET";
-      const signedXdr = await freighterSignTransaction(xdr, stellarNetwork);
+      const net = networkOverride || stellarNetworkLabel;
+      const signedXdr = await freighterSignTransaction(xdr, net);
       return signedXdr;
     } catch (err: any) {
       const message = err.message || "Failed to sign transaction";
       toast.error(message);
       throw err;
     }
-  }, []);
+  }, [stellarNetworkLabel]);
 
   // Auto-refresh token if it expires
   useEffect(() => {

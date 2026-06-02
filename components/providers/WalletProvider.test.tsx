@@ -1,5 +1,6 @@
 import { render, screen, act } from "@testing-library/react";
 import { WalletProvider, useWallet } from "./WalletProvider";
+import { NetworkProvider } from "./NetworkProvider";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as freighter from "@/lib/stellar/freighter";
 import * as stellar from "@/lib/stellar";
@@ -34,6 +35,10 @@ function TestComponent() {
   );
 }
 
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<NetworkProvider><WalletProvider>{ui}</WalletProvider></NetworkProvider>);
+}
+
 describe("WalletProvider SEP-10 Flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,11 +56,7 @@ describe("WalletProvider SEP-10 Flow", () => {
     vi.mocked(freighter.signTransaction).mockResolvedValue(mockSignedXdr);
     vi.mocked(stellar.verifyChallenge).mockResolvedValue(mockToken);
 
-    render(
-      <WalletProvider>
-        <TestComponent />
-      </WalletProvider>
-    );
+    renderWithProviders(<TestComponent />);
 
     const connectButton = screen.getByText("Connect");
     await act(async () => {
@@ -65,7 +66,7 @@ describe("WalletProvider SEP-10 Flow", () => {
     expect(screen.getByTestId("publicKey")).toHaveTextContent(mockPubKey);
     expect(screen.getByTestId("token")).toHaveTextContent(mockToken);
     expect(stellar.getChallenge).toHaveBeenCalledWith(mockPubKey);
-    expect(freighter.signTransaction).toHaveBeenCalledWith(mockChallenge, expect.any(Object));
+    expect(freighter.signTransaction).toHaveBeenCalledWith(mockChallenge, expect.stringMatching(/TESTNET|PUBLIC/));
     expect(stellar.verifyChallenge).toHaveBeenCalledWith(mockSignedXdr);
   });
 
@@ -74,11 +75,7 @@ describe("WalletProvider SEP-10 Flow", () => {
     vi.mocked(freighter.getPublicKey).mockResolvedValue("GABC123");
     vi.mocked(stellar.getChallenge).mockRejectedValue(new Error("Challenge failed"));
 
-    render(
-      <WalletProvider>
-        <TestComponent />
-      </WalletProvider>
-    );
+    renderWithProviders(<TestComponent />);
 
     const connectButton = screen.getByText("Connect");
     await act(async () => {

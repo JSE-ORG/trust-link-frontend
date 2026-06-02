@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Footer > matches snapshot 1`] = `
+<div>
+  <footer
+    class="border-t border-zinc-200 bg-white py-5 dark:border-zinc-800 dark:bg-zinc-950"
+  >
+    <div
+      class="mx-auto max-w-4xl px-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+    >
+      <p
+        class="text-sm text-zinc-500 dark:text-zinc-400"
+      >
+        © 
+        2026
+         
+        Trust Link. All rights reserved.
+      </p>
+      <div
+        class="flex items-center gap-2"
+      >
+        <label
+          class="text-sm text-zinc-500 dark:text-zinc-400"
+          for="language-select"
+        >
+          Language
+          :
+        </label>
+        <select
+          aria-label="Select language"
+          class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+          id="language-select"
+        >
+          <option
+            value="en"
+          >
+            English
+          </option>
+          <option
+            value="fr"
+          >
+            Français
+          </option>
+        </select>
+      </div>
+    </div>
+  </footer>
+</div>
+`;
