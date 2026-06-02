@@ -57,6 +57,12 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    const sorobanRpcUrl =
+      process.env.NEXT_PUBLIC_SOROBAN_RPC_URL ?? "https://soroban-testnet.stellar.org";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+    const preconnectTargets = [sorobanRpcUrl, apiUrl].filter(Boolean);
+    const linkHeaderValue = preconnectTargets.map((url) => `<${url}>; rel=preconnect`).join(", ");
+
     return [
       {
         source: "/(.*)",
@@ -64,6 +70,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Link", value: linkHeaderValue },
         ],
       },
     ];
