@@ -58,7 +58,7 @@ export default function RootLayout({
               </main>
               <Footer />
               <BottomNav />
-              <Toaster richColors position="top-right" />
+              <Toaster position="top-right" theme="system" />
             </I18nProvider>
           </NotificationProvider>
         </WalletProvider>
