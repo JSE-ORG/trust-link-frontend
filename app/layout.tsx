@@ -6,6 +6,8 @@ import { NotificationProvider } from "@/components/providers/NotificationProvide
 import I18nProvider from "@/components/providers/I18nProvider";
 import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
+import Navbar from "@/components/layout/Navbar";
+import TestnetBanner from "@/components/layout/TestnetBanner";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from "sonner";
 
@@ -37,6 +39,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <TestnetBanner />
         <ServiceWorkerProvider />
         <a
           href="#main-content"
@@ -47,6 +50,7 @@ export default function RootLayout({
         <WalletProvider>
           <NotificationProvider>
             <I18nProvider>
+              <Navbar />
               {/* pb-20 on mobile gives room for the fixed BottomNav; md:pb-0 removes it on desktop */}
               <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
                 {children}
