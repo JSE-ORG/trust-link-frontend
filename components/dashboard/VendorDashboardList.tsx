@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, Search, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
@@ -16,6 +17,31 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
   const [escrows, setEscrows] = useState<Escrow[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [selectedEscrow, setSelectedEscrow] = useState<Escrow | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+
+  const filteredEscrows = useMemo(() => {
+    if (!escrows) return null;
+    
+    return escrows.filter((escrow) => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        escrow.id.toLowerCase().includes(query) ||
+        (escrow.vendorId && escrow.vendorId.toLowerCase().includes(query)) ||
+        (escrow.buyerId && escrow.buyerId.toLowerCase().includes(query)) ||
+        (escrow.item && escrow.item.toLowerCase().includes(query));
+        
+      const matchesStatus = statusFilter === "ALL" || escrow.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [escrows, searchQuery, statusFilter]);
+
+  const availableStatuses = useMemo(() => {
+    if (!escrows) return [];
+    const statuses = new Set(escrows.map((e) => e.status));
+    return Array.from(statuses).sort();
+  }, [escrows]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -100,26 +126,67 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
 
   return (
     <>
-      {escrows.length > 0 && (
-        <div className="mb-4 flex justify-end">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search escrows..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-white dark:focus:ring-white"
+            />
+          </div>
+          <div className="relative w-full sm:w-auto">
+            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none rounded-full border border-zinc-200 bg-white py-2 pl-10 pr-8 text-sm text-zinc-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-white dark:focus:ring-white"
+            >
+              <option value="ALL">All Statuses</option>
+              {availableStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
           <TransactionHistoryExport
             escrows={escrows}
             vendorId={escrows[0]?.vendorId || "vendor"}
           />
+          <button
+            id="export-csv-button"
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
         </div>
-      )}
-      <div className="mb-4 flex justify-end">
-        <button
-          id="export-csv-button"
-          type="button"
-          onClick={handleExportCsv}
-          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
       </div>
 
+      {filteredEscrows!.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-zinc-200 py-12 text-center dark:border-zinc-800">
+          <p className="text-zinc-500 dark:text-zinc-400">No escrows found matching your criteria.</p>
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setStatusFilter("ALL");
+            }}
+            className="mt-4 text-sm font-medium text-black hover:underline dark:text-white"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredEscrows!.map((escrow) => (
       {/* Date range filter — narrows the list by escrow creation date. */}
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex flex-col">
@@ -216,6 +283,8 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
               </div>
             </div>
           </div>
+          ))}
+        </div>
         ))}
       </div>
       )}

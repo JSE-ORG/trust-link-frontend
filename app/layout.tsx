@@ -10,6 +10,7 @@ import Navbar from "@/components/layout/Navbar";
 import TestnetBanner from "@/components/layout/TestnetBanner";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from "sonner";
+import CommandPalette from "@/components/ui/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,8 @@ export default function RootLayout({
             </I18nProvider>
           </NotificationProvider>
         </WalletProvider>
+        <CommandPalette />
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

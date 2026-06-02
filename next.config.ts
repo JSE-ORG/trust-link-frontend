@@ -80,6 +80,37 @@ const nextConfig: NextConfig = {
     const preconnectTargets = [sorobanRpcUrl, apiUrl].filter(Boolean);
     const linkHeaderValue = preconnectTargets.map((url) => `<${url}>; rel=preconnect`).join(", ");
 
+    // ── Content-Security-Policy (issue #111) ─────────────────────────────────
+    // Restrictive policy that still permits the origins the app legitimately
+    // needs: the Stellar Soroban RPC, the backend API, Sentry ingestion, and the
+    // image hosts already whitelisted under images.remotePatterns. Next.js needs
+    // 'unsafe-inline' for its injected styles and (in dev) 'unsafe-eval' for the
+    // React Refresh runtime, so eval is only enabled outside production.
+    const isProd = process.env.NODE_ENV === "production";
+    const connectSrc = [
+      "'self'",
+      sorobanRpcUrl,
+      apiUrl,
+      "https://horizon.stellar.org",
+      "https://horizon-testnet.stellar.org",
+      "https://*.sentry.io",
+      "https://*.ingest.sentry.io",
+    ].filter(Boolean);
+
+    const csp = [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://stellarexpert.io https://testnet.stellarexpert.io https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com https://images.unsplash.com https://*.cloudinary.com https://*.imgix.net",
+      "font-src 'self' data:",
+      `connect-src ${connectSrc.join(" ")}`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
@@ -87,6 +118,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Content-Security-Policy", value: csp },
           { key: "Link", value: linkHeaderValue },
         ],
       },

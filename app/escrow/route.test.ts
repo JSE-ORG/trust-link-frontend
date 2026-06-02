@@ -18,7 +18,7 @@ describe("GET /api/escrow", () => {
     ];
     vi.mocked(getEscrowItems).mockReturnValue(escrowItems);
 
-    const response = GET();
+    const response = await GET(new Request("https://test.local/escrow"));
     const body = await response.json();
 
     expect(response.status).toBe(200);
