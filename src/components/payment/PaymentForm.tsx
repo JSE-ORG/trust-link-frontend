@@ -26,14 +26,14 @@ function truncateHash(hash: string) {
 }
 
 // Mock backend API call to get a transaction XDR to sign
-async function mockFetchTransactionXdr(escrowId: string): Promise<string> {
+export async function mockFetchTransactionXdr(escrowId: string): Promise<string> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
   return "mock_xdr_base64_string_for_escrow_" + escrowId;
 }
 
 // Mock backend API call to submit the signed XDR
-async function mockSubmitTransaction(signedXdr: string): Promise<string> {
+export async function mockSubmitTransaction(signedXdr: string): Promise<string> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 1000));
   if (!signedXdr) throw new Error("Invalid transaction signature");
