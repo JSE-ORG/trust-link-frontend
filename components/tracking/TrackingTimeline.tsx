@@ -6,6 +6,8 @@ import { Escrow, EscrowStatus } from "@/types";
 import { CheckCircle2, Circle, Clock, Package, Truck, Home } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEscrow } from "@/hooks/useEscrow";
+import { ConfirmDeliveryButton } from "@/components/escrow/ConfirmDeliveryButton";
+import { track } from "@/lib/analytics";
 
 interface TrackingStage {
   id: string;
@@ -65,47 +67,12 @@ export default function TrackingTimeline({
   loading = false,
 }: TrackingTimelineProps) {
   const { t, i18n } = useTranslation();
-  const {
-    escrow,
-    isLoading,
-    error: fetchError,
-    refetch,
-  } = useEscrow(escrowId, {
+  const { escrow, isLoading, error: fetchError, refetch } = useEscrow(escrowId, {
     initialData: initialEscrow,
     refreshInterval: 30000,
   });
 
   const [localError, setLocalError] = useState<Error | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
-
-  // Poll for updates every 30 seconds
-  useEffect(() => {
-    const pollInterval = setInterval(async () => {
-      try {
-        await refetch();
-      } catch (err) {
-        console.error("Failed to poll escrow status:", err);
-      }
-    }, 30000);
-
-    return () => clearInterval(pollInterval);
-  }, [refetch, escrowId]);
-
-  const handleConfirmDelivery = async () => {
-    setIsConfirming(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/escrows/${escrowId}/confirm`,
-        { method: "POST" }
-      );
-      if (!response.ok) throw new Error("Failed to confirm delivery");
-      await refetch();
-    } catch (err) {
-      setLocalError(err instanceof Error ? err : new Error("Failed to confirm delivery"));
-    } finally {
-      setIsConfirming(false);
-    }
-  };
 
   const handleRaiseDispute = () => {
     window.location.href = `/dispute/${escrowId}`;
@@ -129,7 +96,6 @@ export default function TrackingTimeline({
     );
   }
 
-  // Fallback to initialEscrow if escrow is still loading or null
   const activeEscrow = escrow || initialEscrow;
 
   const getCurrentStageIndex = (status: EscrowStatus): number => {
@@ -142,8 +108,40 @@ export default function TrackingTimeline({
 
   const currentStageIndex = getCurrentStageIndex(activeEscrow.status);
   const isShipped = activeEscrow.status === "SHIPPED";
-  const canConfirmDelivery = isShipped;
-  const canRaiseDispute = isShipped;
+
+  // Touch Swipe State
+  const [swipeIndex, setSwipeIndex] = useState(currentStageIndex);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  // Sync swipe index with the actual stage index when it changes
+  useEffect(() => {
+    setSwipeIndex(currentStageIndex);
+  }, [currentStageIndex]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && swipeIndex < TRACKING_STAGES.length - 1) {
+      setSwipeIndex((prev) => prev + 1);
+    }
+    if (isRightSwipe && swipeIndex > 0) {
+      setSwipeIndex((prev) => prev - 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -152,27 +150,38 @@ export default function TrackingTimeline({
         <h2 className="mb-6 text-lg font-semibold text-zinc-950 dark:text-zinc-100">
           {t("tracking.shipmentStatus")}
         </h2>
-        <div className="space-y-6">
-          {TRACKING_STAGES.map((stage, index) => {
-            const isCompleted = index < currentStageIndex;
-            const isCurrent = index === currentStageIndex;
-            const isPending = index > currentStageIndex;
-            const Icon = stage.icon;
+        
+        <div 
+          className="relative overflow-hidden touch-pan-y"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div 
+            className="flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none"
+            style={{ transform: `translateX(-${swipeIndex * 100}%)` }}
+          >
+            {TRACKING_STAGES.map((stage, index) => {
+              const isCompleted = index < currentStageIndex;
+              const isCurrent = index === currentStageIndex;
+              const isPending = index > currentStageIndex;
+              const Icon = stage.icon;
 
-            return (
-              <div key={stage.id} className="flex items-start gap-4">
-                {/* Icon */}
-                <div
-                  className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
-                    isCompleted
-                      ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
-                      : isCurrent
-                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
-                      : "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600"
-                  }`}
-                >
-                  <Icon className="h-6 w-6" />
-                </div>
+              return (
+                <div key={stage.id} className="w-full flex-shrink-0 md:w-auto md:flex-shrink">
+                  <div className="flex items-start gap-4">
+                    {/* Icon */}
+                    <div
+                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
+                        isCompleted
+                          ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300"
+                          : isCurrent
+                          ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
+                          : "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600"
+                      }`}
+                    >
+                      <Icon className="h-6 w-6" />
+                    </div>
 
                 {/* Content */}
                 <div className="flex-1">
@@ -204,44 +213,59 @@ export default function TrackingTimeline({
                   )}
                 </div>
 
-                {/* Status indicator */}
-                {isCompleted && (
-                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
-                )}
-                {isCurrent && (
-                  <div className="h-5 w-5 flex-shrink-0">
-                    <div className="h-full w-full animate-pulse rounded-full bg-blue-600 dark:bg-blue-400" />
+                    {/* Status indicator */}
+                    {isCompleted && (
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    )}
+                    {isCurrent && (
+                      <div className="h-5 w-5 flex-shrink-0">
+                        <div className="h-full w-full animate-pulse rounded-full bg-blue-600 dark:bg-blue-400" />
+                      </div>
+                    )}
+                    {isPending && (
+                      <Circle className="h-5 w-5 flex-shrink-0 text-zinc-300 dark:text-zinc-700" />
+                    )}
                   </div>
-                )}
-                {isPending && (
-                  <Circle className="h-5 w-5 flex-shrink-0 text-zinc-300 dark:text-zinc-700" />
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile swipe indicators */}
+          <div className="mt-6 flex justify-center gap-2 md:hidden">
+            {TRACKING_STAGES.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setSwipeIndex(index)}
+                className={`h-2 w-2 rounded-full transition-colors ${
+                  index === swipeIndex
+                    ? "bg-blue-600 dark:bg-blue-400"
+                    : "bg-zinc-300 dark:bg-zinc-700"
+                }`}
+                aria-label={`Go to stage ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      {(canConfirmDelivery || canRaiseDispute) && (
+      {isShipped && (
         <div className="flex flex-col gap-3 sm:flex-row">
-          {canConfirmDelivery && (
-            <button
-              onClick={handleConfirmDelivery}
-              disabled={isConfirming}
-              className="flex-1 rounded-2xl bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-800"
-            >
-              {isConfirming ? t("tracking.confirming") : t("tracking.confirmDelivery")}
-            </button>
-          )}
-          {canRaiseDispute && (
-            <button
-              onClick={handleRaiseDispute}
-              className="flex-1 rounded-2xl border-2 border-red-600 bg-transparent px-6 py-3 font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-500 dark:text-red-500 dark:hover:bg-red-950"
-            >
-              {t("tracking.raiseDispute")}
-            </button>
-          )}
+          <ConfirmDeliveryButton
+            escrowId={escrowId}
+            onSuccess={() => {
+              setLocalError(null);
+              refetch();
+              track("delivery_confirmed", { escrowId });
+            }}
+          />
+          <button
+            onClick={handleRaiseDispute}
+            className="flex-1 rounded-2xl border-2 border-red-600 bg-transparent px-6 py-3 font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-500 dark:text-red-500 dark:hover:bg-red-950"
+          >
+            {t("tracking.raiseDispute")}
+          </button>
         </div>
       )}
 

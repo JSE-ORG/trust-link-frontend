@@ -1,161 +1,290 @@
 "use client";
 
 import { useState } from "react";
-import TrackingTimeline, {
-  type ShipmentStage,
-  type TrackingStage,
-} from "@/components/escrow/TrackingTimeline";
+import { Shield, Zap, Lock, ChevronDown, ChevronUp, ArrowRight, CheckCircle } from "lucide-react";
 
-const DEMO_STAGES: TrackingStage[] = [
+const FAQ_ITEMS = [
   {
-    id: "ORDER_PLACED",
-    label: "Order Placed",
-    description: "Escrow funded & order confirmed",
-    timestamp: "2025-05-24T09:15:00Z",
+    question: "How does TrustLink protect my money?",
+    answer: "TrustLink uses smart contracts on the Stellar network to hold funds in escrow. Your money is only released to the vendor after you confirm delivery, ensuring complete protection against fraud.",
   },
   {
-    id: "PICKED_UP",
-    label: "Picked Up",
-    description: "Vendor handed over to courier",
-    timestamp: "2025-05-24T14:30:00Z",
+    question: "What payment methods are supported?",
+    answer: "We support Stellar (XLM) and various Stellar-based assets. The Stellar network enables fast, low-cost transactions globally, making it perfect for cross-border trade.",
   },
   {
-    id: "IN_TRANSIT",
-    label: "In Transit",
-    description: "Shipment en route to destination",
-    timestamp: "2025-05-25T08:00:00Z",
+    question: "How long does the escrow process take?",
+    answer: "Most transactions complete within 2-5 business days depending on shipping. The escrow period automatically releases funds 7 days after delivery confirmation if no disputes are raised.",
   },
   {
-    id: "OUT_FOR_DELIVERY",
-    label: "Out for Delivery",
-    description: "Package is nearby",
+    question: "What happens if there's a dispute?",
+    answer: "If you don't receive your order or it's not as described, you can raise a dispute within the escrow period. Our team will review the evidence and make a fair decision based on the terms.",
   },
   {
-    id: "DELIVERED",
-    label: "Delivered",
-    description: "Item received — awaiting confirmation",
+    question: "Are there any hidden fees?",
+    answer: "TrustLink charges a transparent 1.5% fee on successful transactions. There are no hidden charges, setup fees, or monthly costs. You only pay when you complete a sale.",
   },
-];
-
-const STAGE_ORDER: ShipmentStage[] = [
-  "ORDER_PLACED",
-  "PICKED_UP",
-  "IN_TRANSIT",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
+  {
+    question: "Is TrustLink available internationally?",
+    answer: "Yes! Built on the Stellar network, TrustLink works globally. Vendors and buyers from any country can participate, with automatic currency conversion at competitive rates.",
+  },
 ];
 
 export default function Home() {
-  const [currentStage, setCurrentStage] = useState<ShipmentStage>("IN_TRANSIT");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--muted-bg)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        padding: "32px 16px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 480,
-          background: "var(--background)",
-          borderRadius: 16,
-          border: "1px solid var(--border)",
-          boxShadow: "0 4px 24px rgba(27,42,107,0.07)",
-          padding: "28px 24px 32px",
-        }}
-      >
-        <header style={{ marginBottom: 24 }}>
-          <p
-            style={{
-              margin: "0 0 4px",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
-            Order #TL-20250524-88F2
-          </p>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: "var(--primary)",
-              lineHeight: 1.3,
-            }}
-          >
-            Shipment Tracker
-          </h1>
-        </header>
-
-        <TrackingTimeline
-          currentStage={currentStage}
-          stages={DEMO_STAGES}
-        />
-
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 20,
-            borderTop: "1px solid var(--border)",
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 10px",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--muted)",
-            }}
-          >
-            Demo: advance stage
-          </p>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
-            {STAGE_ORDER.map((stage) => (
-              <button
-                key={stage}
-                onClick={() => setCurrentStage(stage)}
-                aria-pressed={currentStage === stage}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  padding: "5px 12px",
-                  borderRadius: 20,
-                  border: "1.5px solid",
-                  cursor: "pointer",
-                  transition: "background 0.2s, color 0.2s, border-color 0.2s",
-                  borderColor:
-                    currentStage === stage ? "var(--accent)" : "var(--border)",
-                  background:
-                    currentStage === stage
-                      ? "color-mix(in srgb, var(--accent) 10%, transparent)"
-                      : "transparent",
-                  color:
-                    currentStage === stage ? "var(--accent)" : "var(--muted)",
-                }}
+    <div className="min-h-screen bg-[var(--muted-bg)]">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-white">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-white rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+          <div className="text-center">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+              Secure Escrow for
+              <span className="block text-[var(--accent)]">Every Transaction</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-10">
+              TrustLink protects buyers and vendors with smart contract escrow on the Stellar network. 
+              Fast, secure, and transparent payments with zero trust required.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="/vendor/signup"
+                className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[var(--accent)] rounded-lg hover:bg-[var(--accent)]/90 transition-all shadow-lg hover:shadow-xl"
               >
-                {stage.replace(/_/g, " ")}
-              </button>
+                Get Started as a Vendor
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+              <a
+                href="/verify"
+                className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white border-2 border-white/30 rounded-lg hover:bg-white/10 transition-all"
+              >
+                Verify Escrow Link
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20 sm:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-4">
+              How It Works
+            </h2>
+            <p className="text-lg text-[var(--muted)] max-w-2xl mx-auto">
+              Three simple steps to secure your transaction
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 sm:gap-12">
+            {/* Step 1 */}
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-[var(--primary)]/10 flex items-center justify-center mb-6">
+                  <span className="text-3xl font-bold text-[var(--primary)]">1</span>
+                </div>
+                <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                  Vendor Creates Link
+                </h3>
+                <p className="text-[var(--muted)]">
+                  The vendor generates a unique escrow link with payment details and delivery terms.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t-2 border-dashed border-[var(--border)]" />
+            </div>
+            {/* Step 2 */}
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mb-6">
+                  <span className="text-3xl font-bold text-[var(--accent)]">2</span>
+                </div>
+                <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                  Buyer Pays
+                </h3>
+                <p className="text-[var(--muted)]">
+                  Buyer sends payment to the smart contract. Funds are locked until delivery is confirmed.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t-2 border-dashed border-[var(--border)]" />
+            </div>
+            {/* Step 3 */}
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-[var(--success)]/10 flex items-center justify-center mb-6">
+                <span className="text-3xl font-bold text-[var(--success)]">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                Funds Released
+              </h3>
+              <p className="text-[var(--muted)]">
+                Upon delivery confirmation, the smart contract automatically releases funds to the vendor.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Signals Section */}
+      <section className="py-20 sm:py-24 bg-[var(--muted-bg)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-4">
+              Why TrustLink?
+            </h2>
+            <p className="text-lg text-[var(--muted)] max-w-2xl mx-auto">
+              Built on technology you can trust
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-[var(--border)] hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center mb-6">
+                <Shield className="h-7 w-7 text-[var(--primary)]" />
+              </div>
+              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                Stellar Network
+              </h3>
+              <p className="text-[var(--muted)]">
+                Powered by the Stellar blockchain for fast, secure, and low-cost transactions worldwide.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-[var(--border)] hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center mb-6">
+                <Lock className="h-7 w-7 text-[var(--accent)]" />
+              </div>
+              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                Smart Contracts
+              </h3>
+              <p className="text-[var(--muted)]">
+                Automated escrow execution ensures funds are only released when conditions are met.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-[var(--border)] hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 rounded-xl bg-[var(--success)]/10 flex items-center justify-center mb-6">
+                <Zap className="h-7 w-7 text-[var(--success)]" />
+              </div>
+              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
+                Low Fees
+              </h3>
+              <p className="text-[var(--muted)]">
+                Just 1.5% per transaction with no hidden fees. Save more on every sale.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 sm:py-24 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-[var(--muted)]">
+              Everything you need to know about TrustLink
+            </p>
+          </div>
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, index) => (
+              <div
+                key={index}
+                className="border border-[var(--border)] rounded-xl overflow-hidden"
+              >
+                <button
+                  onClick={() => toggleFaq(index)}
+                  className="w-full flex items-center justify-between p-6 text-left bg-white hover:bg-[var(--muted-bg)]/50 transition-colors"
+                  aria-expanded={openFaq === index}
+                >
+                  <span className="text-lg font-semibold text-[var(--foreground)] pr-4">
+                    {item.question}
+                  </span>
+                  {openFaq === index ? (
+                    <ChevronUp className="h-5 w-5 text-[var(--muted)] flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-[var(--muted)] flex-shrink-0" />
+                  )}
+                </button>
+                {openFaq === index && (
+                  <div className="px-6 pb-6 pt-0 bg-[var(--muted-bg)]/30">
+                    <p className="text-[var(--muted)] leading-relaxed">
+                      {item.answer}
+                    </p>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 sm:py-24 bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            Ready to Trade with Confidence?
+          </h2>
+          <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto">
+            Join thousands of vendors and buyers who trust TrustLink for secure transactions.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/vendor/signup"
+              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[var(--accent)] rounded-lg hover:bg-[var(--accent)]/90 transition-all shadow-lg hover:shadow-xl"
+            >
+              Start as a Vendor
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </a>
+            <a
+              href="/verify"
+              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-[var(--primary)] bg-white rounded-lg hover:bg-white/90 transition-all"
+            >
+              Verify a Link
+              <CheckCircle className="ml-2 h-5 w-5" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-[var(--foreground)] text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="md:col-span-2">
+              <h3 className="text-xl font-bold mb-4">TrustLink</h3>
+              <p className="text-white/70 max-w-md">
+                Secure escrow payments powered by the Stellar network. Protecting buyers and vendors worldwide.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-white/70">
+                <li><a href="/vendor/signup" className="hover:text-white transition-colors">For Vendors</a></li>
+                <li><a href="/verify" className="hover:text-white transition-colors">Verify Link</a></li>
+                <li><a href="/pricing" className="hover:text-white transition-colors">Pricing</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-white/70">
+                <li><a href="/about" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="/docs" className="hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="/contact" className="hover:text-white transition-colors">Contact</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-white/10 mt-12 pt-8 text-center text-white/50 text-sm">
+            © 2025 TrustLink. Built on Stellar.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

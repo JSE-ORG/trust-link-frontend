@@ -22,7 +22,15 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/lib/explorer", () => ({
-  getStellarExpertUrl: vi.fn().mockImplementation((hash) => `https://testnet.stellarexpert.io/contract/${hash}`),
+  getStellarExpertUrl: vi.fn().mockImplementation((hash, network) => {
+    const prefix = network === "mainnet" ? "public" : "testnet";
+    return `https://testnet.stellarexpert.io/contract/${hash}`;
+  }),
+}));
+
+vi.mock("@/components/providers/NetworkProvider", () => ({
+  useNetwork: vi.fn(() => ({ network: "testnet", isTestnet: true, isMainnet: false, toggleNetwork: vi.fn(), setNetwork: vi.fn() })),
+  NetworkProvider: ({ children }: any) => children,
 }));
 
 const defaultProps = {
@@ -39,7 +47,7 @@ const defaultProps = {
 describe("PaymentForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useWallet as any).mockReturnValue({ status: "connected" });
+    (useWallet as any).mockReturnValue({ isConnected: true });
   });
 
   it("renders payment summary and shows amount/fee/total correctly", () => {
@@ -52,7 +60,7 @@ describe("PaymentForm", () => {
   });
 
   it("is disabled when wallet is disconnected", () => {
-    (useWallet as any).mockReturnValue({ status: "disconnected" });
+    (useWallet as any).mockReturnValue({ isConnected: false });
     render(<PaymentForm {...defaultProps} />);
 
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
@@ -61,8 +69,7 @@ describe("PaymentForm", () => {
   });
 
   it("shows loading state and prevents duplicate submissions", async () => {
-    vi.useFakeTimers();
-    (signTransaction as any).mockResolvedValue("signed_xdr");
+    (signTransaction as any).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve("signed_xdr"), 100)));
 
     render(<PaymentForm {...defaultProps} />);
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
@@ -72,16 +79,9 @@ describe("PaymentForm", () => {
     // After click, it should change to loading state
     expect(await screen.findByText("Processing payment...")).toBeInTheDocument();
     expect(button).toBeDisabled(); // Prevents duplicate submissions
-
-    // Fast forward through network delays
-    await vi.runAllTimersAsync();
-    
-    vi.useRealTimers();
   });
 
   it("renders success state with tx hash and explorer link", async () => {
-    vi.useFakeTimers();
-    const mockTxHash = "3f7a1234567891bc";
     const onPaymentSuccess = vi.fn();
     (signTransaction as any).mockResolvedValue("signed_xdr");
     
@@ -93,11 +93,16 @@ describe("PaymentForm", () => {
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
 
     fireEvent.click(button);
-    await vi.runAllTimersAsync();
 
-    expect(screen.getByText("Payment successful")).toBeInTheDocument();
-    // 3f7a1f9a22...91bc
-    expect(screen.getByText(/Transaction: 3f7a1f/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Payment successful")).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    // The hash generation in PaymentForm.tsx: "3f7a" + Math.random().toString(16).substring(2, 10) + "91bc"
+    // With 0.12345678, Math.random().toString(16) is "0.1f9a222a"
+    // .substring(2, 10) is "1f9a222a"
+    // Result: "3f7a1f9a222a91bc"
+    expect(screen.getByText(/Transaction: 3f7a1f9a222a91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")
@@ -106,23 +111,21 @@ describe("PaymentForm", () => {
     expect(toast.success).toHaveBeenCalledWith("Payment successful");
 
     Math.random = originalRandom;
-    vi.useRealTimers();
   });
 
   it("shows error state on failure (wallet rejection)", async () => {
-    vi.useFakeTimers();
     (signTransaction as any).mockRejectedValue(new Error("User rejected the transaction"));
 
     render(<PaymentForm {...defaultProps} />);
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
 
     fireEvent.click(button);
-    await vi.runAllTimersAsync();
 
-    expect(await screen.findByText("Transaction was rejected in wallet")).toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalledWith("Transaction was rejected in wallet");
+    await waitFor(() => {
+      expect(screen.getByText("Transaction was rejected in wallet")).toBeInTheDocument();
+    }, { timeout: 5000 });
     
-    vi.useRealTimers();
+    expect(toast.error).toHaveBeenCalledWith("Transaction was rejected in wallet");
   });
 
   it("shows error if escrow is not payable", async () => {

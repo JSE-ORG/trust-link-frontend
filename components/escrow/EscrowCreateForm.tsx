@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createEscrow, type EscrowInput } from "@/lib/api";
+import { track } from "@/lib/analytics";
 
 const shippingOptions = ["Same day", "1-3 days", "1 week", "Custom"] as const;
 
@@ -154,6 +155,7 @@ export default function EscrowCreateForm() {
       }
 
       setResultUrl(response.url);
+      track("link_created");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error creating the link.";
       setSubmitError(message);
@@ -194,7 +196,7 @@ export default function EscrowCreateForm() {
             aria-describedby={errors.itemName ? "itemName-error" : undefined}
           />
           {errors.itemName ? (
-            <p id="itemName-error" className="mt-2 text-sm text-red-600">
+            <p id="itemName-error" role="alert" className="mt-2 text-sm text-red-600">
               {errors.itemName}
             </p>
           ) : null}
@@ -218,7 +220,7 @@ export default function EscrowCreateForm() {
             aria-describedby={errors.priceUSDC ? "priceUSDC-error" : undefined}
           />
           {errors.priceUSDC ? (
-            <p id="priceUSDC-error" className="mt-2 text-sm text-red-600">
+            <p id="priceUSDC-error" role="alert" className="mt-2 text-sm text-red-600">
               {errors.priceUSDC}
             </p>
           ) : null}
@@ -244,7 +246,7 @@ export default function EscrowCreateForm() {
             aria-describedby={errors.description ? "description-error" : undefined}
           />
           {errors.description ? (
-            <p id="description-error" className="mt-2 text-sm text-red-600">
+            <p id="description-error" role="alert" className="mt-2 text-sm text-red-600">
               {errors.description}
             </p>
           ) : null}
@@ -274,7 +276,7 @@ export default function EscrowCreateForm() {
         </div>
 
         {submitError ? (
-          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
+          <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
             {submitError}
           </p>
         ) : null}

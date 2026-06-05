@@ -1,4 +1,4 @@
-import { Dispute, Escrow, Tracking } from "@/types";
+import { Dispute, Escrow, Subscription, Tracking } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -141,5 +141,125 @@ export async function getTracking(escrowId: string): Promise<Tracking> {
   if (!res.ok) {
     throw new Error('Failed to fetch tracking details');
   }
+  return res.json();
+}
+
+export async function getSubscription(token?: string): Promise<Subscription> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_URL}/subscription`, {
+    cache: 'no-store',
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch subscription');
+  }
+  return res.json();
+}
+
+export async function upgradeSubscription(token?: string): Promise<Subscription> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_URL}/subscription/upgrade`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Upgrade failed: ${err}`);
+  }
+  return res.json();
+}
+
+export interface BuyerContactInput {
+  email?: string;
+  phone?: string;
+}
+
+export interface VendorNotificationPreferences {
+  funded:    { email: boolean; sms: boolean };
+  shipped:   { email: boolean; sms: boolean };
+  delivered: { email: boolean; sms: boolean };
+  disputed:  { email: boolean; sms: boolean };
+  completed: { email: boolean; sms: boolean };
+}
+
+export async function getVendorNotificationPreferences(
+  token: string
+): Promise<VendorNotificationPreferences> {
+  const res = await fetch(`${API_URL}/vendor/notifications`, {
+    cache: 'no-store',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch notification preferences');
+  return res.json();
+}
+
+export async function patchVendorNotifications(
+  prefs: VendorNotificationPreferences,
+  token: string
+): Promise<void> {
+  const res = await fetch(`${API_URL}/vendor/notifications`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(prefs),
+  });
+  if (!res.ok) throw new Error('Failed to save notification preferences');
+}
+
+export async function patchBuyerContact(escrowId: string, data: BuyerContactInput): Promise<void> {
+  const res = await fetch(`${API_URL}/escrow/${escrowId}/buyer-contact`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to save contact info: ${err}`);
+  }
+}
+
+export interface VendorAnalyticsPoint {
+  date: string;
+  transactionVolume: number;
+  averageOrderValue: number;
+  completionRate: number;
+  disputeRate: number;
+}
+
+export interface VendorAnalyticsResponse {
+  totalTransactionVolume?: number;
+  averageOrderValue?: number;
+  completionRate?: number;
+  disputeRate?: number;
+  periodLabel?: string;
+  generatedAt?: string;
+  dailyMetrics?: VendorAnalyticsPoint[];
+  series?: VendorAnalyticsPoint[];
+  data?: VendorAnalyticsPoint[];
+}
+
+export async function getVendorAnalytics(token?: string): Promise<VendorAnalyticsResponse> {
+  const headers: HeadersInit = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}/vendor/analytics`, {
+    cache: "no-store",
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch vendor analytics");
+  }
+
   return res.json();
 }

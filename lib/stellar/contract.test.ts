@@ -11,33 +11,39 @@ import {
 } from "./contract";
 
 // Mock Stellar SDK
-vi.mock("@stellar/js-sdk", () => ({
-  Contract: vi.fn().mockImplementation((id) => ({
-    id,
-    call: vi.fn().mockReturnValue({ type: "invocation" }),
-  })),
-  Keypair: { random: vi.fn() },
-  TransactionBuilder: vi.fn().mockImplementation(() => ({
-    addOperation: vi.fn().mockReturnThis(),
-    setTimeout: vi.fn().mockReturnThis(),
-    build: vi.fn().mockReturnValue({
-      toXDR: vi.fn().mockReturnValue("mock-xdr-string"),
+vi.mock("@stellar/stellar-sdk", () => {
+  return {
+    Contract: vi.fn().mockImplementation(function(id) {
+      return {
+        id,
+        call: vi.fn().mockReturnValue({ type: "invocation" }),
+      };
     }),
-  })),
-  Networks: {
-    PUBLIC_NETWORK_PASSPHRASE: "Public Global Stellar Network ; September 2015",
-    TESTNET_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
-  },
-  Operation: {
-    invokeHostFunction: vi.fn().mockReturnValue({}),
-    extendFootprintTtl: vi.fn().mockReturnValue({}),
-  },
-  xdr: {},
-  BASE_FEE: "100",
-  StrKey: {
-    isValidEd25519PublicKey: vi.fn((key) => key.startsWith("G") && key.length === 56),
-  },
-}));
+    Keypair: { random: vi.fn() },
+    TransactionBuilder: vi.fn().mockImplementation(function() {
+      return {
+        addOperation: vi.fn().mockReturnThis(),
+        setTimeout: vi.fn().mockReturnThis(),
+        build: vi.fn().mockReturnValue({
+          toXDR: vi.fn().mockReturnValue("mock-xdr-string"),
+        }),
+      };
+    }),
+    Networks: {
+      PUBLIC_NETWORK_PASSPHRASE: "Public Global Stellar Network ; September 2015",
+      TESTNET_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
+    },
+    Operation: {
+      invokeHostFunction: vi.fn().mockReturnValue({}),
+      extendFootprintTtl: vi.fn().mockReturnValue({}),
+    },
+    xdr: {},
+    BASE_FEE: "100",
+    StrKey: {
+      isValidEd25519PublicKey: vi.fn((key) => typeof key === "string" && key.startsWith("G") && key.length === 56),
+    },
+  };
+});
 
 describe("lib/stellar/contract.ts", () => {
   beforeEach(() => {
@@ -45,7 +51,7 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("buildContractInvocation", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
 
     it("builds contract invocation XDR for testnet", () => {
@@ -271,7 +277,7 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("buildContractDeployment", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const mockWasm = Buffer.from("mock wasm content");
 
     it("builds deployment transaction for testnet", () => {
@@ -344,7 +350,7 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("Contract call construction integration", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
 
     it("validates all components before building invocation", () => {

@@ -281,9 +281,10 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 onChange={(e) => updateField('email', e.target.value)}
                 aria-label="email"
                 aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
               {errors.email && (
-                <span className="error" role="alert">
+                <span id="email-error" className="error" role="alert">
                   {errors.email}
                 </span>
               )}
@@ -299,9 +300,11 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 value={formData.orderNumber}
                 onChange={(e) => updateField('orderNumber', e.target.value)}
                 aria-label="order number"
+                aria-invalid={!!errors.orderNumber}
+                aria-describedby={errors.orderNumber ? "orderNumber-error" : undefined}
               />
               {errors.orderNumber && (
-                <span className="error" role="alert">
+                <span id="orderNumber-error" className="error" role="alert">
                   {errors.orderNumber}
                 </span>
               )}
@@ -322,6 +325,8 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 value={formData.reason}
                 onChange={(e) => updateField('reason', e.target.value)}
                 aria-label="reason"
+                aria-invalid={!!errors.reason}
+                aria-describedby={errors.reason ? "reason-error" : undefined}
               >
                 <option value="">Select a reason</option>
                 <option value="product_not_received">Product not received</option>
@@ -331,7 +336,7 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 <option value="billing_error">Billing error</option>
               </select>
               {errors.reason && (
-                <span className="error" role="alert">
+                <span id="reason-error" className="error" role="alert">
                   {errors.reason}
                 </span>
               )}
@@ -348,9 +353,11 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 rows={5}
                 placeholder="Please provide detailed information about your dispute (minimum 20 characters)"
                 aria-label="description"
+                aria-invalid={!!errors.description}
+                aria-describedby={errors.description ? "description-error" : undefined}
               />
               {errors.description && (
-                <span className="error" role="alert">
+                <span id="description-error" className="error" role="alert">
                   {errors.description}
                 </span>
               )}
@@ -374,11 +381,13 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 accept="image/jpeg,image/png,image/jpg,application/pdf"
                 onChange={handleFileUpload}
                 aria-label="upload files"
+                aria-invalid={!!errors.files}
+                aria-describedby={errors.files ? "files-error" : "files-hint"}
                 data-testid="file-input"
               />
-              <small>Accepted formats: JPEG, PNG, PDF (Max 5MB each)</small>
+              <small id="files-hint">Accepted formats: JPEG, PNG, PDF (Max 5MB each)</small>
             </div>
-            
+
             {formData.files.length > 0 && (
               <div className="file-list" data-testid="file-list">
                 <h4>Uploaded Files:</h4>
@@ -399,9 +408,9 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 </ul>
               </div>
             )}
-            
+
             {errors.files && (
-              <span className="error" role="alert">
+              <span id="files-error" className="error" role="alert">
                 {errors.files}
               </span>
             )}
@@ -434,14 +443,17 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 <label>
                   <input
                     type="checkbox"
+                    id="agreeToTerms"
                     checked={formData.agreeToTerms}
                     onChange={(e) => updateField('agreeToTerms', e.target.checked)}
                     aria-label="agree to terms"
+                    aria-invalid={!!errors.agreeToTerms}
+                    aria-describedby={errors.agreeToTerms ? "agreeToTerms-error" : undefined}
                   />
                   I confirm that all information provided is accurate and complete *
                 </label>
                 {errors.agreeToTerms && (
-                  <span className="error" role="alert">
+                  <span id="agreeToTerms-error" className="error" role="alert">
                     {errors.agreeToTerms}
                   </span>
                 )}

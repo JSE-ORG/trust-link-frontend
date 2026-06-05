@@ -1,6 +1,8 @@
+import * as Sentry from "@sentry/nextjs";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";
 import { getEscrow } from "@/lib/api";
+import { formatUSDC } from "@/utils/currency";
 
 interface TrackPageProps {
   params: Promise<{ escrowId: string }>;
@@ -8,6 +10,9 @@ interface TrackPageProps {
 
 export default async function TrackPage({ params }: TrackPageProps) {
   const { escrowId } = await params;
+  
+  Sentry.setTag("escrow.id", escrowId);
+  Sentry.setContext("tracking", { escrowId });
   
   // Fetch initial escrow data
   let initialEscrow;
@@ -57,7 +62,7 @@ export default async function TrackPage({ params }: TrackPageProps) {
             <div className="flex justify-between">
               <span className="text-zinc-600 dark:text-zinc-400">Amount:</span>
               <span className="font-medium text-zinc-950 dark:text-zinc-100">
-                ${initialEscrow.amount.toFixed(2)}
+                {formatUSDC(initialEscrow.amount)}
               </span>
             </div>
             <div className="flex justify-between">

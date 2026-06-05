@@ -1,5 +1,8 @@
 "use client";
 
+import { formatTimeAgo } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+
 export type ShipmentStage =
   | "ORDER_PLACED"
   | "PICKED_UP"
@@ -170,6 +173,7 @@ export default function TrackingTimeline({
   stages = DEFAULT_STAGES,
   className = "",
 }: TrackingTimelineProps) {
+  const { i18n } = useTranslation();
   const currentIndex = STAGE_ORDER.indexOf(currentStage);
 
   const liveMessage = (() => {
@@ -322,10 +326,7 @@ export default function TrackingTimeline({
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {new Date(stage.timestamp).toLocaleString(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatTimeAgo(stage.timestamp, i18n.language)}
                   </time>
                 )}
               </div>
