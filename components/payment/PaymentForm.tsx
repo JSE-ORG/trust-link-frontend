@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useWallet from "@/hooks/useWallet";
+<<<<<<< HEAD
 import { submitPayment } from "@/lib/stellar/contract";
 import { Loader2, ShieldCheck, CheckCircle2, AlertCircle } from "lucide-react";
 import { formatUSDC } from "@/utils/currency";
@@ -107,6 +108,8 @@ export default function PaymentForm({
       </div>
 import React, { useState } from "react";
 import useWallet from "@/hooks/useWallet";
+=======
+>>>>>>> origin/main
 import { signTransaction } from "@/lib/stellar/freighter";
 import { getStellarExpertTxUrl } from "@/lib/explorer";
 import { toast } from "sonner";
