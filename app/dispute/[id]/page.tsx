@@ -5,6 +5,7 @@ import useEscrow from "@/hooks/useEscrow";
 import DisputeForm from "./DisputeForm";
 import { Loader2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { formatUSDC } from "@/utils/currency";
 
 export default function RaiseDisputePage() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +55,28 @@ export default function RaiseDisputePage() {
             Order #{escrow.id.slice(0, 8)} • {escrow.item}
           </p>
         </header>
+
+        <section className="mb-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Order summary</h2>
+          <dl className="mt-4 grid gap-3 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Order</dt>
+              <dd className="font-medium text-zinc-950 dark:text-zinc-100">{escrow.item}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Amount</dt>
+              <dd className="font-medium text-zinc-950 dark:text-zinc-100">{formatUSDC(escrow.amount)}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Status</dt>
+              <dd className="font-medium text-zinc-950 dark:text-zinc-100">{escrow.status}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Reference</dt>
+              <dd className="font-mono text-zinc-950 dark:text-zinc-100">{escrow.id}</dd>
+            </div>
+          </dl>
+        </section>
 
         <DisputeForm escrowId={escrow.id} />
 
