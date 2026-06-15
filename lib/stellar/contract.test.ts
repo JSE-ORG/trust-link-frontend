@@ -8,7 +8,15 @@ import {
   buildContractDeployment,
   isContractSuccess,
   ContractCallOptions,
+  fundEscrow,
+  confirmDelivery,
+  raiseDispute,
 } from "./contract";
+import * as freighter from "./freighter";
+
+vi.mock("./freighter", () => ({
+  signTransaction: vi.fn(),
+}));
 
 // Mock Stellar SDK
 vi.mock("@stellar/stellar-sdk", () => {
@@ -36,8 +44,20 @@ vi.mock("@stellar/stellar-sdk", () => {
     Operation: {
       invokeHostFunction: vi.fn().mockReturnValue({}),
       extendFootprintTtl: vi.fn().mockReturnValue({}),
+      invokeContractFunction: vi.fn().mockReturnValue({}),
     },
-    xdr: {},
+    xdr: {
+      TransactionEnvelope: {
+        fromXDR: vi.fn().mockReturnValue("tx-envelope"),
+      },
+    },
+    SorobanRpc: {
+      Server: vi.fn().mockImplementation(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: "GTEST", sequenceNumber: "0" }),
+        sendTransaction: vi.fn(),
+        getTransaction: vi.fn(),
+      })),
+    },
     BASE_FEE: "100",
     StrKey: {
       isValidEd25519PublicKey: vi.fn((key) => typeof key === "string" && key.startsWith("G") && key.length === 56),
@@ -48,6 +68,7 @@ vi.mock("@stellar/stellar-sdk", () => {
 describe("lib/stellar/contract.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-xdr");
   });
 
   describe("buildContractInvocation", () => {
@@ -346,6 +367,59 @@ describe("lib/stellar/contract.ts", () => {
     it("prioritizes explicit success flag", () => {
       expect(isContractSuccess({ success: true, error: "ignored" })).toBe(true);
       expect(isContractSuccess({ success: false, error: null })).toBe(false);
+    });
+  });
+
+  describe("Soroban contract call helpers", () => {
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
+    const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
+
+    it("fundEscrow returns hash and result XDR on success", async () => {
+      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
+      const mockSendTransaction = vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-1", resultXdr: "result-xdr" });
+      server.mockImplementationOnce(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+        sendTransaction: mockSendTransaction,
+      }));
+
+      const result = await fundEscrow(validContractId, ["arg"], validSourceAccount, "TESTNET");
+
+      expect(result).toEqual({ hash: "hash-1", resultXdr: "result-xdr" });
+      expect(freighter.signTransaction).toHaveBeenCalled();
+    });
+
+    it("propagates TxFailed errors", async () => {
+      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
+      server.mockImplementationOnce(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+        sendTransaction: vi.fn().mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: bad" }),
+      }));
+
+      await expect(fundEscrow(validContractId, [], validSourceAccount, "TESTNET"))
+        .rejects.toThrow("TxFailed");
+    });
+
+    it("propagates TxExpired errors", async () => {
+      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
+      server.mockImplementationOnce(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+        sendTransaction: vi.fn().mockResolvedValue({ status: "ERROR", error: "TxExpired: expired" }),
+      }));
+
+      await expect(confirmDelivery(validContractId, [], validSourceAccount, "TESTNET"))
+        .rejects.toThrow("TxExpired");
+    });
+
+    it("raises dispute through its contract method", async () => {
+      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
+      server.mockImplementationOnce(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+        sendTransaction: vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-2", resultXdr: "result-xdr-2" }),
+      }));
+
+      const result = await raiseDispute(validContractId, ["reason"], validSourceAccount, "TESTNET");
+
+      expect(result).toEqual({ hash: "hash-2", resultXdr: "result-xdr-2" });
     });
   });
 

@@ -9,6 +9,7 @@ import {
   xdr,
   BASE_FEE,
   StrKey,
+  SorobanRpc,
 } from "@stellar/stellar-sdk";
 import { signTransaction } from "./freighter";
 
@@ -58,6 +59,162 @@ export interface ContractInvocationResult {
   result?: any;
   error?: string;
   transactionHash?: string;
+}
+
+export interface ContractTransactionResult {
+  hash: string;
+  resultXdr: string;
+}
+
+export interface SorobanContractCallOptions {
+  contractId: string;
+  method: string;
+  args?: any[];
+  sourceAccount: string;
+  network?: "TESTNET" | "PUBLIC";
+  rpcUrl?: string;
+  fee?: string;
+}
+
+function getNetworkPassphrase(network: "TESTNET" | "PUBLIC") {
+  return network === "PUBLIC"
+    ? Networks.PUBLIC_NETWORK_PASSPHRASE
+    : Networks.TESTNET_NETWORK_PASSPHRASE;
+}
+
+function toTxError(error: unknown, fallback: string): Error {
+  const message = error instanceof Error ? error.message : String(error ?? fallback);
+  const normalized = message.includes("TxFailed") || message.includes("tx_failed")
+    ? `TxFailed: ${message}`
+    : message.includes("TxExpired") || message.includes("tx_expired")
+      ? `TxExpired: ${message}`
+      : message;
+
+  const wrapped = new Error(normalized || fallback);
+  if (message.includes("TxFailed") || message.includes("tx_failed")) {
+    (wrapped as Error & { name?: string }).name = "TxFailed";
+  }
+  if (message.includes("TxExpired") || message.includes("tx_expired")) {
+    (wrapped as Error & { name?: string }).name = "TxExpired";
+  }
+  return wrapped;
+}
+
+async function invokeSorobanContract(
+  options: SorobanContractCallOptions
+): Promise<ContractTransactionResult> {
+  const {
+    contractId,
+    method,
+    args = [],
+    sourceAccount,
+    network = "TESTNET",
+    rpcUrl = process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
+    fee = BASE_FEE,
+  } = options;
+
+  if (!contractId || !contractId.startsWith("C")) {
+    throw new Error("Invalid contract ID");
+  }
+
+  if (!method) {
+    throw new Error("Method name is required");
+  }
+
+  if (!StrKey.isValidEd25519PublicKey(sourceAccount)) {
+    throw new Error("Invalid source account public key");
+  }
+
+  const server = new SorobanRpc.Server(rpcUrl);
+  const networkPassphrase = getNetworkPassphrase(network);
+
+  try {
+    const account = await server.getAccount(sourceAccount);
+    const tx = new TransactionBuilder(account as any, {
+      fee,
+      networkPassphrase,
+    })
+      .addOperation(
+        Operation.invokeContractFunction({
+          contract: contractId,
+          function: method,
+          args: args as any,
+        } as any)
+      )
+      .setTimeout(30)
+      .build();
+
+    const signedXdr = await signTransaction(tx.toXDR(), networkPassphrase);
+    const txEnvelope = xdr.TransactionEnvelope.fromXDR(signedXdr, "base64");
+    const response = await server.sendTransaction(txEnvelope);
+
+    if ((response as any)?.status === "ERROR" || (response as any)?.status === "FAILED") {
+      throw toTxError((response as any)?.errorResultXdr || (response as any)?.error, "Transaction failed");
+    }
+
+    if ((response as any)?.status === "PENDING") {
+      const txResponse = await server.getTransaction((response as any).hash);
+      if (txResponse.status === "FAILED") {
+        throw toTxError(txResponse.errorResultXdr || txResponse.resultXdr, "Transaction failed");
+      }
+      return {
+        hash: (response as any).hash,
+        resultXdr: txResponse.resultXdr || "",
+      };
+    }
+
+    return {
+      hash: (response as any).hash || "",
+      resultXdr: (response as any).resultXdr || "",
+    };
+  } catch (error) {
+    throw toTxError(error, "Transaction submission failed");
+  }
+}
+
+export async function fundEscrow(
+  contractId: string,
+  args: any[],
+  sourceAccount: string,
+  network: "TESTNET" | "PUBLIC" = "TESTNET"
+): Promise<ContractTransactionResult> {
+  return invokeSorobanContract({
+    contractId,
+    method: "fund_escrow",
+    args,
+    sourceAccount,
+    network,
+  });
+}
+
+export async function confirmDelivery(
+  contractId: string,
+  args: any[],
+  sourceAccount: string,
+  network: "TESTNET" | "PUBLIC" = "TESTNET"
+): Promise<ContractTransactionResult> {
+  return invokeSorobanContract({
+    contractId,
+    method: "confirm_delivery",
+    args,
+    sourceAccount,
+    network,
+  });
+}
+
+export async function raiseDispute(
+  contractId: string,
+  args: any[],
+  sourceAccount: string,
+  network: "TESTNET" | "PUBLIC" = "TESTNET"
+): Promise<ContractTransactionResult> {
+  return invokeSorobanContract({
+    contractId,
+    method: "raise_dispute",
+    args,
+    sourceAccount,
+    network,
+  });
 }
 
 /**
