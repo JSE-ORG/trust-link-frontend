@@ -70,3 +70,31 @@ export interface Subscription {
   upgradedAt?: string;
   expiresAt?: string;
 }
+
+export interface VendorNotificationPreferences {
+  funded: { email: boolean; sms: boolean };
+  shipped: { email: boolean; sms: boolean };
+  delivered: { email: boolean; sms: boolean };
+  disputed: { email: boolean; sms: boolean };
+  completed: { email: boolean; sms: boolean };
+}
+
+export interface VendorAnalyticsPoint {
+  date: string;
+  transactionVolume: number;
+  averageOrderValue: number;
+  completionRate: number;
+  disputeRate: number;
+}
+
+export interface VendorAnalyticsResponse {
+  totalTransactionVolume?: number;
+  averageOrderValue?: number;
+  completionRate?: number;
+  disputeRate?: number;
+  periodLabel?: string;
+  generatedAt?: string;
+  dailyMetrics?: VendorAnalyticsPoint[];
+  series?: VendorAnalyticsPoint[];
+  data?: VendorAnalyticsPoint[];
+}
