@@ -44,7 +44,7 @@ export default async function PayPage({ params }: PayPageProps) {
 		]
 
 		return (
-			<main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+			<main className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
 				<div className="mx-auto max-w-4xl">
 					<Breadcrumb items={breadcrumbItems} className="mb-4" />
 					<PaymentEscrowClient escrow={escrow} escrowId={escrowId} />
@@ -60,7 +60,7 @@ export default async function PayPage({ params }: PayPageProps) {
 		)
 	} catch {
 		return (
-			<main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+			<main className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
 				<div className="mx-auto max-w-4xl">
 					<Breadcrumb
 						items={[

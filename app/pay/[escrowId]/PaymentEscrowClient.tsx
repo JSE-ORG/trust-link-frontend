@@ -1,12 +1,35 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { Escrow } from "@/types";
 import { TrustBadge } from "@/components/payment/TrustBadge";
 import { useWallet } from "@/components/providers/WalletProvider";
 import { connectFreighter, isFreighterInstalled } from "@/lib/stellar/freighter";
 import { patchBuyerContact } from "@/lib/api";
 import { formatUSDC } from "@/utils/currency";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+function TrackingTimelineSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex gap-4">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2 pt-1">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const TrackingTimeline = dynamic(
+  () => import("@/components/escrow/TrackingTimeline"),
+  { loading: () => <TrackingTimelineSkeleton />, ssr: false }
+);
 
 interface PaymentEscrowClientProps {
   escrow: Escrow;
@@ -193,9 +216,17 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
       ) : null}
 
       {isFunded ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          This escrow is already funded.
-        </div>
+        <>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            This escrow is already funded.
+          </div>
+          <div>
+            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+              Shipment Tracking
+            </h2>
+            <TrackingTimeline currentStage="ORDER_PLACED" />
+          </div>
+        </>
       ) : null}
       {isExpired ? (
         <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">

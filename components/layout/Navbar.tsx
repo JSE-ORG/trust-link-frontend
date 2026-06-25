@@ -1,9 +1,12 @@
 "use client";
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 
 export default function Navbar() {
-  const { network, toggleNetwork, isMainnet } = useNetwork();
+  const { toggleNetwork, isMainnet } = useNetwork();
+  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -11,24 +14,38 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <span className="font-bold">TrustLink</span>
         </div>
-        <button
-          type="button"
-          onClick={toggleNetwork}
-          className="flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-          role="switch"
-          aria-checked={isMainnet}
-          aria-label={`Switch to ${isMainnet ? "Testnet" : "Mainnet"}`}
-        >
-          <span
-            className={`h-2 w-2 rounded-full ${
-              isMainnet ? "bg-green-500" : "bg-yellow-500"
-            }`}
-            aria-hidden="true"
-          />
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            {isMainnet ? "Mainnet" : "Testnet"}
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleNetwork}
+            className="flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            role="switch"
+            aria-checked={isMainnet}
+            aria-label={`Switch to ${isMainnet ? "Testnet" : "Mainnet"}`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isMainnet ? "bg-green-500" : "bg-yellow-500"
+              }`}
+              aria-hidden="true"
+            />
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              {isMainnet ? "Mainnet" : "Testnet"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          >
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Moon className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
     </header>
   );

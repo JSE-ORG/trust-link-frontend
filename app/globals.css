@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -53,6 +55,14 @@
     --muted-bg: #1F2937;
     --border: #374151;
   }
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --muted: #6B7280;
+  --muted-bg: #1F2937;
+  --border: #374151;
 }
 
 body {

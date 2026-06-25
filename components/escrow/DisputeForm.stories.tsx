@@ -20,6 +20,81 @@ const meta: Meta<typeof DisputeForm> = {
 export default meta;
 type Story = StoryObj<typeof DisputeForm>;
 
+// ── Issue #193 required stories ───────────────────────────────────────────────
+
+/** Empty — fresh form with no data entered (Step 1). */
+export const Empty: Story = {
+  name: "Empty — fresh form",
+  args: { onSubmit: async () => {} },
+  parameters: {
+    docs: {
+      description: { story: "Initial state: all fields blank, Step 1 visible." },
+    },
+  },
+};
+
+/** With evidence — description filled and file attached (Step 3 reached). */
+export const WithEvidence: Story = {
+  name: "With Evidence — file attached, description filled",
+  args: { onSubmit: async () => {} },
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.type(canvas.getByLabelText("name"), "Adaeze Okonkwo");
+    await userEvent.type(canvas.getByLabelText("email"), "adaeze@example.com");
+    await userEvent.type(canvas.getByLabelText("order number"), "ORD-55555");
+    await userEvent.click(canvas.getByTestId("next-button"));
+
+    await userEvent.selectOptions(canvas.getByLabelText("reason"), "damaged_product");
+    await userEvent.type(
+      canvas.getByLabelText("description"),
+      "The package arrived with severe water damage — all contents were unusable."
+    );
+    await userEvent.click(canvas.getByTestId("next-button"));
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Advances to Step 3 (evidence upload) with reason and description already filled in.",
+      },
+    },
+  },
+};
+
+/** Submitted — success confirmation screen after a dispute is filed. */
+export const Submitted: Story = {
+  name: "Submitted — success confirmation",
+  args: {
+    onSubmit: async () => {},
+    onSuccess: () => {},
+  },
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.type(canvas.getByLabelText("name"), "Kelechi Eze");
+    await userEvent.type(canvas.getByLabelText("email"), "kelechi@example.com");
+    await userEvent.type(canvas.getByLabelText("order number"), "ORD-77777");
+    await userEvent.click(canvas.getByTestId("next-button"));
+
+    await userEvent.selectOptions(canvas.getByLabelText("reason"), "product_not_received");
+    await userEvent.type(
+      canvas.getByLabelText("description"),
+      "My order has not arrived after 3 weeks and tracking shows no movement."
+    );
+    await userEvent.click(canvas.getByTestId("next-button"));
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Green success screen shown after the dispute is submitted. " +
+          "Includes a \"Submit Another Dispute\" reset button.",
+      },
+    },
+  },
+};
+
 // ── Step 1: Personal Information (initial state) ──────────────────────────────
 
 export const Step1PersonalInfo: Story = {
