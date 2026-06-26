@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Escrow } from "@/types";
 import { TrustBadge } from "@/components/payment/TrustBadge";
 import { useWallet } from "@/components/providers/WalletProvider";
@@ -49,6 +49,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [contactErrors, setContactErrors] = useState<ContactErrors>({});
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
   const amount = escrow.amount;
   const fee = useMemo(() => Number(((amount * PLATFORM_FEE_PERCENT) / 100).toFixed(2)), [amount]);
@@ -57,6 +58,35 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
 
   const isFunded = escrow.status === "FUNDED";
   const isExpired = escrow.status === "EXPIRED";
+
+  // Countdown logic for expiresAt
+  useEffect(() => {
+    if (!escrow.expiresAt) {
+      setTimeLeft(null);
+      return;
+    }
+    const update = () => {
+      const now = new Date();
+      const expiry = new Date(escrow.expiresAt as string);
+      const diff = expiry.getTime() - now.getTime();
+      if (diff <= 0) {
+        setTimeLeft("Expired");
+        return;
+      }
+      const totalMinutes = Math.floor(diff / 60000);
+      const days = Math.floor(totalMinutes / (24 * 60));
+      const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+      const minutes = totalMinutes % 60;
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0) parts.push(`${minutes}m`);
+      setTimeLeft(parts.join(' '));
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [escrow.expiresAt]);
 
   const handlePayNow = async () => {
     setError(null);
@@ -99,6 +129,12 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
         <h1 className="text-3xl font-semibold text-zinc-950 dark:text-zinc-100">Complete Payment</h1>
         <p className="mt-1 text-sm text-zinc-500">Escrow ID: {escrowId}</p>
       </header>
+
+      {timeLeft && !isFunded && !isExpired && (
+        <p aria-live="polite" className="text-sm text-zinc-600 dark:text-zinc-400">
+          Offer valid for {timeLeft}
+        </p>
+      )}
 
       <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">Order Details</h2>
