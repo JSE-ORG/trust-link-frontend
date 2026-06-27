@@ -11,6 +11,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import TestnetBanner from "@/components/layout/TestnetBanner";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "sonner";
 import CommandPalette from "@/components/ui/CommandPalette";
 import { Suspense } from "react";
@@ -48,7 +49,14 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {/* Inline script runs before paint to apply stored theme class without flash */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');else if(t==='light')document.documentElement.classList.add('light');}catch(e){}})();`,
+        }}
+      />
       <body className="min-h-full flex flex-col">
+        <ThemeProvider>
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>
@@ -78,6 +86,7 @@ export default function RootLayout({
           </WalletProvider>
         </NetworkProvider>
         <CommandPalette />
+        </ThemeProvider>
       </body>
     </html>
   );

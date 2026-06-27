@@ -26,6 +26,7 @@ interface WalletContextType {
   disconnect: () => void;
   signTransaction: (xdr: string, network?: string) => Promise<string>;
   isLoading: boolean;
+  walletReady: boolean;
   error: string | null;
 }
 
@@ -40,6 +41,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const jwt = token;
   const [isInstalled, setIsInstalled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [walletReady, setWalletReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { network } = useNetwork();
 
@@ -85,6 +87,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setIsLoading(false);
+      setWalletReady(true);
     }
     init();
   }, [authenticate]);
@@ -189,6 +192,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         disconnect,
         signTransaction,
         isLoading,
+        walletReady,
         error,
       }}
     >
