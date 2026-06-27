@@ -6,7 +6,7 @@ import { truncateAddress } from "@/utils/truncateAddress";
 import { ChevronDown, LogOut, Wallet, ExternalLink } from "lucide-react";
 
 export default function WalletConnectButton() {
-  const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, error } = useWallet();
+  const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, walletReady, error } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +31,10 @@ export default function WalletConnectButton() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  if (!walletReady) {
+    return <div className="h-10 w-32 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" aria-hidden />;
+  }
 
   if (!isInstalled) {
     return (
