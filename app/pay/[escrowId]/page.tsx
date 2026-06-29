@@ -1,12 +1,45 @@
+import type { Metadata } from "next"
 import { getEscrow } from "@/lib/api"
 import { PaymentEscrowClient } from "./PaymentEscrowClient"
 import { Breadcrumb } from "@/components/ui/Breadcrumb"
 import { Accordion } from "@/components/ui/Accordion"
 import { HowItWorks } from "@/components/payment/HowItWorks"
 
-
 interface PayPageProps {
 	params: Promise<{ escrowId: string }>
+}
+
+export async function generateMetadata({ params }: PayPageProps): Promise<Metadata> {
+	const { escrowId } = await params
+
+	try {
+		const escrow = await getEscrow(escrowId)
+		const title = `Pay for ${escrow.item} | TrustLink`
+		const description = `Secure escrow payment for ${escrow.item} — ${escrow.amount} USDC. Protected by TrustLink on the Stellar blockchain.`
+		const images = escrow.imageUrl ? [{ url: escrow.imageUrl, alt: escrow.item }] : []
+
+		return {
+			title,
+			description,
+			openGraph: {
+				title,
+				description,
+				type: "website",
+				...(images.length > 0 && { images }),
+			},
+			twitter: {
+				card: images.length > 0 ? "summary_large_image" : "summary",
+				title,
+				description,
+				...(images.length > 0 && { images }),
+			},
+		}
+	} catch {
+		return {
+			title: "Payment | TrustLink",
+			description: "Secure escrow payment powered by TrustLink on the Stellar blockchain.",
+		}
+	}
 }
 
 const faqItems = [
