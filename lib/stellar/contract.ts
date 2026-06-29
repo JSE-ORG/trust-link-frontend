@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
@@ -10,7 +11,7 @@ import {
   BASE_FEE,
   StrKey,
   rpc,
-} from "stellar-sdk";
+} from "@stellar/stellar-sdk";
 import { signTransaction } from "./freighter";
 
 /**
@@ -40,10 +41,21 @@ export async function submitPayment(amount: string, destination: string) {
   return "b2d8e9f...a1c3b5d7";
 }
 
+export type ContractArg =
+  | xdr.ScVal
+  | string
+  | number
+  | boolean
+  | bigint
+  | Buffer
+  | Uint8Array
+  | { [key: string]: ContractArg }
+  | ContractArg[];
+
 export interface ContractCallOptions {
   contractId: string;
   method: string;
-  args: any[];
+  args: ContractArg[];
   sourceAccount: string;
   network: "TESTNET" | "PUBLIC";
   fee?: string;
@@ -69,7 +81,7 @@ export interface ContractTransactionResult {
 export interface SorobanContractCallOptions {
   contractId: string;
   method: string;
-  args?: any[];
+  args?: ContractArg[];
   sourceAccount: string;
   network?: "TESTNET" | "PUBLIC";
   rpcUrl?: string;
@@ -174,7 +186,7 @@ async function invokeSorobanContract(
 
 export async function fundEscrow(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -189,7 +201,7 @@ export async function fundEscrow(
 
 export async function confirmDelivery(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -204,7 +216,7 @@ export async function confirmDelivery(
 
 export async function raiseDispute(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -276,7 +288,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
   })
     .addOperation(
       Operation.invokeHostFunction({
-        func: contract.call(method, ...args) as any,
+        func: contract.call(method, ...(args as unknown as xdr.ScVal[])) as any,
       })
     )
     .setTimeout(30)
@@ -365,7 +377,7 @@ export function parseContractResult(response: any): any {
  */
 export function validateContractMethodCall(
   method: string,
-  args: any[]
+  args: ContractArg[]
 ): { valid: boolean; error?: string } {
   if (!method || typeof method !== "string") {
     return { valid: false, error: "Method name must be a non-empty string" };

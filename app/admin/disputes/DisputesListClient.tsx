@@ -117,17 +117,17 @@ export function DisputesListClient() {
               key={dispute.id}
               className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
               role="listitem"
-              aria-labelledby={}
+              aria-labelledby={`dispute-title-${dispute.id}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
                   <p 
-                    id={}
+                    id={`dispute-title-${dispute.id}`}
                     className="text-sm font-medium text-zinc-950 dark:text-zinc-100"
                   >
                     {dispute.escrow.item}
                   </p>
-                  <p className="text-xs text-zinc-500" aria-label={}>
+                  <p className="text-xs text-zinc-500">
                     Escrow #{dispute.escrowId}
                   </p>
                   <p className="text-sm text-zinc-600 dark:text-zinc-300" aria-label="Dispute reason">
@@ -138,23 +138,23 @@ export function DisputesListClient() {
                   <p className="font-medium text-zinc-950 dark:text-zinc-100">
                     {formatUSDC(dispute.escrow.amount)}
                   </p>
-                  <p className="text-zinc-600 dark:text-zinc-400" aria-label={}>
+                  <p className="text-zinc-600 dark:text-zinc-400">
                     {dispute.status}
                   </p>
-                  <p className="text-xs text-zinc-500" aria-label={}>
+                  <p className="text-xs text-zinc-500">
                     {new Date(dispute.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-zinc-500" aria-label={}>
+                <p className="text-xs text-zinc-500">
                   Evidence links: <span className="font-medium">{dispute.evidence.length}</span>
                 </p>
                 <Link
-                  href={}
+                  href={`/admin/disputes/${dispute.id}`}
                   className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                  aria-label={}
+                  aria-label={`View dispute for ${dispute.escrow.item}`}
                 >
                   View Dispute
                 </Link>

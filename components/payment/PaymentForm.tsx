@@ -85,7 +85,7 @@ export default function PaymentForm({
       setFormState("success");
       toast.success("Payment successful");
       onPaymentSuccess?.(hash);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       let msg = "Network request failed";
 
