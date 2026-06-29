@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import ConfirmationDialog from "../ConfirmationDialog";
 
 describe("ConfirmationDialog (issue #69)", () => {
-  let onConfirm: ReturnType<typeof vi.fn>;
-  let onCancel: ReturnType<typeof vi.fn>;
+  let onConfirm: any;
+  let onCancel: any;
 
   beforeEach(() => {
     onConfirm = vi.fn();

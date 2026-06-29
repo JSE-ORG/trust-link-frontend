@@ -18,7 +18,7 @@ describe("PATCH /api/escrow/:id/ship", () => {
       body: JSON.stringify({ carrier: "DHL" }),
     });
 
-    const response = await PATCH(request, { params: { id: "escrow-1" } });
+    const response = await PATCH(request as any, { params: Promise.resolve({ id: "escrow-1" }) as any });
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -32,7 +32,7 @@ describe("PATCH /api/escrow/:id/ship", () => {
       body: JSON.stringify({ trackingId: "x".repeat(65) }),
     });
 
-    const response = await PATCH(request, { params: { id: "escrow-1" } });
+    const response = await PATCH(request as any, { params: Promise.resolve({ id: "escrow-1" }) as any });
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -56,7 +56,7 @@ describe("PATCH /api/escrow/:id/ship", () => {
       body: JSON.stringify({ trackingId: "  TRACK-123  " }),
     });
 
-    const response = await PATCH(request, { params: { id: "escrow-1" } });
+    const response = await PATCH(request as any, { params: Promise.resolve({ id: "escrow-1" }) as any });
     const body = await response.json();
 
     expect(shipEscrow).toHaveBeenCalledWith("escrow-1", "TRACK-123", "Other");
@@ -74,7 +74,7 @@ describe("PATCH /api/escrow/:id/ship", () => {
       body: JSON.stringify({ trackingId: "TRACK-123" }),
     });
 
-    const response = await PATCH(request, { params: { id: "missing" } });
+    const response = await PATCH(request as any, { params: Promise.resolve({ id: "missing" }) as any });
     const body = await response.json();
 
     expect(response.status).toBe(404);

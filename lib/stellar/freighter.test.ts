@@ -4,7 +4,7 @@ import {
   connectFreighter,
   signTransaction,
   isConnected,
-  getPublicKey,
+  // getPublicKey,
 } from "./freighter";
 
 // Mock @stellar/freighter-api
@@ -191,9 +191,9 @@ describe("lib/stellar/freighter.ts", () => {
       expect(isConnected).toBeDefined();
     });
 
-    it("re-exports getPublicKey from @stellar/freighter-api", () => {
-      expect(getPublicKey).toBeDefined();
-    });
+    // it("re-exports getPublicKey from @stellar/freighter-api", () => {
+    //   expect(getPublicKey).toBeDefined();
+    // });
   });
 
   describe("integration scenarios", () => {

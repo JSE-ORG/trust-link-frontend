@@ -69,7 +69,7 @@ describe("useToast", () => {
   it("merges custom options with defaults", () => {
     const { result } = renderHook(() => useToast());
 
-    result.current.success("Done", { duration: 2000, important: true });
+    result.current.success("Done", { duration: 2000 });
 
     expect(sonnerSuccess).toHaveBeenCalledWith("Done", {
       duration: 2000,

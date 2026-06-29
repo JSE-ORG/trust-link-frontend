@@ -62,5 +62,10 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^4.0.0",
     "vitest": "^4.1.7"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom",
+    "next": "$next"
   }
 }

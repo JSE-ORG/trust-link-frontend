@@ -10,7 +10,7 @@ import {
   BASE_FEE,
   StrKey,
   rpc,
-} from "@stellar/stellar-sdk";
+} from "stellar-sdk";
 import { signTransaction } from "./freighter";
 
 /**

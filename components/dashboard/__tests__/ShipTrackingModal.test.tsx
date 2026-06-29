@@ -169,7 +169,7 @@ describe("ShipTrackingModal", () => {
       json: async () => {
         throw new Error("invalid json");
       },
-    } as Response);
+    } as unknown as Response);
 
     render(<ShipTrackingModal {...defaultProps} />);
 
