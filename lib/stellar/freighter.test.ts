@@ -26,12 +26,12 @@ describe("lib/stellar/freighter.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset window.freighter
-    delete (window as any).freighter;
+    delete (window as Window & { freighter?: Record<string, unknown> }).freighter;
   });
 
   describe("isFreighterInstalled", () => {
     it("returns true when Freighter is installed", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       const result = await isFreighterInstalled();
       expect(result).toBe(true);
     });
@@ -44,7 +44,7 @@ describe("lib/stellar/freighter.ts", () => {
 
   describe("connectFreighter", () => {
     it("connects successfully when Freighter is installed and allowed", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
       mockGetPublicKey.mockResolvedValue("GD1234567890");
 
@@ -56,7 +56,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("requests permission when not allowed and then connects", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(false);
       mockSetAllowed.mockResolvedValue(undefined);
       mockGetPublicKey.mockResolvedValue("GD1234567890");
@@ -73,7 +73,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when getPublicKey returns null", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
       mockGetPublicKey.mockResolvedValue(null);
 
@@ -81,7 +81,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when getPublicKey returns undefined", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
       mockGetPublicKey.mockResolvedValue(undefined);
 
@@ -89,7 +89,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when getPublicKey returns empty string", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
       mockGetPublicKey.mockResolvedValue("");
 
@@ -99,7 +99,7 @@ describe("lib/stellar/freighter.ts", () => {
 
   describe("signTransaction", () => {
     it("signs transaction successfully on PUBLIC network", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: "signed-xdr-string",
         error: null,
@@ -114,7 +114,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("signs transaction successfully on TESTNET network", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: "signed-xdr-string",
         error: null,
@@ -135,7 +135,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when Freighter returns an error", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: null,
         error: "User rejected transaction",
@@ -147,7 +147,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when signedTransaction is null", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: null,
         error: null,
@@ -159,7 +159,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("throws error when signedTransaction is undefined", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: undefined,
         error: null,
@@ -171,7 +171,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("handles custom network string", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: "signed-xdr-string",
         error: null,
@@ -198,7 +198,7 @@ describe("lib/stellar/freighter.ts", () => {
 
   describe("integration scenarios", () => {
     it("handles complete connect and sign workflow", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
       mockGetPublicKey.mockResolvedValue("GD1234567890");
       mockFreighterSignTransaction.mockResolvedValue({
@@ -216,7 +216,7 @@ describe("lib/stellar/freighter.ts", () => {
     });
 
     it("handles workflow requiring permission request", async () => {
-      (window as any).freighter = {};
+      (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(false);
       mockSetAllowed.mockResolvedValue(undefined);
       mockGetPublicKey.mockResolvedValue("GD9876543210");

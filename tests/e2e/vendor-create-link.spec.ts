@@ -2,8 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("vendor can connect Freighter, create an escrow link, and see the QR code", async ({ page }) => {
   await page.addInitScript(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).freighter = {
+    (window as Window & { freighter?: Record<string, unknown> }).freighter = {
       connect: async () => ({ publicKey: "GCFM4VENDOR8TESTING1234567890ABCDEF" }),
       signTransaction: async () => ({ signedTransaction: "signed-challenge-xdr" }),
       isConnected: async () => true,

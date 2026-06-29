@@ -178,9 +178,9 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("returns false for non-string input", () => {
-      expect(isValidContractId(null as any)).toBe(false);
-      expect(isValidContractId(undefined as any)).toBe(false);
-      expect(isValidContractId(123 as any)).toBe(false);
+      expect(isValidContractId(null as unknown as string)).toBe(false);
+      expect(isValidContractId(undefined as unknown as string)).toBe(false);
+      expect(isValidContractId(123 as unknown as string)).toBe(false);
     });
 
     it("returns false when not starting with C", () => {
@@ -264,7 +264,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-string method", () => {
-      const result = validateContractMethodCall(null as any, []);
+      const result = validateContractMethodCall(null as unknown as string, []);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("non-empty string");
     });
@@ -276,7 +276,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-array arguments", () => {
-      const result = validateContractMethodCall("transfer", "not-an-array" as any);
+      const result = validateContractMethodCall("transfer", "not-an-array" as unknown as unknown[]);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("Arguments must be an array");
     });
@@ -327,7 +327,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("throws error for null WASM buffer", () => {
-      expect(() => buildContractDeployment(null as any, validSourceAccount, "TESTNET")).toThrow(
+      expect(() => buildContractDeployment(null as unknown as Buffer, validSourceAccount, "TESTNET")).toThrow(
         "WASM buffer cannot be empty"
       );
     });

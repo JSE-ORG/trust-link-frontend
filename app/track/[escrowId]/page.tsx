@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import * as Sentry from "@sentry/nextjs";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";
@@ -6,6 +7,22 @@ import { formatUSDC } from "@/utils/currency";
 
 interface TrackPageProps {
   params: Promise<{ escrowId: string }>;
+}
+
+export async function generateMetadata({ params }: TrackPageProps): Promise<Metadata> {
+  const { escrowId } = await params;
+  try {
+    const escrow = await getEscrow(escrowId);
+    return {
+      title: `Track Order — ${escrow.item} | TrustLink`,
+      description: `Real-time tracking for your ${escrow.item} order. Monitor escrow status, shipment, and payment release on the Stellar network.`,
+    };
+  } catch {
+    return {
+      title: "Track Order | TrustLink",
+      description: "Track your escrow order and monitor shipment status on the Stellar network.",
+    };
+  }
 }
 
 export default async function TrackPage({ params }: TrackPageProps) {

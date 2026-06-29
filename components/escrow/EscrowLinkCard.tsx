@@ -31,7 +31,7 @@ async function fetchEscrowLink() {
     expires: "May 31, 2026",
     escrowId: "1293",
     url: "https://trustlink.example.com/pay/1293",
-    imageUrl: undefined, // Optional: Add escrow item image URL here
+    imageUrl: undefined, // Optional: Add escrow item image URL here also
   };
 }
 
@@ -116,6 +116,7 @@ export default function EscrowLinkCard({
       await navigator.clipboard.writeText(link!.url);
       setCopyStatus("success");
       onCopySuccess?.();
+      track("link_copied", { method: "copy_button" });
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err: any) {
       setCopyStatus("error");
@@ -131,6 +132,7 @@ export default function EscrowLinkCard({
     }
   };
 
+  // Share functions for WhatsApp, Instagram, Twitter/X, and QR code download
   const shareWhatsApp = async () => {
     const text = `Check out this secure escrow payment link: ${link.url}`;
     
@@ -264,10 +266,8 @@ export default function EscrowLinkCard({
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => {
-              copyToClipboard(link.url);
-              track("link_copied", { method: "copy_button" });
-            }} 
+            onClick={handleCopy}
+            disabled={isCopying}
             aria-label="Copy URL"
             title="Copy link to clipboard"
           >
@@ -313,6 +313,17 @@ export default function EscrowLinkCard({
           </Button>
         </div>
       </div>
+
+      {copyStatus === "success" && (
+        <p className="mt-3 text-sm text-emerald-600" data-testid="copy-success">
+          Link copied
+        </p>
+      )}
+      {errorMsg && (
+        <p className="mt-3 text-sm text-red-600" data-testid="copy-error">
+          {errorMsg}
+        </p>
+      )}
 
       {showQRCode && (
         <div className="mt-6 flex justify-center">

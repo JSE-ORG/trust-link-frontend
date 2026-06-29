@@ -90,7 +90,7 @@ export default function CommandPalette() {
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent text-lg text-zinc-900 placeholder-zinc-400 outline-none dark:text-white dark:placeholder-zinc-500"
+            className="flex-1 bg-transparent text-lg text-zinc-900 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:text-white dark:placeholder-zinc-500 dark:focus-visible:ring-zinc-300 rounded"
             placeholder="Type a command or search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -115,7 +115,7 @@ export default function CommandPalette() {
                 <button
                   key={cmd.route}
                   onClick={() => handleSelect(cmd.route)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-100 dark:hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300"
                 >
                   <div className="text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg">
                     {cmd.icon}

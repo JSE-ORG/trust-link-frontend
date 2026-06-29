@@ -28,8 +28,8 @@ describe("WalletConnectButton", () => {
   });
 
   it("shows Connect Wallet when disconnected", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(true);
-    (freighter.isConnected as any).mockResolvedValue(false);
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue(false);
 
     render(
       <WalletProvider>
@@ -43,12 +43,12 @@ describe("WalletConnectButton", () => {
   });
 
   it("shows connecting indicator while connecting", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(true);
-    (freighter.isConnected as any).mockResolvedValue(false);
-    (freighter.connectFreighter as any).mockResolvedValue("GABCDE12345XYZ");
-    (stellarAuth.getChallenge as any).mockResolvedValue("challenge");
-    (freighter.signTransaction as any).mockResolvedValue("signed-tx");
-    (stellarAuth.verifyChallenge as any).mockResolvedValue("jwt-token");
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue(false);
+    vi.mocked(freighter.connectFreighter).mockResolvedValue("GABCDE12345XYZ");
+    vi.mocked(stellarAuth.getChallenge).mockResolvedValue("challenge");
+    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-tx");
+    vi.mocked(stellarAuth.verifyChallenge).mockResolvedValue("jwt-token");
 
     render(
       <WalletProvider>
@@ -67,7 +67,7 @@ describe("WalletConnectButton", () => {
   });
 
   it("shows install prompt when Freighter is absent", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(false);
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(false);
     
     render(
       <WalletProvider>

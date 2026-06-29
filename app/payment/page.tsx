@@ -3,6 +3,11 @@ import PaymentSection from "@/components/payment/PaymentSection";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Accordion } from "@/components/ui/Accordion";
 
+export const metadata = {
+  title: "Payment | TrustLink",
+  description: "Make secure escrow payments on the Stellar network. Your funds are protected by smart contracts until delivery is confirmed.",
+};
+
 const faqItems = [
   {
     question: "How does escrow protect my payment?",

@@ -1,6 +1,11 @@
 import EscrowCreateForm from "@/components/escrow/EscrowCreateForm";
 import WalletConnectButton from "@/components/wallet/WalletConnectButton";
 
+export const metadata = {
+  title: "Create Escrow | TrustLink",
+  description: "Generate a secure escrow link for your transaction. Connect your wallet and create a shareable payment link in seconds.",
+};
+
 export default function CreatePage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(24,24,27,0.12),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-10 text-zinc-950 dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#111827_100%)] dark:text-zinc-50 sm:px-6 lg:px-8">

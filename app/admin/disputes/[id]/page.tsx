@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getDispute } from "@/lib/api";
 import { DisputeDetailsClient } from "./DisputeDetailsClient";
@@ -5,6 +6,24 @@ import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const dispute = await getDispute(id);
+    return {
+      title: `Dispute #${id.slice(0, 8)} | TrustLink Admin`,
+      description: dispute.reason
+        ? `Review dispute: ${dispute.reason.slice(0, 120)}`
+        : `Manage and resolve escrow dispute #${id.slice(0, 8)}.`,
+    };
+  } catch {
+    return {
+      title: "Dispute Details | TrustLink Admin",
+      description: "Review and resolve escrow disputes on TrustLink.",
+    };
+  }
 }
 
 export default async function DisputeDetailsPage({ params }: PageProps) {

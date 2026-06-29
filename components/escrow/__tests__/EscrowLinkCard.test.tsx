@@ -1,9 +1,10 @@
 // src/escrow/__test__/EscrowLinkCard.test.tsx
+import React from "react";
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import EscrowLinkCard from '../EscrowLinkCard';
-const EscrowLinkCardAny = EscrowLinkCard as any;
+const EscrowLinkCardAny = EscrowLinkCard as unknown as React.ComponentType<Record<string, unknown>>;
 
 // Mock clipboard API
 Object.assign(navigator, {
@@ -26,8 +27,8 @@ describe('EscrowLinkCard Component', () => {
   const defaultProps = {
     escrowId: 'ESC-123-456',
     url: mockUrl,
-    onCopySuccess: vi.fn() as any,
-    onCopyError: vi.fn() as any,
+    onCopySuccess: vi.fn(),
+    onCopyError: vi.fn(),
   };
 
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe('EscrowLinkCard Component', () => {
 
   describe('Copy to Clipboard Tests (AC #1)', () => {
     test('copy button writes URL to clipboard when clicked', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
       render(<EscrowLinkCardAny {...defaultProps} />);
       
@@ -53,7 +54,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('shows success feedback when copy succeeds', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
       render(<EscrowLinkCardAny {...defaultProps} />);
       
@@ -66,7 +67,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('shows error feedback when copy fails', async () => {
-      (navigator.clipboard.writeText as any).mockRejectedValueOnce(new Error('Clipboard error'));
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Clipboard error'));
       
       render(<EscrowLinkCardAny {...defaultProps} />);
       
@@ -79,7 +80,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('calls onCopySuccess callback when copy succeeds', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
       render(<EscrowLinkCardAny {...defaultProps} />);
       
@@ -91,7 +92,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('calls onCopyError callback when copy fails', async () => {
-      (navigator.clipboard.writeText as any).mockRejectedValueOnce(new Error('Clipboard error'));
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Clipboard error'));
       
       render(<EscrowLinkCardAny {...defaultProps} />);
       
@@ -216,7 +217,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('disables copy button while copying', async () => {
-      (navigator.clipboard.writeText as any).mockImplementationOnce(
+      vi.mocked(navigator.clipboard.writeText).mockImplementationOnce(
         () => new Promise(resolve => setTimeout(resolve, 100))
       );
       

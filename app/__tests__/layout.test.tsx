@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import { vi, describe, it, expect, beforeAll, afterAll, type Mock } from "vitest";
 import RootLayout from "../layout";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { useWallet } from "@/components/providers/WalletProvider";
@@ -130,7 +130,7 @@ describe("RootLayout & AppProviders", () => {
 
   describe("Failure Verification Tests (Throws without providers)", () => {
     // Suppress console.error for expected errors during rendering
-    let consoleError: any;
+    let consoleError: Mock;
     beforeAll(() => {
       consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     });

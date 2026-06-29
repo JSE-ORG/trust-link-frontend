@@ -21,7 +21,7 @@ interface DisputeFormData {
 interface DisputeFormProps {
   onSubmit?: (data: DisputeFormData) => Promise<void>;
   apiEndpoint?: string;
-  onSuccess?: (response: any) => void;
+  onSuccess?: (response: Record<string, unknown>) => void;
   onError?: (error: Error) => void;
 }
 

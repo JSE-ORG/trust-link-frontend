@@ -1,8 +1,16 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import * as StellarSdk from "stellar-sdk";
 
 type Network = "testnet" | "mainnet";
+
+interface NetworkConfig {
+  rpcUrl: string;
+  networkPassphrase: string;
+  horizonUrl: string;
+  stellarExpertPrefix: string;
+}
 
 interface NetworkContextType {
   network: Network;
@@ -10,7 +18,23 @@ interface NetworkContextType {
   toggleNetwork: () => void;
   isTestnet: boolean;
   isMainnet: boolean;
+  config: NetworkConfig;
 }
+
+const NETWORK_CONFIGS: Record<Network, NetworkConfig> = {
+  testnet: {
+    rpcUrl: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
+    networkPassphrase: StellarSdk.Networks.TESTNET,
+    horizonUrl: "https://horizon-testnet.stellar.org",
+    stellarExpertPrefix: "testnet",
+  },
+  mainnet: {
+    rpcUrl: "https://soroban.stellar.org",
+    networkPassphrase: StellarSdk.Networks.PUBLIC,
+    horizonUrl: "https://horizon.stellar.org",
+    stellarExpertPrefix: "public",
+  },
+};
 
 const STORAGE_KEY = "network.preferred";
 
@@ -46,13 +70,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const value = {
+  const config = useMemo(() => NETWORK_CONFIGS[network], [network]);
+
+  const value = useMemo(() => ({
     network,
     setNetwork,
     toggleNetwork,
     isTestnet: network === "testnet",
     isMainnet: network === "mainnet",
-  };
+    config,
+  }), [network, setNetwork, toggleNetwork, config]);
 
   return (
     <NetworkContext.Provider value={value}>
