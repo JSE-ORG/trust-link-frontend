@@ -68,7 +68,7 @@ export interface ContractDeployResult {
 
 export interface ContractInvocationResult {
   success: boolean;
-  result?: any;
+  result?: xdr.ScVal;
   error?: string;
   transactionHash?: string;
 }
@@ -340,28 +340,23 @@ export function parseContractError(error: any): string {
 
 /**
  * Extract result from contract response
- * @param {any} response - The contract response
- * @returns {any} Parsed result or null
+ * @param {ContractInvocationResult} response - The contract response
+ * @returns {xdr.ScVal | null} Parsed result or null
  * @example
  * const response = await invokeContract();
  * const result = parseContractResult(response);
  * console.log("Contract returned:", result);
  */
-export function parseContractResult(response: any): any {
+export function parseContractResult(response: ContractInvocationResult): xdr.ScVal | null {
   if (!response) {
     return null;
   }
 
-  // Handle different response formats
-  if (response.result) {
+  if (response.result !== undefined) {
     return response.result;
   }
 
-  if (response.value !== undefined) {
-    return response.value;
-  }
-
-  return response;
+  return null;
 }
 
 /**

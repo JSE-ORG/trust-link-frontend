@@ -30,6 +30,12 @@ interface WalletContextType {
   error: string | null;
 }
 
+interface JwtPayload {
+  exp: number;
+  sub?: string;
+  iat?: number;
+}
+
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
@@ -154,7 +160,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     if (!token || !publicKey) return;
 
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded = jwtDecode<JwtPayload>(token);
       const expirationTime = decoded.exp * 1000;
       const now = Date.now();
       const timeLeft = expirationTime - now;
