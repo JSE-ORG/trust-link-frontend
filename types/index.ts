@@ -10,6 +10,7 @@ export interface Escrow {
   status: EscrowStatus;
   createdAt: string;
   updatedAt: string;
+  expiresAt?: string;
   history: EscrowHistoryEvent[];
   imageUrl?: string; // Optional escrow item image for display
 }
