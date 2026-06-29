@@ -116,6 +116,7 @@ export default function EscrowLinkCard({
       await navigator.clipboard.writeText(link!.url);
       setCopyStatus("success");
       onCopySuccess?.();
+      track("link_copied", { method: "copy_button" });
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err: any) {
       setCopyStatus("error");
@@ -264,10 +265,8 @@ export default function EscrowLinkCard({
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => {
-              copyToClipboard(link.url);
-              track("link_copied", { method: "copy_button" });
-            }} 
+            onClick={handleCopy}
+            disabled={isCopying}
             aria-label="Copy URL"
             title="Copy link to clipboard"
           >
@@ -313,6 +312,17 @@ export default function EscrowLinkCard({
           </Button>
         </div>
       </div>
+
+      {copyStatus === "success" && (
+        <p className="mt-3 text-sm text-emerald-600" data-testid="copy-success">
+          Link copied
+        </p>
+      )}
+      {errorMsg && (
+        <p className="mt-3 text-sm text-red-600" data-testid="copy-error">
+          {errorMsg}
+        </p>
+      )}
 
       {showQRCode && (
         <div className="mt-6 flex justify-center">
