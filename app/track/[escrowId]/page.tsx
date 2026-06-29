@@ -93,7 +93,9 @@ export default async function TrackPage({ params }: TrackPageProps) {
 
         {/* Tracking Timeline */}
         <ErrorBoundary>
-          <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          <Suspense fallback={null}>
+            <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     </main>
