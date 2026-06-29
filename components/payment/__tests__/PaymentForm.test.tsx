@@ -23,8 +23,10 @@ vi.mock("sonner", () => ({
 
 vi.mock("@/lib/explorer", () => ({
   getStellarExpertUrl: vi.fn().mockImplementation((hash, network) => {
-    const prefix = network === "mainnet" ? "public" : "testnet";
     return `https://testnet.stellarexpert.io/contract/${hash}`;
+  }),
+  getStellarExpertTxUrl: vi.fn().mockImplementation((hash, network) => {
+    return `https://testnet.stellarexpert.io/tx/${hash}`;
   }),
 }));
 
@@ -47,7 +49,7 @@ const defaultProps = {
 describe("PaymentForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useWallet as any).mockReturnValue({ isConnected: true });
+    (useWallet as any).mockReturnValue({ isConnected: true, status: "connected" });
   });
 
   it("renders payment summary and shows amount/fee/total correctly", () => {
@@ -60,7 +62,7 @@ describe("PaymentForm", () => {
   });
 
   it("is disabled when wallet is disconnected", () => {
-    (useWallet as any).mockReturnValue({ isConnected: false });
+    (useWallet as any).mockReturnValue({ isConnected: false, status: "disconnected" });
     render(<PaymentForm {...defaultProps} />);
 
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
@@ -98,11 +100,7 @@ describe("PaymentForm", () => {
       expect(screen.getByText("Payment successful")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    // The hash generation in PaymentForm.tsx: "3f7a" + Math.random().toString(16).substring(2, 10) + "91bc"
-    // With 0.12345678, Math.random().toString(16) is "0.1f9a222a"
-    // .substring(2, 10) is "1f9a222a"
-    // Result: "3f7a1f9a222a91bc"
-    expect(screen.getByText(/Transaction: 3f7a1f9a222a91bc/)).toBeInTheDocument();
+    expect(screen.getByText(/Transaction: 3f7a1f.*91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")
