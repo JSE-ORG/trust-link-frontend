@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";
@@ -76,7 +77,9 @@ export default async function TrackPage({ params }: TrackPageProps) {
 
         {/* Tracking Timeline */}
         <ErrorBoundary>
-          <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          <Suspense fallback={null}>
+            <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     </main>
