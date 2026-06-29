@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 
 async function fetchTrackingData() {
   await new Promise((resolve) => setTimeout(resolve, 150));
@@ -11,11 +12,25 @@ export default function TrackingSection() {
   const [data, setData] = useState<{ update: string } | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setError(null);
     fetchTrackingData().then(setData).catch(setError);
   }, []);
 
-  if (error) throw error;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (error) {
+    return (
+      <FetchErrorState
+        title="We couldn't load tracking details"
+        message={getFetchErrorMessage(error, "Failed to load tracking details.")}
+        onRetry={loadData}
+      />
+    );
+  }
+
   if (!data) {
     return <p className="text-zinc-600 dark:text-zinc-400">Loading tracking details…</p>;
   }

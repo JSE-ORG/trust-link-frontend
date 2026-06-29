@@ -17,6 +17,7 @@ import { getVendorEscrows } from "@/lib/api";
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
 import ProGate from "@/components/subscription/ProGate";
 import { Skeleton } from "@/components/ui/Skeleton";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import type { Escrow, EscrowStatus } from "@/types";
 
 interface StatCard {
@@ -211,6 +212,7 @@ function AnalyticsPageContent() {
   const { isPro, isLoading: planLoading } = useSubscription();
   const [escrows, setEscrows] = useState<Escrow[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
@@ -225,8 +227,13 @@ function AnalyticsPageContent() {
   useEffect(() => {
     if (isChecking || !isPro || planLoading) return;
     const token = localStorage.getItem("wallet.jwt") ?? undefined;
+    setIsLoading(true);
+    setError(null);
     getVendorEscrows(token)
       .then(setEscrows)
+      .catch((caught) => {
+        setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
+      })
       .finally(() => setIsLoading(false));
   }, [isChecking, isPro, planLoading]);
 
@@ -260,7 +267,23 @@ function AnalyticsPageContent() {
           feature="Analytics Dashboard"
           description="Get deep insights into your escrow performance — completions, disputes, monthly trends, and more."
         >
-          {isLoading || !escrows ? (
+          {error ? (
+            <FetchErrorState
+              title="We couldn't load your analytics"
+              message={error}
+              onRetry={() => {
+                const token = localStorage.getItem("wallet.jwt") ?? undefined;
+                setError(null);
+                setIsLoading(true);
+                getVendorEscrows(token)
+                  .then(setEscrows)
+                  .catch((caught) => {
+                    setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
+                  })
+                  .finally(() => setIsLoading(false));
+              }}
+            />
+          ) : isLoading || !escrows ? (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[...Array(6)].map((_, i) => (

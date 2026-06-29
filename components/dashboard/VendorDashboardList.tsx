@@ -12,6 +12,7 @@ import { getVendorEscrows } from "@/lib/api";
 import { downloadCsv } from "@/utils/exportCsv";
 import type { Escrow, EscrowStatus } from "@/types";
 import EmptyVendorState from "./EmptyVendorState";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { formatUSDC } from "@/utils/currency";
 
 const STATUS_TABS = ["ALL", "PENDING", "FUNDED", "SHIPPED", "COMPLETED", "DISPUTED", "RELEASED", "REFUNDED", "EXPIRED"] as const;
@@ -72,6 +73,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
 
   const loadItems = async () => {
     try {
+      setError(null);
       const token = window.localStorage.getItem("wallet.jwt") || undefined;
       const data = await getVendorEscrows(token);
       setEscrows(data);
@@ -113,7 +115,18 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     );
   };
 
-  if (error) throw error;
+  if (error) {
+    return (
+      <FetchErrorState
+        title="We couldn't load your escrows"
+        message={getFetchErrorMessage(error, "Failed to load vendor escrows.")}
+        onRetry={() => {
+          setEscrows(null);
+          void loadItems();
+        }}
+      />
+    );
+  }
 
   if (loading || !escrows) {
     return (

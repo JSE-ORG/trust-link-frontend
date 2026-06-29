@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { formatUSDC } from "@/utils/currency";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 
 type SortField = "date" | "amount" | "status";
 
@@ -87,7 +88,23 @@ export function DisputesListClient() {
       </header>
 
       {isLoading ? <p className="text-sm text-zinc-500" role="status" aria-live="polite">Loading disputes...</p> : null}
-      {error ? <p className="text-sm text-red-600" role="alert" aria-live="assertive">{error}</p> : null}
+      {error ? (
+        <FetchErrorState
+          title="We couldn't load disputes"
+          message={getFetchErrorMessage(error, "Failed to load disputes.")}
+          onRetry={() => {
+            setError(null);
+            setIsLoading(true);
+            void getAdminDisputes(window.localStorage.getItem("wallet.jwt") ?? "")
+              .then(setDisputes)
+              .catch((caught) => {
+                setError(caught instanceof Error ? caught.message : "Failed to load disputes");
+              })
+              .finally(() => setIsLoading(false));
+          }}
+          className="min-h-[160px]"
+        />
+      ) : null}
 
       {!isLoading && !error && sortedDisputes.length === 0 ? (
         <p className="text-sm text-zinc-500" role="status">No open disputes right now.</p>
