@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Shield, Zap, Lock, ChevronDown, ChevronUp, ArrowRight, CheckCircle } from "lucide-react";
+import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 
 const FAQ_ITEMS = [
   {
@@ -180,6 +181,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Featured Artists Section */}
+      <FeaturedArtistSection />
 
       {/* FAQ Section */}
       <section className="py-20 sm:py-24 bg-white">
