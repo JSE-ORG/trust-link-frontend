@@ -80,7 +80,10 @@ export default function VendorProfilePage({ params }: { params: Promise<{ addres
                 </div>
               </div>
               <div className="flex gap-3">
-                <button className="rounded-full bg-[#1B2A6B] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#152052] transition">
+                <button
+                  aria-label="Start a trade with this vendor"
+                  className="rounded-full bg-[#1B2A6B] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#152052] transition"
+                >
                   Start Trade
                 </button>
                 <Link
