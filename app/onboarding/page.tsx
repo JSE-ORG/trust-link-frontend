@@ -1,7 +1,8 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import VendorOnboardingWizard from "@/components/onboarding/VendorOnboardingWizard";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Vendor Onboarding | TrustLink",
   description: "Create your vendor profile and start accepting secure escrow payments on the Stellar network.",
 };
