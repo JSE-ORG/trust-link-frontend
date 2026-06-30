@@ -171,8 +171,9 @@ async function invokeSorobanContract(
       .build();
 
     const signedXdr = await signTransaction(tx.toXDR(), networkPassphrase);
-    const txEnvelope = xdr.TransactionEnvelope.fromXDR(signedXdr, "base64");
-    const response = await server.sendTransaction(txEnvelope as any);
+    const response = await server.sendTransaction(
+      TransactionBuilder.fromXDR(signedXdr, networkPassphrase)
+    );
 
     if ((response as any)?.status === "ERROR" || (response as any)?.status === "FAILED") {
       throw toTxError((response as any)?.errorResultXdr || (response as any)?.error, "Transaction failed");
