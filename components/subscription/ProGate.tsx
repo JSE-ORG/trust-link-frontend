@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Lock, Sparkles } from "lucide-react";
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface ProGateProps {
   feature: string;
@@ -20,7 +21,26 @@ export default function ProGate({
 }: ProGateProps) {
   const { isPro, isLoading } = useSubscription();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div
+        className="rounded-3xl border border-zinc-200 bg-white px-6 py-12 dark:border-zinc-800 dark:bg-zinc-950"
+        role="status"
+        aria-live="polite"
+        aria-label={`Loading ${feature}`}
+      >
+        <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+          <Skeleton className="h-14 w-14 rounded-full" />
+          <div className="w-full space-y-2">
+            <Skeleton className="mx-auto h-5 w-2/3" />
+            <Skeleton className="mx-auto h-4 w-full" />
+            <Skeleton className="mx-auto h-4 w-4/5" />
+          </div>
+          <Skeleton className="h-10 w-36 rounded-full" />
+        </div>
+      </div>
+    );
+  }
   if (isPro) return <>{children}</>;
 
   const gate = (

@@ -67,7 +67,7 @@ export interface ContractDeployResult {
 
 export interface ContractInvocationResult {
   success: boolean;
-  result?: any;
+  result?: xdr.ScVal;
   error?: string;
   transactionHash?: string;
 }
@@ -362,6 +362,8 @@ export function parseContractError(error: unknown): string {
  * Extract result from contract response
  * @param {unknown} response - The contract response
  * @returns Parsed result or null
+ * @param {ContractInvocationResult} response - The contract response
+ * @returns {xdr.ScVal | null} Parsed result or null
  * @example
  * const response = await invokeContract();
  * const result = parseContractResult(response);
@@ -390,6 +392,11 @@ export function parseContractResult<TResult = unknown>(
   }
 
   return response as TResult;
+  if (response.result !== undefined) {
+    return response.result;
+  }
+
+  return null;
 }
 
 /**

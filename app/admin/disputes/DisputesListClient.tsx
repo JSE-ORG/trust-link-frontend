@@ -4,12 +4,42 @@ import { getAdminDisputes } from "@/lib/api";
 import { Dispute } from "@/types";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
 import { formatUSDC } from "@/utils/currency";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type SortField = "date" | "amount" | "status";
+
+function DisputesListSkeleton() {
+  return (
+    <div className="space-y-4" role="status" aria-live="polite" aria-label="Loading disputes">
+      {[...Array(3)].map((_, index) => (
+        <article
+          key={index}
+          className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="w-full max-w-md space-y-3">
+              <Skeleton className="h-4 w-2/3 rounded-md" />
+              <Skeleton className="h-3 w-32 rounded-md" />
+              <Skeleton className="h-4 w-full rounded-md" />
+            </div>
+            <div className="space-y-2 sm:w-32">
+              <Skeleton className="h-4 w-24 rounded-md sm:ml-auto" />
+              <Skeleton className="h-4 w-20 rounded-md sm:ml-auto" />
+              <Skeleton className="h-3 w-28 rounded-md sm:ml-auto" />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton className="h-3 w-28 rounded-md" />
+            <Skeleton className="h-9 w-28 rounded-md" />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
 
 function sortDisputes(disputes: Dispute[], field: SortField): Dispute[] {
   return [...disputes].sort((a, b) => {
@@ -25,7 +55,6 @@ function sortDisputes(disputes: Dispute[], field: SortField): Dispute[] {
 
 export function DisputesListClient() {
   const router = useRouter();
-  const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("date");
@@ -87,7 +116,7 @@ export function DisputesListClient() {
         </label>
       </header>
 
-      {isLoading ? <p className="text-sm text-zinc-500" role="status" aria-live="polite">Loading disputes...</p> : null}
+      {isLoading ? <DisputesListSkeleton /> : null}
       {error ? (
         <FetchErrorState
           title="We couldn't load disputes"

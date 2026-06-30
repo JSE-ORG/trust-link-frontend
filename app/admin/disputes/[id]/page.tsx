@@ -4,6 +4,8 @@ import { getDispute } from "@/lib/api";
 import { DisputeDetailsClient } from "./DisputeDetailsClient";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

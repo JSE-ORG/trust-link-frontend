@@ -215,7 +215,7 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
       
       setSubmitStatus('success');
       setSubmitMessage('Your dispute has been submitted successfully!');
-    } catch (error) {
+    } catch (error: unknown) {
       setSubmitStatus('error');
       setSubmitMessage(error instanceof Error ? error.message : 'Failed to submit dispute');
       if (onError && error instanceof Error) {
