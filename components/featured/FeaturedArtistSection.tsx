@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowRight, Star, ShieldCheck, MapPin } from "lucide-react";
 import Link from "next/link";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -68,6 +66,19 @@ const FEATURED_ARTISTS: FeaturedArtist[] = [
   },
 ];
 
+/**
+ * Server component — no client-side interactivity needed.
+ * Being a server component means its JS is never sent to the browser,
+ * improving TBT and performance score.
+ *
+ * CLS notes:
+ * - Avatar containers have explicit w-20 h-20 (80×80px) with flex-shrink-0,
+ *   so the surrounding card layout is fully reserved before images arrive.
+ * - OptimizedImage receives matching width/height so Next.js can compute the
+ *   correct intrinsic aspect-ratio and include it in the <img> element.
+ * - The first card's image uses priority=true (eager + preload) because it is
+ *   likely in-viewport on load and contributes to LCP.
+ */
 export default function FeaturedArtistSection() {
   return (
     <section className="py-20 sm:py-24 bg-white">
@@ -86,19 +97,28 @@ export default function FeaturedArtistSection() {
             className="mt-4 sm:mt-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary)] hover:text-[var(--accent)] transition-colors"
           >
             View All Artists
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURED_ARTISTS.map((artist) => (
+          {FEATURED_ARTISTS.map((artist, index) => (
             <Link
               key={artist.id}
               href={`/vendor/${artist.address}`}
               className="group rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
             >
               <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-full bg-[var(--muted-bg)] overflow-hidden mb-4 ring-2 ring-[var(--border)] group-hover:ring-[var(--accent)] transition-all">
+                {/*
+                  CLS fix: explicit w-20 h-20 (80×80 CSS px) with flex-shrink-0
+                  means the card never changes height once images load.
+                  aspect-ratio:1/1 (square) is set so the browser can reserve
+                  the correct space even before the img intrinsic size is known.
+                */}
+                <div
+                  className="w-20 h-20 flex-shrink-0 rounded-full bg-[var(--muted-bg)] overflow-hidden mb-4 ring-2 ring-[var(--border)] group-hover:ring-[var(--accent)] transition-all"
+                  style={{ aspectRatio: "1 / 1" }}
+                >
                   <OptimizedImage
                     src={artist.imageUrl}
                     alt={`${artist.name} avatar`}
@@ -106,6 +126,13 @@ export default function FeaturedArtistSection() {
                     height={80}
                     className="w-full h-full object-cover"
                     sizes="80px"
+                    /*
+                      First card is above-the-fold on all common viewports —
+                      mark as priority so Next.js generates a <link rel="preload">
+                      for it, which directly reduces LCP for this section.
+                    */
+                    priority={index === 0}
+                    loading={index === 0 ? "eager" : "lazy"}
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-1">
@@ -115,21 +142,31 @@ export default function FeaturedArtistSection() {
                   {artist.category}
                 </span>
                 <div className="flex items-center gap-1 mb-3">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium text-[var(--foreground)]">{artist.rating}</span>
-                  <span className="text-sm text-[var(--muted)]">({artist.reviewsCount})</span>
+                  <Star
+                    className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    {artist.rating}
+                  </span>
+                  <span className="text-sm text-[var(--muted)]">
+                    ({artist.reviewsCount})
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-500 mb-1">
-                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{artist.verificationLevel} Verified</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-[var(--muted)]">
-                  <MapPin className="h-3.5 w-3.5" />
+                  <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{artist.location}</span>
                 </div>
                 <div className="mt-4 pt-4 border-t border-[var(--border)] w-full">
                   <span className="text-sm text-[var(--muted)]">
-                    <span className="font-semibold text-[var(--foreground)]">{artist.totalTransactions}</span> transactions
+                    <span className="font-semibold text-[var(--foreground)]">
+                      {artist.totalTransactions}
+                    </span>{" "}
+                    transactions
                   </span>
                 </div>
               </div>
