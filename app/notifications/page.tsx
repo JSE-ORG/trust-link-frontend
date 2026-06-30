@@ -1,10 +1,5 @@
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
-
-const NotificationsPageContent = dynamic(
-  () => import("@/components/notifications/NotificationsPageContent"),
-  { ssr: false },
-);
+import NotificationsPageContent from "@/components/notifications/NotificationsPageContent";
 
 export const metadata = {
   title: "Notifications | TrustLink",

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";

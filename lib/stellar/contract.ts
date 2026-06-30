@@ -394,11 +394,6 @@ export function parseContractResult<TResult = unknown>(
   }
 
   return response as TResult;
-  if (response.result !== undefined) {
-    return response.result;
-  }
-
-  return null;
 }
 
 /**
