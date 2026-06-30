@@ -16,6 +16,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "sonner";
 import { Suspense } from "react";
 import TopProgressBar from "@/components/ui/TopProgressBar";
+import CommandPalette from "@/components/ui/CommandPalette";
 import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
