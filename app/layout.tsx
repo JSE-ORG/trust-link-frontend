@@ -15,9 +15,8 @@ import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvi
 import { Toaster } from "sonner";
 import { Suspense } from "react";
 import TopProgressBar from "@/components/ui/TopProgressBar";
-import { ThemeProvider } from "next-themes";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import CommandPalette from "@/components/ui/CommandPalette";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
