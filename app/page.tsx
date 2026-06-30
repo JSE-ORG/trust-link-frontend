@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Zap, Lock, ChevronDown, ChevronUp, ArrowRight, CheckCircle } from "lucide-react";
+import { Shield, Zap, Lock, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 
 const FAQ_ITEMS = [
@@ -251,7 +251,6 @@ export default function Home() {
               className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-[var(--primary)] bg-white rounded-lg hover:bg-white/90 transition-all"
             >
               Verify a Link
-              <CheckCircle className="ml-2 h-5 w-5" />
             </a>
           </div>
         </div>
