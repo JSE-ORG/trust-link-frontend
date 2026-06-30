@@ -62,7 +62,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setToken(jwt);
       return jwt;
     } catch (err: unknown) {
-      console.error("Authentication failed:", err);
+      Sentry.captureException(err);
       toast.error("Authentication failed");
       throw err;
     }
@@ -92,7 +92,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (e) {
-          console.error("Failed to restore session:", e);
+          Sentry.captureException(e);
         }
       }
       if (!isMounted) return;
@@ -177,7 +177,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeout);
     } catch (err) {
-      console.error("Token decode failed:", err);
+      Sentry.captureException(err);
       setToken(null);
     }
   }, [token, publicKey, authenticate]);
