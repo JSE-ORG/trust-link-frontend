@@ -30,6 +30,12 @@ interface WalletContextType {
   error: string | null;
 }
 
+interface JwtPayload {
+  exp: number;
+  sub?: string;
+  iat?: number;
+}
+
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
@@ -55,7 +61,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const jwt = await verifyChallenge(signedXdr);
       setToken(jwt);
       return jwt;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Authentication failed:", err);
       toast.error("Authentication failed");
       throw err;
@@ -117,8 +123,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       await authenticate(pubKey);
       
       toast.success("Wallet connected");
-    } catch (err: any) {
-      const message = err.message || "Failed to connect wallet";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to connect wallet";
       setError(message);
       toast.error(message);
       throw err;
@@ -143,8 +149,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const net = networkOverride || stellarNetworkLabel;
       const signedXdr = await freighterSignTransaction(xdr, net);
       return signedXdr;
-    } catch (err: any) {
-      const message = err.message || "Failed to sign transaction";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to sign transaction";
       toast.error(message);
       throw err;
     }
@@ -154,12 +160,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     if (!token || !publicKey) return;
 
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded = jwtDecode<JwtPayload>(token);
       const expirationTime = decoded.exp * 1000;
       const now = Date.now();
       const timeLeft = expirationTime - now;
 
       if (timeLeft <= 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         authenticate(publicKey);
         return;
       }

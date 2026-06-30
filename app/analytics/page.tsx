@@ -207,6 +207,33 @@ function AnalyticsContent({ escrows }: { escrows: Escrow[] }) {
   );
 }
 
+function AnalyticsPageSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-zinc-50 p-6 dark:bg-black"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading analytics"
+    >
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-8 flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="h-7 w-36" />
+        </div>
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-2xl" />
+            ))}
+          </div>
+          <Skeleton className="h-52 rounded-2xl" />
+          <Skeleton className="h-40 rounded-2xl" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function AnalyticsPageContent() {
   const router = useRouter();
   const { isPro, isLoading: planLoading } = useSubscription();
@@ -221,24 +248,51 @@ function AnalyticsPageContent() {
       router.push("/");
       return;
     }
-    setIsChecking(false);
+    const frame = window.requestAnimationFrame(() => setIsChecking(false));
+    return () => window.cancelAnimationFrame(frame);
   }, [router]);
 
   useEffect(() => {
     if (isChecking || !isPro || planLoading) return;
+    let isMounted = true;
     const token = localStorage.getItem("wallet.jwt") ?? undefined;
-    setIsLoading(true);
+    const loadEscrows = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getVendorEscrows(token);
+        if (isMounted) setEscrows(data);
+      } catch (caught) {
+        if (isMounted) {
+          setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    const frame = window.requestAnimationFrame(() => {
+      void loadEscrows();
+    });
+    return () => {
+      isMounted = false;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isChecking, isPro, planLoading]);
+
+  const retryLoadEscrows = () => {
+    const token = localStorage.getItem("wallet.jwt") ?? undefined;
     setError(null);
+    setIsLoading(true);
     getVendorEscrows(token)
       .then(setEscrows)
       .catch((caught) => {
         setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
       })
       .finally(() => setIsLoading(false));
-  }, [isChecking, isPro, planLoading]);
+  };
 
   if (isChecking || planLoading) {
-    return <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black" />;
+    return <AnalyticsPageSkeleton />;
   }
 
   return (
@@ -271,17 +325,7 @@ function AnalyticsPageContent() {
             <FetchErrorState
               title="We couldn't load your analytics"
               message={error}
-              onRetry={() => {
-                const token = localStorage.getItem("wallet.jwt") ?? undefined;
-                setError(null);
-                setIsLoading(true);
-                getVendorEscrows(token)
-                  .then(setEscrows)
-                  .catch((caught) => {
-                    setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
-                  })
-                  .finally(() => setIsLoading(false));
-              }}
+              onRetry={retryLoadEscrows}
             />
           ) : isLoading || !escrows ? (
             <div className="space-y-4">

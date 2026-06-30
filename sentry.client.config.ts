@@ -9,9 +9,9 @@ Sentry.init({
   integrations: [browserTracingIntegration()],
 
   beforeSend(event, hint) {
-    const error = hint.originalException as any;
-    const message = error?.message || String(error);
-    
+    const error = hint.originalException;
+    const message = error instanceof Error ? error.message : String(error ?? "");
+
     if (message.includes("User rejected")) {
       return null;
     }

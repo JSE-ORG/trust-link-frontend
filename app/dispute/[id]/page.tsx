@@ -3,23 +3,56 @@
 import { useParams } from "next/navigation";
 import useEscrow from "@/hooks/useEscrow";
 import DisputeForm from "./DisputeForm";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { formatUSDC } from "@/utils/currency";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+function DisputePageSkeleton() {
+  return (
+    <main
+      className="min-h-screen bg-zinc-50 px-4 py-12 dark:bg-black sm:px-6"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading order details"
+    >
+      <div className="mx-auto max-w-2xl">
+        <header className="mb-10 flex flex-col items-center">
+          <Skeleton className="mb-3 h-10 w-72 max-w-full" />
+          <Skeleton className="h-5 w-56 max-w-full" />
+        </header>
+
+        <section className="mb-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <Skeleton className="h-6 w-40" />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-5 w-36 max-w-full" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <Skeleton className="h-6 w-36" />
+          <div className="mt-5 space-y-4">
+            <Skeleton className="h-12 w-full rounded-2xl" />
+            <Skeleton className="h-28 w-full rounded-2xl" />
+            <Skeleton className="h-12 w-full rounded-2xl" />
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
 
 export default function RaiseDisputePage() {
   const { id } = useParams<{ id: string }>();
   const { escrow, isLoading, error } = useEscrow(id);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-zinc-50 dark:bg-black">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-          <p className="text-sm font-medium text-[var(--muted)]">Loading order details...</p>
-        </div>
-      </div>
-    );
+    return <DisputePageSkeleton />;
   }
 
   if (error || !escrow) {
@@ -31,7 +64,7 @@ export default function RaiseDisputePage() {
           </div>
           <h1 className="text-xl font-bold mb-2">Order Not Found</h1>
           <p className="text-sm text-[var(--muted)] mb-8">
-            We couldn't retrieve the details for order #{id}. Please verify the ID and try again.
+            We could not retrieve the details for order #{id}. Please verify the ID and try again.
           </p>
           <Link
             href="/"
