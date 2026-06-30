@@ -20,6 +20,9 @@
 # production
 /build
 
+# tailwind purgecss audit output (issue #287)
+/.audit
+
 # misc
 .DS_Store
 *.pem

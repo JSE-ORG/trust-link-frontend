@@ -389,7 +389,7 @@ describe("lib/stellar/contract.ts", () => {
         return {
           getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
           sendTransaction: mockSendTransaction,
-        } as any;
+        } as unknown as rpc.Server;
       });
 
       const result = await fundEscrow(validContractId, ["arg"], validSourceAccount, "TESTNET");
@@ -404,7 +404,7 @@ describe("lib/stellar/contract.ts", () => {
         return {
           getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
           sendTransaction: vi.fn().mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: bad" }),
-        } as any;
+        } as unknown as rpc.Server;
       });
 
       await expect(fundEscrow(validContractId, [], validSourceAccount, "TESTNET"))
@@ -417,7 +417,7 @@ describe("lib/stellar/contract.ts", () => {
         return {
           getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
           sendTransaction: vi.fn().mockResolvedValue({ status: "ERROR", error: "TxExpired: expired" }),
-        } as any;
+        } as unknown as rpc.Server;
       });
 
       await expect(confirmDelivery(validContractId, [], validSourceAccount, "TESTNET"))
@@ -430,7 +430,7 @@ describe("lib/stellar/contract.ts", () => {
         return {
           getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
           sendTransaction: vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-2", resultXdr: "result-xdr-2" }),
-        } as any;
+        } as unknown as rpc.Server;
       });
 
       const result = await raiseDispute(validContractId, ["reason"], validSourceAccount, "TESTNET");
