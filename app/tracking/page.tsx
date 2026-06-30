@@ -1,6 +1,3 @@
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
-import { redirect } from "next/navigation";
-
 export const metadata = {
   title: "Track Order | TrustLink",
   description: "Track your escrow order in real-time. Monitor shipment status, delivery confirmation, and payment release on the Stellar network.",
