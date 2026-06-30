@@ -4,9 +4,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/Skeleton";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Share2, Download, X, MessageCircle, Image } from "lucide-react";
+import { Copy, Download, X, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatUSDC } from "@/utils/currency";
 import { track } from "@/lib/analytics";
@@ -57,7 +56,7 @@ export default function EscrowLinkCard({
   const [isCopying, setIsCopying] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showQRCode, setShowQRCode] = useState(true);
+  const showQRCode = true;
 
   const copyToClipboard = async (text: string) => {
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
@@ -74,6 +73,7 @@ export default function EscrowLinkCard({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLink();
   }, [loadLink]);
 
@@ -291,7 +291,7 @@ export default function EscrowLinkCard({
             title="Share on Instagram"
             className="hover:bg-pink-50 dark:hover:bg-pink-950"
           >
-            <Image className="h-4 w-4" />
+            <ImageIcon className="h-4 w-4" />
           </Button>
           <Button 
             variant="outline" 

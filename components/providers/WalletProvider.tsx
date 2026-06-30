@@ -166,6 +166,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const timeLeft = expirationTime - now;
 
       if (timeLeft <= 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         authenticate(publicKey);
         return;
       }

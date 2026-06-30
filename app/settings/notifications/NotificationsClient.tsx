@@ -37,6 +37,7 @@ export default function NotificationSettingsPage() {
 
   useEffect(() => {
     if (!token) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     getVendorNotificationPreferences(token)
       .then(setPrefs)
