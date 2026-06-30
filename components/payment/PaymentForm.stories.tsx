@@ -1,5 +1,6 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
+import { fn } from "@storybook/test";
 import PaymentForm from "./PaymentForm";
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
 import { WalletProvider } from "@/components/providers/WalletProvider";
@@ -58,7 +59,7 @@ const defaultArgs = {
   sellerAddress: "GSELLER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   escrowContractId: "CONTRACT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   status: "PENDING",
-  onPaymentSuccess: (txHash: string) => console.log("Payment success:", txHash),
+  onPaymentSuccess: fn(),
 };
 
 /**

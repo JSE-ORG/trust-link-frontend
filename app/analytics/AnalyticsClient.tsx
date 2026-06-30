@@ -1,10 +1,75 @@
-import type { Metadata } from "next";
-import AnalyticsClient from "./AnalyticsClient";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Analytics | TrustLink",
-  description:
-    "Track your escrow performance — transaction volume, completion rate, dispute rate, and monthly trends.",
+import { Suspense, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  BarChart3,
+  CircleCheck,
+  Clock,
+  DollarSign,
+  Package,
+  ShieldAlert,
+  Truck,
+} from "lucide-react";
+import { getVendorEscrows } from "@/lib/api";
+import { useSubscription } from "@/components/providers/SubscriptionProvider";
+import ProGate from "@/components/subscription/ProGate";
+import { Skeleton } from "@/components/ui/Skeleton";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import type { Escrow, EscrowStatus } from "@/types";
+
+interface StatCard {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+function computeStats(escrows: Escrow[]) {
+  const total = escrows.length;
+  const byStatus = escrows.reduce<Record<string, number>>((acc, e) => {
+    acc[e.status] = (acc[e.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const totalValue = escrows.reduce((sum, e) => sum + (e.amount ?? 0), 0);
+  const completed = byStatus["COMPLETED"] ?? 0;
+  const disputed = byStatus["DISPUTED"] ?? 0;
+  const successRate =
+    total > 0 ? Math.round((completed / total) * 100) : 0;
+  const disputeRate =
+    total > 0 ? Math.round((disputed / total) * 100) : 0;
+
+  // Monthly buckets (last 6 months)
+  const now = new Date();
+  const months: { label: string; count: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleString("default", { month: "short" });
+    const count = escrows.filter((e) => {
+      const c = new Date(e.createdAt);
+      return (
+        c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth()
+      );
+    }).length;
+    months.push({ label, count });
+  }
+
+  return { total, byStatus, totalValue, completed, disputed, successRate, disputeRate, months };
+}
+
+const STATUS_META: Record<EscrowStatus, { label: string; color: string }> = {
+  PENDING:   { label: "Pending",   color: "bg-zinc-400" },
+  FUNDED:    { label: "Funded",    color: "bg-blue-500" },
+  SHIPPED:   { label: "Shipped",   color: "bg-indigo-500" },
+  COMPLETED: { label: "Completed", color: "bg-emerald-500" },
+  DISPUTED:  { label: "Disputed",  color: "bg-red-500" },
+  RELEASED:  { label: "Released",  color: "bg-green-500" },
+  REFUNDED:  { label: "Refunded",  color: "bg-orange-400" },
+  EXPIRED:   { label: "Expired",   color: "bg-zinc-300" },
 };
 
 function AnalyticsContent({ escrows }: { escrows: Escrow[] }) {
@@ -142,33 +207,6 @@ function AnalyticsContent({ escrows }: { escrows: Escrow[] }) {
   );
 }
 
-function AnalyticsPageSkeleton() {
-  return (
-    <main
-      className="min-h-screen bg-zinc-50 p-6 dark:bg-black"
-      role="status"
-      aria-live="polite"
-      aria-label="Loading analytics"
-    >
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center gap-3">
-          <Skeleton className="h-9 w-9 rounded-full" />
-          <Skeleton className="h-7 w-36" />
-        </div>
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-2xl" />
-            ))}
-          </div>
-          <Skeleton className="h-52 rounded-2xl" />
-          <Skeleton className="h-40 rounded-2xl" />
-        </div>
-      </div>
-    </main>
-  );
-}
-
 function AnalyticsPageContent() {
   const router = useRouter();
   const { isPro, isLoading: planLoading } = useSubscription();
@@ -183,51 +221,24 @@ function AnalyticsPageContent() {
       router.push("/");
       return;
     }
-    const frame = window.requestAnimationFrame(() => setIsChecking(false));
-    return () => window.cancelAnimationFrame(frame);
+    setIsChecking(false);
   }, [router]);
 
   useEffect(() => {
     if (isChecking || !isPro || planLoading) return;
-    let isMounted = true;
     const token = localStorage.getItem("wallet.jwt") ?? undefined;
-    const loadEscrows = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getVendorEscrows(token);
-        if (isMounted) setEscrows(data);
-      } catch (caught) {
-        if (isMounted) {
-          setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-    const frame = window.requestAnimationFrame(() => {
-      void loadEscrows();
-    });
-    return () => {
-      isMounted = false;
-      window.cancelAnimationFrame(frame);
-    };
-  }, [isChecking, isPro, planLoading]);
-
-  const retryLoadEscrows = () => {
-    const token = localStorage.getItem("wallet.jwt") ?? undefined;
-    setError(null);
     setIsLoading(true);
+    setError(null);
     getVendorEscrows(token)
       .then(setEscrows)
       .catch((caught) => {
         setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
       })
       .finally(() => setIsLoading(false));
-  };
+  }, [isChecking, isPro, planLoading]);
 
   if (isChecking || planLoading) {
-    return <AnalyticsPageSkeleton />;
+    return <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black" />;
   }
 
   return (
@@ -260,7 +271,17 @@ function AnalyticsPageContent() {
             <FetchErrorState
               title="We couldn't load your analytics"
               message={error}
-              onRetry={retryLoadEscrows}
+              onRetry={() => {
+                const token = localStorage.getItem("wallet.jwt") ?? undefined;
+                setError(null);
+                setIsLoading(true);
+                getVendorEscrows(token)
+                  .then(setEscrows)
+                  .catch((caught) => {
+                    setError(getFetchErrorMessage(caught, "Failed to load analytics data."));
+                  })
+                  .finally(() => setIsLoading(false));
+              }}
             />
           ) : isLoading || !escrows ? (
             <div className="space-y-4">
@@ -290,6 +311,10 @@ function AnalyticsPageContent() {
   );
 }
 
-export default function AnalyticsPage() {
-  return <AnalyticsClient />;
+export default function AnalyticsClient() {
+  return (
+    <Suspense fallback={null}>
+      <AnalyticsPageContent />
+    </Suspense>
+  );
 }

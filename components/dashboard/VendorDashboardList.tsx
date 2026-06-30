@@ -10,7 +10,7 @@ import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
 import { getVendorEscrows } from "@/lib/api";
 import { downloadCsv } from "@/utils/exportCsv";
-import type { Escrow, EscrowStatus } from "@/types";
+import type { Escrow } from "@/types";
 import EmptyVendorState from "./EmptyVendorState";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { formatUSDC } from "@/utils/currency";

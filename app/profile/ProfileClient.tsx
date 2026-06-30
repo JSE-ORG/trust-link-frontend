@@ -1,21 +1,11 @@
-import type { Metadata } from "next";
-import ProfileClient from "./ProfileClient";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Profile | TrustLink",
-  description:
-    "View your connected wallet, manage profile settings, and review your TrustLink subscription plan.",
-};
-
-export default function ProfilePage() {
-  return <ProfileClient />;
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { useWallet } from "@/components/providers/WalletProvider";
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
-import { Skeleton } from "@/components/ui/Skeleton";
 
-export default function ProfilePage() {
+export default function ProfileClient() {
   const { publicKey, disconnect } = useWallet();
   const { plan, isPro, isLoading: planLoading } = useSubscription();
 
@@ -26,7 +16,6 @@ export default function ProfilePage() {
         <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           {publicKey ? (
             <div className="space-y-6">
-              {/* Wallet address */}
               <div>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Wallet Address</p>
                 <p className="mt-1 break-all font-mono text-sm text-zinc-950 dark:text-zinc-100">
@@ -48,16 +37,10 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              {/* Plan */}
               <div>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Current Plan</p>
                 {planLoading ? (
-                  <Skeleton
-                    className="mt-2 h-7 w-16 rounded-full"
-                    role="status"
-                    aria-live="polite"
-                    aria-label="Loading current plan"
-                  />
+                  <div className="mt-2 h-7 w-16 animate-pulse rounded-full bg-zinc-100 dark:bg-zinc-800" />
                 ) : (
                   <div className="mt-2 flex items-center gap-3">
                     {isPro ? (

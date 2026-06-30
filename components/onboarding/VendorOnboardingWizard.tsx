@@ -8,7 +8,6 @@ import {
   Link as LinkIcon,
   ShieldCheck,
   Sparkles,
-  Truck,
   User,
 } from "lucide-react";
 import WalletConnectButton from "@/components/wallet/WalletConnectButton";
