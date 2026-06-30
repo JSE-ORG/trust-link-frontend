@@ -12,7 +12,8 @@
     "test": "vitest run",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "audit:tailwind": "node scripts/purge-tailwind-audit.mjs"
+    "audit:tailwind": "node scripts/purge-tailwind-audit.mjs",
+    "lighthouse:ci": "lhci autorun"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.61.0",

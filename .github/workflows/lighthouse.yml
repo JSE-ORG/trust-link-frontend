@@ -6,25 +6,35 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel any in-progress run for the same ref so we don't queue audits that
+# are already stale.
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lhci:
     name: Lighthouse CI
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 20
           cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
+      # Install a pinned version of the CLI so audit results are reproducible.
+      - name: Install Lighthouse CI CLI
+        run: npm install -g @lhci/cli@0.14.0
+
+      # The Next.js build validates required env vars at startup.  We supply
+      # placeholder values that satisfy the validation without hitting real
+      # external services.
       - name: Build Next.js app
         run: npm run build
         env:
@@ -32,11 +42,25 @@ jobs:
           NEXT_PUBLIC_CONTRACT_ID: Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           NEXT_PUBLIC_STELLAR_NETWORK: testnet
           NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
-          NEXT_PUBLIC_SITE_URL: https://trustlink.app
-          NEXT_PUBLIC_APP_URL: https://trustlink.app
-          NEXT_PUBLIC_POSTHOG_DISABLED: "true"
+          NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
+          NEXT_PUBLIC_SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+          NEXT_PUBLIC_USDC_CONTRACT: Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
 
+      # Run the audit.  `lhci autorun` reads .lighthouserc.json, starts the
+      # production server on port 3000, runs 3 Lighthouse audits per URL, and
+      # asserts thresholds.  The LHCI_GITHUB_APP_TOKEN enables automatic PR
+      # comments with audit results (optional — works without the secret too).
       - name: Run Lighthouse CI
-        run: npm run lhci -- autorun
+        run: lhci autorun
         env:
+          PORT: 3000
+          NEXT_PUBLIC_API_URL: http://localhost:3000/api
+          NEXT_PUBLIC_CONTRACT_ID: Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          NEXT_PUBLIC_STELLAR_NETWORK: testnet
+          NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
+          NEXT_PUBLIC_HORIZON_URL: https://horizon-testnet.stellar.org
+          NEXT_PUBLIC_SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+          NEXT_PUBLIC_USDC_CONTRACT: Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
