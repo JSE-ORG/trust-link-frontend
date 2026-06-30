@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AnalyticsClient from "./AnalyticsClient";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function AnalyticsPage() {
-  return <AnalyticsClient />;
+  return (
+    <Suspense fallback={null}>
+      <AnalyticsClient />
+    </Suspense>
+  );
 }
