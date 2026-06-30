@@ -61,8 +61,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const jwt = await verifyChallenge(signedXdr);
       setToken(jwt);
       return jwt;
-    } catch (err: any) {
-      console.error("Authentication failed:", err);
+    } catch (err: unknown) {
+      Sentry.captureException(err);
       toast.error("Authentication failed");
       throw err;
     }
@@ -92,7 +92,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (e) {
-          console.error("Failed to restore session:", e);
+          Sentry.captureException(e);
         }
       }
       if (!isMounted) return;
@@ -123,8 +123,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       await authenticate(pubKey);
       
       toast.success("Wallet connected");
-    } catch (err: any) {
-      const message = err.message || "Failed to connect wallet";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to connect wallet";
       setError(message);
       toast.error(message);
       throw err;
@@ -149,8 +149,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const net = networkOverride || stellarNetworkLabel;
       const signedXdr = await freighterSignTransaction(xdr, net);
       return signedXdr;
-    } catch (err: any) {
-      const message = err.message || "Failed to sign transaction";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to sign transaction";
       toast.error(message);
       throw err;
     }
@@ -166,6 +166,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const timeLeft = expirationTime - now;
 
       if (timeLeft <= 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         authenticate(publicKey);
         return;
       }
@@ -176,7 +177,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeout);
     } catch (err) {
-      console.error("Token decode failed:", err);
+      Sentry.captureException(err);
       setToken(null);
     }
   }, [token, publicKey, authenticate]);

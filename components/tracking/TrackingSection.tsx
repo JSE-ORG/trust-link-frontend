@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 async function fetchTrackingData() {
   await new Promise((resolve) => setTimeout(resolve, 150));
@@ -18,7 +19,8 @@ export default function TrackingSection() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const frame = window.requestAnimationFrame(loadData);
+    return () => window.cancelAnimationFrame(frame);
   }, [loadData]);
 
   if (error) {
@@ -32,7 +34,21 @@ export default function TrackingSection() {
   }
 
   if (!data) {
-    return <p className="text-zinc-600 dark:text-zinc-400">Loading tracking details…</p>;
+    return (
+      <div
+        className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading tracking details"
+      >
+        <Skeleton className="mb-4 h-6 w-1/3" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-3/5" />
+        </div>
+      </div>
+    );
   }
 
   return (
