@@ -12,7 +12,6 @@ import TestnetBanner from "@/components/layout/TestnetBanner";
 import CommandPalette from "@/components/ui/CommandPalette";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from "sonner";
-import CommandPalette from "@/components/ui/CommandPalette";
 import TopProgressBar from "@/components/ui/TopProgressBar";
 
 const geistSans = Geist({
@@ -56,25 +55,21 @@ export default function RootLayout({
         </a>
         <WalletProvider>
           <SubscriptionProvider>
-            <I18nProvider>
-          <NotificationProvider>
-            <I18nProvider>
-              <Navbar />
-              {/* pb-20 on mobile gives room for the fixed BottomNav; md:pb-0 removes it on desktop */}
-              <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
-                {children}
-              </main>
-              <Footer />
-              <BottomNav />
-              <Toaster richColors position="top-right" />
-            </I18nProvider>
+            <NotificationProvider>
+              <I18nProvider>
+                <Navbar />
+                {/* pb-20 on mobile gives room for the fixed BottomNav; md:pb-0 removes it on desktop */}
+                <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
+                  {children}
+                </main>
+                <Footer />
+                <BottomNav />
+                <Toaster richColors position="top-right" theme="system" />
+              </I18nProvider>
+            </NotificationProvider>
           </SubscriptionProvider>
-              <Toaster position="top-right" theme="system" />
-            </I18nProvider>
-          </NotificationProvider>
         </WalletProvider>
         <CommandPalette />
-        <Toaster position="bottom-right" />
       </body>
     </html>
   );

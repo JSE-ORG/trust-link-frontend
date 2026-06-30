@@ -5,6 +5,11 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
+  resolve: {
+    alias: {
+      "next/image": path.resolve(__dirname, "./__mocks__/next-image.tsx"),
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,

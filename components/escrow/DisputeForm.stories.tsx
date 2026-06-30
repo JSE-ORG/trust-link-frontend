@@ -187,7 +187,7 @@ export const SuccessState: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Green confirmation screen with a "Submit Another Dispute" reset button.",
+        story: "Green confirmation screen with a 'Submit Another Dispute' reset button.",
       },
     },
   },
