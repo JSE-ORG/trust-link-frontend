@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 import PaymentForm, { PaymentFormProps } from './PaymentForm';
 
 const baseProps: PaymentFormProps = {
@@ -11,9 +12,7 @@ const baseProps: PaymentFormProps = {
   sellerAddress: 'GDC...seller',
   escrowContractId: 'GDC...contract',
   status: 'PENDING',
-  onPaymentSuccess: (hash: string) => {
-    console.log('Payment success:', hash);
-  },
+  onPaymentSuccess: fn(),
 };
 
 const meta: Meta<typeof PaymentForm> = {

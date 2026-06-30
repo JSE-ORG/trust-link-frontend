@@ -1,6 +1,5 @@
 // src/escrow/__test__/DisputeForm.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import DisputeForm from '../DisputeForm';
