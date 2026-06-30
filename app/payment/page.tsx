@@ -3,6 +3,7 @@ import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import PaymentSection from "@/components/payment/PaymentSection";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Accordion } from "@/components/ui/Accordion";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export const metadata = {
   title: "Payment | TrustLink",
@@ -44,7 +45,20 @@ export default function PaymentPage() {
         <Breadcrumb items={breadcrumbItems} className="mb-4" />
         <h1 className="mb-6 text-3xl font-semibold text-zinc-950 dark:text-white">Payment</h1>
         <ErrorBoundary>
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              /* Skeleton matches the PaymentSection card shape — prevents CLS
+                 caused by the page height jumping from 0 → full content height */
+              <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                <Skeleton className="mb-4 h-6 w-1/3" />
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-4 w-3/5" />
+                </div>
+              </div>
+            }
+          >
             <PaymentSection />
           </Suspense>
         </ErrorBoundary>
