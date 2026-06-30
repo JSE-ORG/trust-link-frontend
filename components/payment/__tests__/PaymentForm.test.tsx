@@ -57,9 +57,9 @@ describe("PaymentForm", () => {
     render(<PaymentForm {...defaultProps} />);
 
     expect(screen.getByText("Payment Details")).toBeInTheDocument();
-    expect(screen.getByText("XLM 10")).toBeInTheDocument();
-    expect(screen.getByText("XLM 0.5")).toBeInTheDocument();
-    expect(screen.getByText("XLM 10.5")).toBeInTheDocument();
+    expect(screen.getByText("10.00 USDC")).toBeInTheDocument();
+    expect(screen.getByText("0.50 USDC")).toBeInTheDocument();
+    expect(screen.getByText("10.50 USDC")).toBeInTheDocument();
   });
 
   it("is disabled when wallet is disconnected", () => {
@@ -102,7 +102,7 @@ describe("PaymentForm", () => {
       expect(screen.getByText("Payment successful")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    expect(screen.getByText(/Transaction: 3f7a1f.*91bc/)).toBeInTheDocument();
+    expect(screen.getByText(/Transaction: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")
