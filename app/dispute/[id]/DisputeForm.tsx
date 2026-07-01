@@ -50,8 +50,13 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
     }
 
     setError(null);
+    if (files.length + validFiles.length > MAX_FILES) {
+      setError(`You can upload a maximum of ${MAX_FILES} files.`);
+      return;
+    }
+
     setFiles((current) => {
-      const merged = [...current, ...validFiles].slice(0, MAX_FILES);
+      const merged = [...current, ...validFiles];
       return merged;
     });
   };
@@ -129,12 +134,12 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
       <div className="space-y-2">
         <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Evidence files</label>
         <div
-          onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
+          onDragOver={(event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
             setIsDragging(true);
           }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(event: React.DragEvent<HTMLDivElement>) => {
+          onDrop={(event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
             setIsDragging(false);
             handleFileSelection(event.dataTransfer.files);
