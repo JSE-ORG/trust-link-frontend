@@ -4,19 +4,18 @@ import {
   connectFreighter,
   signTransaction,
   isConnected,
-  // getPublicKey,
 } from "./freighter";
 
 // Mock @stellar/freighter-api
 const mockIsConnected = vi.fn();
-const mockGetPublicKey = vi.fn();
+const mockGetAddress = vi.fn();
 const mockFreighterSignTransaction = vi.fn();
 const mockIsAllowed = vi.fn();
-const mockSetAllowed = vi.fn();
+const mockSetAllowed = vi.fn(); 
 
 vi.mock("@stellar/freighter-api", () => ({
   isConnected: mockIsConnected,
-  getPublicKey: mockGetPublicKey,
+  getAddress: mockGetAddress,
   signTransaction: mockFreighterSignTransaction,
   isAllowed: mockIsAllowed,
   setAllowed: mockSetAllowed,
@@ -46,12 +45,12 @@ describe("lib/stellar/freighter.ts", () => {
     it("connects successfully when Freighter is installed and allowed", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
-      mockGetPublicKey.mockResolvedValue("GD1234567890");
+      mockGetAddress.mockResolvedValue({ address: "GD1234567890" });
 
       const result = await connectFreighter();
       expect(result).toBe("GD1234567890");
       expect(mockIsAllowed).toHaveBeenCalled();
-      expect(mockGetPublicKey).toHaveBeenCalled();
+      expect(mockGetAddress).toHaveBeenCalled();
       expect(mockSetAllowed).not.toHaveBeenCalled();
     });
 
@@ -59,39 +58,39 @@ describe("lib/stellar/freighter.ts", () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(false);
       mockSetAllowed.mockResolvedValue(undefined);
-      mockGetPublicKey.mockResolvedValue("GD1234567890");
+      mockGetAddress.mockResolvedValue({ address: "GD1234567890" });
 
       const result = await connectFreighter();
       expect(result).toBe("GD1234567890");
       expect(mockIsAllowed).toHaveBeenCalled();
       expect(mockSetAllowed).toHaveBeenCalled();
-      expect(mockGetPublicKey).toHaveBeenCalled();
+      expect(mockGetAddress).toHaveBeenCalled();
     });
 
     it("throws error when Freighter is not installed", async () => {
       await expect(connectFreighter()).rejects.toThrow("Freighter not installed");
     });
 
-    it("throws error when getPublicKey returns null", async () => {
+    it("throws error when getAddress returns null", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
-      mockGetPublicKey.mockResolvedValue(null);
+      mockGetAddress.mockResolvedValue(null);
 
       await expect(connectFreighter()).rejects.toThrow("Failed to get public key from Freighter");
     });
 
-    it("throws error when getPublicKey returns undefined", async () => {
+    it("throws error when getAddress returns undefined", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
-      mockGetPublicKey.mockResolvedValue(undefined);
+      mockGetAddress.mockResolvedValue(undefined);
 
       await expect(connectFreighter()).rejects.toThrow("Failed to get public key from Freighter");
     });
 
-    it("throws error when getPublicKey returns empty string", async () => {
+    it("throws error when getAddress returns an empty address string", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
-      mockGetPublicKey.mockResolvedValue("");
+      mockGetAddress.mockResolvedValue({ address: "" });
 
       await expect(connectFreighter()).rejects.toThrow("Failed to get public key from Freighter");
     });
@@ -190,17 +189,13 @@ describe("lib/stellar/freighter.ts", () => {
     it("re-exports isConnected from @stellar/freighter-api", () => {
       expect(isConnected).toBeDefined();
     });
-
-    // it("re-exports getPublicKey from @stellar/freighter-api", () => {
-    //   expect(getPublicKey).toBeDefined();
-    // });
   });
 
   describe("integration scenarios", () => {
     it("handles complete connect and sign workflow", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(true);
-      mockGetPublicKey.mockResolvedValue("GD1234567890");
+      mockGetAddress.mockResolvedValue({ address: "GD1234567890" });
       mockFreighterSignTransaction.mockResolvedValue({
         signedTransaction: "signed-xdr",
         error: null,
@@ -219,7 +214,7 @@ describe("lib/stellar/freighter.ts", () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockIsAllowed.mockResolvedValue(false);
       mockSetAllowed.mockResolvedValue(undefined);
-      mockGetPublicKey.mockResolvedValue("GD9876543210");
+      mockGetAddress.mockResolvedValue({ address: "GD9876543210" });
 
       const publicKey = await connectFreighter();
       expect(publicKey).toBe("GD9876543210");
