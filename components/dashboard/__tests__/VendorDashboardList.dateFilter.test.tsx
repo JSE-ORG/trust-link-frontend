@@ -104,7 +104,7 @@ describe("VendorDashboardList — date range filter (issue #72)", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/no escrows match the selected date range/i)
+        screen.getByText(/No escrows found matching your criteria/i)
       ).toBeInTheDocument()
     );
   });
@@ -118,7 +118,7 @@ describe("VendorDashboardList — date range filter (issue #72)", () => {
       expect(screen.queryByText("January Item")).not.toBeInTheDocument()
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+    await userEvent.click(screen.getByRole("button", { name: /Clear/i }));
     await waitFor(() => expect(screen.getByText("January Item")).toBeInTheDocument());
     expect(screen.getByText("March Item")).toBeInTheDocument();
     expect(screen.getByText("June Item")).toBeInTheDocument();

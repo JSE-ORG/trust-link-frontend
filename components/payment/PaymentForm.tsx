@@ -7,6 +7,7 @@ import { getStellarExpertTxUrl } from "@/lib/explorer";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useNetwork } from "@/components/providers/NetworkProvider";
+import { formatUSDC } from "@/utils/currency";
 
 export interface PaymentFormProps {
   escrowId: string;
@@ -47,7 +48,7 @@ export default function PaymentForm({
   status,
   onPaymentSuccess,
 }: PaymentFormProps) {
-  const { status: walletStatus } = useWallet();
+  const { isConnected } = useWallet();
   const { network } = useNetwork();
   const [formState, setFormState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

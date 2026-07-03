@@ -152,14 +152,25 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
 
   // File upload handler
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      return validTypes.includes(file.type) && file.size <= maxSize;
-    });
-    
-    updateField('files', [...formData.files, ...validFiles]);
+    const selectedFiles = Array.from(e.target.files || []);
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const rejectedByType = selectedFiles.filter(file => !allowedTypes.includes(file.type));
+    const rejectedBySize = selectedFiles.filter(file => file.size > maxSize);
+
+    if (rejectedByType.length > 0) {
+      setErrors(prev => ({ ...prev, files: "Please upload an image (JPG, PNG, WebP) or PDF." }));
+      return;
+    }
+
+    if (rejectedBySize.length > 0) {
+      setErrors(prev => ({ ...prev, files: "Each file must be 10 MB or smaller." }));
+      return;
+    }
+
+    setErrors(prev => ({ ...prev, files: undefined }));
+    updateField('files', [...formData.files, ...selectedFiles]);
   }, [formData.files, updateField]);
 
   const removeFile = useCallback((index: number) => {
@@ -378,14 +389,14 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 id="files"
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                accept="image/jpeg,image/png,image/jpg,image/webp,application/pdf"
                 onChange={handleFileUpload}
                 aria-label="upload files"
                 aria-invalid={!!errors.files}
                 aria-describedby={errors.files ? "files-error" : "files-hint"}
                 data-testid="file-input"
               />
-              <small id="files-hint">Accepted formats: JPEG, PNG, PDF (Max 5MB each)</small>
+              <small id="files-hint">Accepted formats: JPEG, PNG, WebP, PDF (Max 10MB each)</small>
             </div>
 
             {formData.files.length > 0 && (

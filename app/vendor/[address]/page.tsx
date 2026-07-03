@@ -45,11 +45,10 @@ export default function VendorProfilePage({ params }: { params: Promise<{ addres
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header & Back Button */}
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
-          >
-            <ArrowLeft className="h-5 w-5" />
+          <Link href="/dashboard">
+            <a className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800">
+              <ArrowLeft className="h-5 w-5" />
+            </a>
           </Link>
           <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white">Vendor Profile</h1>
         </div>
@@ -86,12 +85,11 @@ export default function VendorProfilePage({ params }: { params: Promise<{ addres
                 >
                   Start Trade
                 </button>
-                <Link
-                  href="/dashboard/analytics"
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  Analytics
+                <Link href="/dashboard/analytics">
+                  <a className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </a>
                 </Link>
               </div>
             </div>

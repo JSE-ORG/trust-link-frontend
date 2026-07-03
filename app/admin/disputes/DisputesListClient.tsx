@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { formatUSDC } from "@/utils/currency";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useTranslation } from "react-i18next";
+import { formatTimeAgo } from "@/lib/utils";
 
 type SortField = "date" | "amount" | "status";
 
@@ -55,6 +57,7 @@ function sortDisputes(disputes: Dispute[], field: SortField): Dispute[] {
 
 export function DisputesListClient() {
   const router = useRouter();
+  const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("date");
@@ -170,8 +173,8 @@ export function DisputesListClient() {
                   <p className="text-zinc-600 dark:text-zinc-400">
                     {dispute.status}
                   </p>
-                  <p className="text-xs text-zinc-500">
-                    {new Date(dispute.createdAt).toLocaleString()}
+                  <p className="text-xs text-zinc-500" aria-label={`Created ${formatTimeAgo(dispute.createdAt, i18n.language)}`}>
+                    {formatTimeAgo(dispute.createdAt, i18n.language)}
                   </p>
                 </div>
               </div>
@@ -180,12 +183,13 @@ export function DisputesListClient() {
                 <p className="text-xs text-zinc-500">
                   Evidence links: <span className="font-medium">{dispute.evidence.length}</span>
                 </p>
-                <Link
-                  href={`/admin/disputes/${dispute.id}`}
-                  className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                  aria-label={`View dispute for ${dispute.escrow.item}`}
-                >
-                  View Dispute
+                <Link href={`/admin/disputes/${dispute.id}`}>
+                  <a
+                    className="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                    aria-label={`View dispute for ${dispute.escrow.item}`}
+                  >
+                    View Dispute
+                  </a>
                 </Link>
               </div>
             </article>

@@ -7,7 +7,18 @@ import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 
 const MAX_FILES = 5;
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+/** Allowed MIME types for evidence uploads. */
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+] as const;
+
+const ALLOWED_TYPES_LABEL = "JPG, PNG, WebP or PDF";
+const ACCEPT_ATTR = ALLOWED_TYPES.join(",");
 
 interface DisputeFormProps {
   escrowId: string;
@@ -23,16 +34,29 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
 
   const handleFileSelection = (selectedFiles: FileList | null) => {
     const nextFiles = Array.from(selectedFiles ?? []);
-    const validFiles = nextFiles.filter((file) => file.size <= MAX_FILE_SIZE && /image\/(jpeg|png)|application\/pdf/i.test(file.type));
+    const rejectedByType = nextFiles.filter((f) => !ALLOWED_TYPES.includes(f.type as typeof ALLOWED_TYPES[number]));
+    const rejectedBySize = nextFiles.filter((f) => f.size > MAX_FILE_SIZE);
+    const validFiles = nextFiles.filter(
+      (f) => ALLOWED_TYPES.includes(f.type as typeof ALLOWED_TYPES[number]) && f.size <= MAX_FILE_SIZE
+    );
 
-    if (nextFiles.length > MAX_FILES || validFiles.length !== nextFiles.length) {
-      setError("Only image and PDF files up to 10 MB are allowed, with a maximum of 5 files.");
+    if (rejectedByType.length > 0) {
+      setError(`Please upload an image (JPG, PNG, WebP) or PDF. The following file(s) have an unsupported type: ${rejectedByType.map((f) => f.name).join(", ")}`);
+      return;
+    }
+    if (rejectedBySize.length > 0) {
+      setError(`Each file must be 10 MB or smaller. The following file(s) are too large: ${rejectedBySize.map((f) => f.name).join(", ")}`);
       return;
     }
 
     setError(null);
+    if (files.length + validFiles.length > MAX_FILES) {
+      setError(`You can upload a maximum of ${MAX_FILES} files.`);
+      return;
+    }
+
     setFiles((current) => {
-      const merged = [...current, ...validFiles].slice(0, MAX_FILES);
+      const merged = [...current, ...validFiles];
       return merged;
     });
   };
@@ -110,12 +134,12 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
       <div className="space-y-2">
         <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Evidence files</label>
         <div
-          onDragOver={(event: React.DragEvent<HTMLDivElement>) => {
+          onDragOver={(event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
             setIsDragging(true);
           }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(event: React.DragEvent<HTMLDivElement>) => {
+          onDrop={(event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
             setIsDragging(false);
             handleFileSelection(event.dataTransfer.files);
@@ -125,7 +149,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
           <input
             id="evidence"
             type="file"
-            accept="image/*,.pdf"
+            accept={ACCEPT_ATTR}
             multiple
             className="hidden"
             onChange={(event: ChangeEvent<HTMLInputElement>) => handleFileSelection(event.target.files)}
@@ -136,7 +160,7 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
             <span>Up to {MAX_FILES} files, 10 MB each</span>
           </label>
         </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">Accepted formats: JPG, PNG, PDF.</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">Accepted formats: {ALLOWED_TYPES_LABEL}. Max {MAX_FILES} files, 10 MB each.</p>
 
         {files.length > 0 && (
           <ul className="space-y-2">

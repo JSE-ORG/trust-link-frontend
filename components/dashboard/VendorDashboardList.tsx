@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Download, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/Skeleton";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -14,6 +13,7 @@ import type { Escrow } from "@/types";
 import EmptyVendorState from "./EmptyVendorState";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { formatUSDC } from "@/utils/currency";
+import { formatTimeAgo } from "@/lib/utils";
 
 const STATUS_TABS = ["ALL", "PENDING", "FUNDED", "SHIPPED", "COMPLETED", "DISPUTED", "RELEASED", "REFUNDED", "EXPIRED"] as const;
 const ITEMS_PER_PAGE = 10;
@@ -57,6 +57,10 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     });
   }, [escrows, searchQuery, statusFilter, fromDate, toDate]);
 
+  const clearDateFilter = () => {
+    setFromDate("");
+    setToDate("");
+  };
   const totalPages = filteredEscrows ? Math.ceil(filteredEscrows.length / ITEMS_PER_PAGE) : 0;
 
   const paginatedEscrows = useMemo(() => {
@@ -64,12 +68,6 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredEscrows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredEscrows, currentPage]);
-
-  const availableStatuses = useMemo(() => {
-    if (!escrows) return [];
-    const statuses = new Set(escrows.map((e) => e.status));
-    return Array.from(statuses).sort();
-  }, [escrows]);
 
   const loadItems = async () => {
     try {
@@ -94,15 +92,10 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     );
   };
 
-  const clearDateFilter = () => {
-    setFromDate("");
-    setToDate("");
-  };
-
   const handleExportCsv = () => {
     if (!filteredEscrows || filteredEscrows.length === 0) return;
     downloadCsv(
-      filteredEscrows,
+      filteredEscrows as unknown as Record<string, unknown>[],
       [
         { key: "id", header: "Escrow ID" },
         { key: "item", header: "Item" },
@@ -209,7 +202,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
           );
         })}
       </div>
-
+      {/* Date range filter */}
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex flex-col">
           <label htmlFor="escrow-from-date" className="mb-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -301,7 +294,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
                       <span>•</span>
                       <span>Amount: {formatUSDC(escrow.amount)}</span>
                       <span>•</span>
-                      <span>Created: {new Date(escrow.createdAt).toLocaleDateString()}</span>
+                      <span>Created: {formatTimeAgo(escrow.createdAt, i18n.language)}</span>
                     </div>
                   </div>
                 </div>
