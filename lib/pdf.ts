@@ -24,7 +24,6 @@ export async function generatePDFFromElement(
       scale: 2,
       logging: false,
       useCORS: true,
-      allowTaint: true,
     });
 
     const imgWidth = 210; // A4 width in mm

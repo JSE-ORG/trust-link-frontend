@@ -1,0 +1,23 @@
+import Link from "next/link";
+
+export const metadata = {
+  title: "Documentation | TrustLink",
+  description: "TrustLink documentation and guides.",
+};
+
+export default function DocsPage() {
+  return (
+    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+      <div className="mx-auto max-w-3xl">
+        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
+          &larr; Back to Home
+        </Link>
+        <h1 className="mt-6 text-3xl font-semibold text-zinc-950 dark:text-white">Documentation</h1>
+        <p className="mt-4 text-zinc-600 dark:text-zinc-400">
+          Documentation is coming soon. Check back for guides on creating escrow links, 
+          making payments, and managing disputes.
+        </p>
+      </div>
+    </main>
+  );
+}

@@ -27,7 +27,6 @@ import { signTransaction } from "./freighter";
 export async function submitPayment(amount: string, destination: string) {
   // In a real implementation, this would involve building a transaction
   // and using signTransaction(xdr, network)
-  console.log(`Building transaction for ${amount} XLM to ${destination}`);
   
   // Simulated delay
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -56,7 +55,7 @@ export interface ContractDeployResult {
 
 export interface ContractInvocationResult {
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
   transactionHash?: string;
 }
@@ -310,17 +309,19 @@ export function isValidContractId(contractId: string): boolean {
  *   alert(message);
  * }
  */
-export function parseContractError(error: any): string {
+export function parseContractError(error: unknown): string {
   if (typeof error === "string") {
     return error;
   }
 
-  if (error?.message) {
-    return error.message;
-  }
-
-  if (error?.type === "ContractError") {
-    return `Contract Error: ${error.details || "Unknown error"}`;
+  if (error && typeof error === "object") {
+    const obj = error as Record<string, unknown>;
+    if (typeof obj.message === "string") {
+      return obj.message;
+    }
+    if (obj.type === "ContractError") {
+      return `Contract Error: ${String(obj.details ?? "Unknown error")}`;
+    }
   }
 
   return "An unknown error occurred";
@@ -335,18 +336,19 @@ export function parseContractError(error: any): string {
  * const result = parseContractResult(response);
  * console.log("Contract returned:", result);
  */
-export function parseContractResult(response: any): any {
-  if (!response) {
-    return null;
+export function parseContractResult(response: unknown): unknown {
+  if (!response || typeof response !== "object") {
+    return response ?? null;
   }
 
-  // Handle different response formats
-  if (response.result) {
-    return response.result;
+  const obj = response as Record<string, unknown>;
+
+  if (obj.result !== undefined) {
+    return obj.result;
   }
 
-  if (response.value !== undefined) {
-    return response.value;
+  if (obj.value !== undefined) {
+    return obj.value;
   }
 
   return response;
@@ -421,8 +423,8 @@ export function buildContractDeployment(
     networkPassphrase,
   })
     .addOperation(
-      Operation.extendFootprintTtl({
-        extendTo: 535679,
+      Operation.uploadContractWasm({
+        wasm: wasmBuffer,
       })
     )
     .setTimeout(30)
@@ -441,20 +443,22 @@ export function buildContractDeployment(
  *   console.log("Contract executed successfully");
  * }
  */
-export function isContractSuccess(response: any): boolean {
-  if (!response) {
+export function isContractSuccess(response: unknown): boolean {
+  if (!response || typeof response !== "object") {
     return false;
   }
 
-  if (response.success === false) {
+  const obj = response as Record<string, unknown>;
+
+  if (obj.success === false) {
     return false;
   }
 
-  if (response.success === true) {
+  if (obj.success === true) {
     return true;
   }
 
-  if (response.error !== null && response.error !== undefined) {
+  if (obj.error !== null && obj.error !== undefined) {
     return false;
   }
 

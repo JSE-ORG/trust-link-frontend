@@ -6,8 +6,9 @@ export type EscrowState =
   | "Shipped"
   | "Completed"
   | "Disputed"
+  | "Released"
   | "Refunded"
-  | "Cancelled";
+  | "Expired";
 
 export interface EscrowStatusConfig {
   label: string;
@@ -15,11 +16,12 @@ export interface EscrowStatusConfig {
 }
 
 export const ESCROW_STATUS_MAP: Record<EscrowState, EscrowStatusConfig> = {
-  Pending: { label: "Pending", variant: "secondary" },
-  Funded: { label: "Funded", variant: "default" },
-  Shipped: { label: "Shipped", variant: "outline" },
+  Pending:   { label: "Pending",   variant: "secondary" },
+  Funded:    { label: "Funded",    variant: "default" },
+  Shipped:   { label: "Shipped",   variant: "outline" },
   Completed: { label: "Completed", variant: "success" },
-  Disputed: { label: "Disputed", variant: "destructive" },
-  Refunded: { label: "Refunded", variant: "warning" },
-  Cancelled: { label: "Cancelled", variant: "secondary" },
+  Disputed:  { label: "Disputed",  variant: "destructive" },
+  Released:  { label: "Released",  variant: "success" },
+  Refunded:  { label: "Refunded",  variant: "warning" },
+  Expired:   { label: "Expired",   variant: "secondary" },
 };

@@ -9,7 +9,7 @@ import { formatUSDC } from "@/utils/currency";
 import { track } from "@/lib/analytics";
 import { getStellarExpertTxUrl } from "@/lib/explorer";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PaymentClient({ escrow }: { escrow: Escrow }) {
   const { t, i18n } = useTranslation();

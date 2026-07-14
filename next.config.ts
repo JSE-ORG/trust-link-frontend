@@ -67,6 +67,21 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async redirects() {
+    return [
+      {
+        source: "/vendor/signup",
+        destination: "/create",
+        permanent: true,
+      },
+      {
+        source: "/verify",
+        destination: "/track",
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     const sorobanRpcUrl =
       process.env.NEXT_PUBLIC_SOROBAN_RPC_URL ?? "https://soroban-testnet.stellar.org";

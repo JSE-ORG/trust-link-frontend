@@ -24,7 +24,6 @@ function sortDisputes(disputes: Dispute[], field: SortField): Dispute[] {
 
 export function DisputesListClient() {
   const router = useRouter();
-  const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("date");

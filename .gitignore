@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+*.pdf
+*.stackdump
+storybook-static/
 
 # debug
 npm-debug.log*

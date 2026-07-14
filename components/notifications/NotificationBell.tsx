@@ -140,7 +140,7 @@ export default function NotificationBell() {
                 No notifications yet
               </li>
             ) : (
-              preview.map((n: any) => (
+              preview.map((n) => (
                 <li key={n.id}>
                   <Link
                     href={`/escrow/${n.escrowId}`}

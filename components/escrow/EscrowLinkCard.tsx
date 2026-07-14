@@ -101,11 +101,11 @@ export default function EscrowLinkCard({
       setCopyStatus("success");
       onCopySuccess?.();
       setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setCopyStatus("error");
-      const msg = err.message || "Failed to copy";
+      const msg = err instanceof Error ? err.message : "Failed to copy";
       setErrorMsg(msg);
-      onCopyError?.(err);
+      onCopyError?.(err instanceof Error ? err : new Error(String(err)));
       setTimeout(() => {
         setCopyStatus("idle");
         setErrorMsg(null);

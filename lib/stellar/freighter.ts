@@ -84,8 +84,11 @@ export async function signTransaction(
     }
 
     return signedTxXdr;
-  } catch (error: any) {
-    captureWalletError(error, { xdr, network, action: "signTransaction" });
+  } catch (error: unknown) {
+    captureWalletError(
+      error instanceof Error ? error : new Error(String(error)),
+      { xdr, network, action: "signTransaction" }
+    );
     throw error;
   }
 }
