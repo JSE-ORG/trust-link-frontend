@@ -23,7 +23,7 @@ describe("EscrowStatusBadge", () => {
       render(<EscrowStatusBadge status={state} />);
       const badge = screen.getByText(label);
       expect(badge).toBeInTheDocument();
-      expect(badge.className).toContain(VARIANT_CLASSES[variant]);
+      expect(badge.className).toContain(VARIANT_CLASSES[variant as string]);
     }
   );
 

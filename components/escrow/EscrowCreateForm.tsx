@@ -161,6 +161,7 @@ export default function EscrowCreateForm() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error creating the link.";
       setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -168,14 +169,29 @@ export default function EscrowCreateForm() {
 
   const downloadQR = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const escrowId = (resultUrl || "escrow").split("/").pop() || "escrow";
-    const pngUrl = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = pngUrl;
-    a.download = `escrow_${escrowId}.png`;
-    a.click();
-    toast.success("QR code downloaded");
+    if (!canvas || !resultUrl) return;
+    const svgEl = document.querySelector<SVGSVGElement>("[data-testid=\"qr-code\"]");
+    if (!svgEl) return;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 192;
+      canvas.height = 192;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, 192, 192);
+      URL.revokeObjectURL(url);
+      const escrowId = resultUrl.split("/").pop() || "escrow";
+      const pngUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = pngUrl;
+      a.download = `escrow_${escrowId}.png`;
+      a.click();
+      toast.success("QR code downloaded");
+    };
+    img.src = url;
   };
 
   return (
@@ -329,8 +345,16 @@ export default function EscrowCreateForm() {
             {copyStatus ? <p className="mt-2 text-sm text-emerald-600">{copyStatus}</p> : null}
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-col items-center gap-3">
             <QrCode value={resultUrl} />
+            <canvas ref={canvasRef} className="sr-only" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={downloadQR}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-950"
+            >
+              Download QR
+            </button>
           </div>
         </section>
       ) : null}

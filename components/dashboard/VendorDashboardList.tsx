@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Download, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/Skeleton";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -10,9 +9,11 @@ import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
 import { getVendorEscrows } from "@/lib/api";
 import { downloadCsv } from "@/utils/exportCsv";
-import type { Escrow, EscrowStatus } from "@/types";
+import type { Escrow } from "@/types";
 import EmptyVendorState from "./EmptyVendorState";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { formatUSDC } from "@/utils/currency";
+import { formatTimeAgo } from "@/lib/utils";
 
 const STATUS_TABS = ["ALL", "PENDING", "FUNDED", "SHIPPED", "COMPLETED", "DISPUTED", "RELEASED", "REFUNDED", "EXPIRED"] as const;
 const ITEMS_PER_PAGE = 10;
@@ -56,6 +57,10 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     });
   }, [escrows, searchQuery, statusFilter, fromDate, toDate]);
 
+  const clearDateFilter = () => {
+    setFromDate("");
+    setToDate("");
+  };
   const totalPages = filteredEscrows ? Math.ceil(filteredEscrows.length / ITEMS_PER_PAGE) : 0;
 
   const paginatedEscrows = useMemo(() => {
@@ -64,14 +69,9 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     return filteredEscrows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredEscrows, currentPage]);
 
-  const availableStatuses = useMemo(() => {
-    if (!escrows) return [];
-    const statuses = new Set(escrows.map((e) => e.status));
-    return Array.from(statuses).sort();
-  }, [escrows]);
-
   const loadItems = async () => {
     try {
+      setError(null);
       const token = window.localStorage.getItem("wallet.jwt") || undefined;
       const data = await getVendorEscrows(token);
       setEscrows(data);
@@ -92,15 +92,10 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     );
   };
 
-  const clearDateFilter = () => {
-    setFromDate("");
-    setToDate("");
-  };
-
   const handleExportCsv = () => {
     if (!filteredEscrows || filteredEscrows.length === 0) return;
     downloadCsv(
-      filteredEscrows,
+      filteredEscrows as unknown as Record<string, unknown>[],
       [
         { key: "id", header: "Escrow ID" },
         { key: "item", header: "Item" },
@@ -113,7 +108,18 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     );
   };
 
-  if (error) throw error;
+  if (error) {
+    return (
+      <FetchErrorState
+        title="We couldn't load your escrows"
+        message={getFetchErrorMessage(error, "Failed to load vendor escrows.")}
+        onRetry={() => {
+          setEscrows(null);
+          void loadItems();
+        }}
+      />
+    );
+  }
 
   if (loading || !escrows) {
     return (
@@ -157,6 +163,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
             id="export-csv-button"
             type="button"
             onClick={handleExportCsv}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleExportCsv();
+              }
+            }}
             className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
             <Download className="h-4 w-4" />
@@ -173,6 +185,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
               key={s}
               type="button"
               onClick={() => setStatusFilter(s)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setStatusFilter(s);
+                }
+              }}
               className={`rounded-full px-3 py-1 text-sm font-medium transition ${
                 statusFilter === s
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -184,7 +202,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
           );
         })}
       </div>
-
+      {/* Date range filter */}
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div className="flex flex-col">
           <label htmlFor="escrow-from-date" className="mb-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -216,6 +234,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
           <button
             type="button"
             onClick={clearDateFilter}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                clearDateFilter();
+              }
+            }}
             className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             Clear dates
@@ -231,6 +255,14 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
               setSearchQuery("");
               setStatusFilter("ALL");
               clearDateFilter();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSearchQuery("");
+                setStatusFilter("ALL");
+                clearDateFilter();
+              }
             }}
             className="mt-4 text-sm font-medium text-black hover:underline dark:text-white"
           >
@@ -262,7 +294,7 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
                       <span>•</span>
                       <span>Amount: {formatUSDC(escrow.amount)}</span>
                       <span>•</span>
-                      <span>Created: {new Date(escrow.createdAt).toLocaleDateString()}</span>
+                      <span>Created: {formatTimeAgo(escrow.createdAt, i18n.language)}</span>
                     </div>
                   </div>
                 </div>
@@ -280,6 +312,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
                     <button
                       type="button"
                       onClick={() => setSelectedEscrow(escrow)}
+                      onKeyDown={(e) => {
+                        if ((e.key === "Enter" || e.key === " ") && escrow.status === "FUNDED") {
+                          e.preventDefault();
+                          setSelectedEscrow(escrow);
+                        }
+                      }}
                       disabled={escrow.status !== "FUNDED"}
                       className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                     >
@@ -301,6 +339,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && currentPage > 1) {
+                  e.preventDefault();
+                  setCurrentPage((p) => Math.max(1, p - 1));
+                }
+              }}
               disabled={currentPage === 1}
               className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
@@ -308,6 +352,12 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && currentPage < totalPages) {
+                  e.preventDefault();
+                  setCurrentPage((p) => Math.min(totalPages, p + 1));
+                }
+              }}
               disabled={currentPage === totalPages}
               className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, type JSX } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import type { JSX } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, Package, Banknote, Truck, ShieldAlert, RotateCcw, CircleCheck, Clock, AlertCircle } from "lucide-react";
 import { useNotifications } from "@/components/providers/NotificationProvider";
 import { relativeTime, statusLabel } from "@/lib/notifications";
-import type { EscrowStatus } from "@/types";
+import type { AppNotification, EscrowStatus } from "@/types";
 
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-4 w-4 shrink-0";
@@ -140,7 +141,7 @@ export default function NotificationBell() {
                 No notifications yet
               </li>
             ) : (
-              preview.map((n) => (
+              preview.map((n: AppNotification) => (
                 <li key={n.id}>
                   <Link
                     href={`/escrow/${n.escrowId}`}

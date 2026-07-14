@@ -1,5 +1,11 @@
+import { Suspense } from "react";
 import EscrowCreateForm from "@/components/escrow/EscrowCreateForm";
 import WalletConnectButton from "@/components/wallet/WalletConnectButton";
+
+export const metadata = {
+  title: "Create Escrow | TrustLink",
+  description: "Generate a secure escrow link for your transaction. Connect your wallet and create a shareable payment link in seconds.",
+};
 
 export default function CreatePage() {
   return (
@@ -18,7 +24,9 @@ export default function CreatePage() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <WalletConnectButton />
+            <Suspense fallback={null}>
+              <WalletConnectButton />
+            </Suspense>
           </div>
 
           <div className="mt-10 grid gap-4 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-3">
@@ -38,7 +46,9 @@ export default function CreatePage() {
         </section>
 
         <section className="rounded-[36px] border border-white/70 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-zinc-950/90 sm:p-6">
-          <EscrowCreateForm />
+          <Suspense fallback={null}>
+            <EscrowCreateForm />
+          </Suspense>
         </section>
       </div>
     </main>

@@ -1,6 +1,11 @@
 import { WifiOff } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Offline | TrustLink",
+  description: "You're offline. Check your internet connection and try again to access TrustLink's escrow platform.",
+};
+
 export default function OfflinePage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-6 dark:bg-black text-center">

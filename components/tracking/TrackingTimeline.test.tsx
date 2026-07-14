@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TrackingTimeline from "./TrackingTimeline";
 import { Escrow } from "@/types";
@@ -7,6 +7,12 @@ import { Escrow } from "@/types";
 vi.mock("@/lib/api", () => ({
   getEscrow: vi.fn(),
 }));
+
+vi.mock("@/hooks/useEscrow", () => ({
+  useEscrow: vi.fn(),
+}));
+
+import { useEscrow } from "@/hooks/useEscrow";
 
 const mockEscrow: Escrow = {
   id: "esc_123",
@@ -23,6 +29,12 @@ const mockEscrow: Escrow = {
 describe("TrackingTimeline", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useEscrow).mockReturnValue({
+      escrow: mockEscrow,
+      isLoading: false,
+      error: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("renders loading state", () => {
@@ -114,5 +126,23 @@ describe("TrackingTimeline", () => {
     );
 
     expect(screen.getByText("Delivered")).toBeInTheDocument();
+  });
+
+  it("shows a user-friendly error state when fetching fails", () => {
+    const refetch = vi.fn();
+    vi.mocked(useEscrow).mockReturnValue({
+      escrow: undefined,
+      isLoading: false,
+      error: new Error("Failed to fetch escrow"),
+      refetch,
+    });
+
+    render(
+      <TrackingTimeline escrowId="esc_123" initialEscrow={mockEscrow} />
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("We couldn't load tracking status")).toBeInTheDocument();
+    expect(screen.getByText("Failed to fetch escrow")).toBeInTheDocument();
   });
 });

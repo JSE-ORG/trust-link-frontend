@@ -10,25 +10,30 @@ import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import TestnetBanner from "@/components/layout/TestnetBanner";
+import OfflineBanner from "@/components/layout/OfflineBanner";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { Toaster } from "sonner";
-import CommandPalette from "@/components/ui/CommandPalette";
 import { Suspense } from "react";
 import TopProgressBar from "@/components/ui/TopProgressBar";
+import CommandPalette from "@/components/ui/CommandPalette";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://trustlink.app"),
   title: "TrustLink",
   description: "The Web2 experience. The Web3 guarantee.",
 };
@@ -48,12 +53,33 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/*
+          next/font/google self-hosts the woff2 files in the Next.js static
+          bundle, so preconnect to fonts.googleapis.com / fonts.gstatic.com is
+          not needed at runtime.  The font CSS is also inlined at build time
+          (display:swap, preload:true above).
+
+          We still DNS-prefetch the Soroban RPC and API origins so those
+          lookups are already resolved when the first wallet operation fires.
+        */}
+        <link rel="dns-prefetch" href="https://soroban-testnet.stellar.org" />
+        <link rel="dns-prefetch" href="https://horizon-testnet.stellar.org" />
+      </head>
+      {/* Inline script runs before paint to apply stored theme class without flash */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');else if(t==='light')document.documentElement.classList.add('light');}catch(e){}})();`,
+        }}
+      />
       <body className="min-h-full flex flex-col">
+        <ThemeProvider>
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>
         <NetworkProvider>
           <ServiceWorkerProvider />
+          <OfflineBanner />
           <TestnetBanner />
           <a
             href="#main-content"
@@ -78,6 +104,7 @@ export default function RootLayout({
           </WalletProvider>
         </NetworkProvider>
         <CommandPalette />
+        </ThemeProvider>
       </body>
     </html>
   );

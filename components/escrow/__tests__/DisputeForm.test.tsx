@@ -1,6 +1,5 @@
 // src/escrow/__test__/DisputeForm.test.tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 import DisputeForm from '../DisputeForm';
@@ -128,16 +127,18 @@ describe('DisputeForm Multi-Step Flow', () => {
       setFiles(fileInput, [invalidFile]);
 
       // Invalid file should NOT appear in the file list
-      expect(screen.queryByText('notes.txt')).not.toBeInTheDocument();
+      expect(screen.queryByText(/notes\.txt/)).not.toBeInTheDocument();
+      // Should show inline error message
+      expect(screen.getByText(/Please upload an image \(JPG, PNG, WebP\) or PDF\./i)).toBeInTheDocument();
     });
 
-    test('rejects files exceeding the 5MB size limit', async () => {
+    test('rejects files exceeding the 10MB size limit', async () => {
       render(<DisputeForm />);
       await navigateToStep3();
 
-      // Create a file that exceeds 5MB
+      // Create a file that exceeds 10MB
       const oversizedFile = new File(
-        ['x'.repeat(6 * 1024 * 1024)],
+        ['x'.repeat(11 * 1024 * 1024)],
         'huge.pdf',
         { type: 'application/pdf' }
       );
@@ -145,15 +146,18 @@ describe('DisputeForm Multi-Step Flow', () => {
       setFiles(fileInput, [oversizedFile]);
 
       // Oversized file should NOT appear in the file list
-      expect(screen.queryByText('huge.pdf')).not.toBeInTheDocument();
+      expect(screen.queryByText(/huge\.pdf/)).not.toBeInTheDocument();
+      // Should show inline error message
+      expect(screen.getByText(/Each file must be 10 MB or smaller\./i)).toBeInTheDocument();
     });
 
-    test('accepts valid file types (JPEG, PNG, PDF)', async () => {
+    test('accepts valid file types (JPEG, PNG, WebP, PDF)', async () => {
       render(<DisputeForm />);
       await navigateToStep3();
 
       const jpegFile = new File(['img'], 'photo.jpg', { type: 'image/jpeg' });
       const pngFile = new File(['img'], 'screenshot.png', { type: 'image/png' });
+      const webpFile = new File(['img'], 'graphic.webp', { type: 'image/webp' });
       const pdfFile = new File(['pdf'], 'receipt.pdf', { type: 'application/pdf' });
 
       const fileInput = screen.getByTestId('file-input') as HTMLInputElement;
@@ -162,12 +166,16 @@ describe('DisputeForm Multi-Step Flow', () => {
       setFiles(fileInput, [jpegFile]);
       expect(screen.getByText(/photo\.jpg/)).toBeInTheDocument();
 
-      // Upload PNG (appended to existing files)
+      // Upload PNG
       setFiles(fileInput, [jpegFile, pngFile]);
       expect(screen.getByText(/screenshot\.png/)).toBeInTheDocument();
 
+      // Upload WebP
+      setFiles(fileInput, [jpegFile, pngFile, webpFile]);
+      expect(screen.getByText(/graphic\.webp/)).toBeInTheDocument();
+
       // Upload PDF
-      setFiles(fileInput, [jpegFile, pngFile, pdfFile]);
+      setFiles(fileInput, [jpegFile, pngFile, webpFile, pdfFile]);
       expect(screen.getByText(/receipt\.pdf/)).toBeInTheDocument();
     });
 

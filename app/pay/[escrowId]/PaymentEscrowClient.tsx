@@ -1,12 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useMemo, useState, useEffect } from "react";
 import { Escrow } from "@/types";
 import { TrustBadge } from "@/components/payment/TrustBadge";
 import { useWallet } from "@/components/providers/WalletProvider";
 import { connectFreighter, isFreighterInstalled } from "@/lib/stellar/freighter";
 import { patchBuyerContact } from "@/lib/api";
 import { formatUSDC } from "@/utils/currency";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+function TrackingTimelineSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex gap-4">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2 pt-1">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const TrackingTimeline = dynamic(
+  () => import("@/components/escrow/TrackingTimeline"),
+  { loading: () => <TrackingTimelineSkeleton />, ssr: false }
+);
+import { toast } from "sonner";
 
 interface PaymentEscrowClientProps {
   escrow: Escrow;
@@ -49,6 +73,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [contactErrors, setContactErrors] = useState<ContactErrors>({});
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
   const amount = escrow.amount;
   const fee = useMemo(() => Number(((amount * PLATFORM_FEE_PERCENT) / 100).toFixed(2)), [amount]);
@@ -57,6 +82,35 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
 
   const isFunded = escrow.status === "FUNDED";
   const isExpired = escrow.status === "EXPIRED";
+
+  // Countdown logic for expiresAt
+  useEffect(() => {
+    if (!escrow.expiresAt) {
+      setTimeLeft(null);
+      return;
+    }
+    const update = () => {
+      const now = new Date();
+      const expiry = new Date(escrow.expiresAt as string);
+      const diff = expiry.getTime() - now.getTime();
+      if (diff <= 0) {
+        setTimeLeft("Expired");
+        return;
+      }
+      const totalMinutes = Math.floor(diff / 60000);
+      const days = Math.floor(totalMinutes / (24 * 60));
+      const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+      const minutes = totalMinutes % 60;
+      const parts = [];
+      if (days > 0) parts.push(`${days}d`);
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0) parts.push(`${minutes}m`);
+      setTimeLeft(parts.join(' '));
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [escrow.expiresAt]);
 
   const handlePayNow = async () => {
     setError(null);
@@ -88,6 +142,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Unable to trigger wallet signature.";
       setError(message);
+      toast.error(message);
     } finally {
       setIsPaying(false);
     }
@@ -99,6 +154,12 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
         <h1 className="text-3xl font-semibold text-zinc-950 dark:text-zinc-100">Complete Payment</h1>
         <p className="mt-1 text-sm text-zinc-500">Escrow ID: {escrowId}</p>
       </header>
+
+      {timeLeft && !isFunded && !isExpired && (
+        <p aria-live="polite" className="text-sm text-zinc-600 dark:text-zinc-400">
+          Offer valid for {timeLeft}
+        </p>
+      )}
 
       <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">Order Details</h2>
@@ -193,9 +254,17 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
       ) : null}
 
       {isFunded ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          This escrow is already funded.
-        </div>
+        <>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            This escrow is already funded.
+          </div>
+          <div>
+            <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+              Shipment Tracking
+            </h2>
+            <TrackingTimeline currentStage="ORDER_PLACED" />
+          </div>
+        </>
       ) : null}
       {isExpired ? (
         <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">

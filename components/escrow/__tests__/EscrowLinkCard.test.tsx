@@ -1,8 +1,10 @@
 // src/escrow/__test__/EscrowLinkCard.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from "react";
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import EscrowLinkCard from '../EscrowLinkCard';
+const EscrowLinkCardAny = EscrowLinkCard as unknown as React.ComponentType<Record<string, unknown>>;
 
 // Mock clipboard API
 Object.assign(navigator, {
@@ -40,9 +42,9 @@ describe('EscrowLinkCard Component', () => {
 
   describe('Copy to Clipboard Tests (AC #1)', () => {
     test('copy button writes URL to clipboard when clicked', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -52,9 +54,9 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('shows success feedback when copy succeeds', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -65,9 +67,9 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('shows error feedback when copy fails', async () => {
-      (navigator.clipboard.writeText as any).mockRejectedValueOnce(new Error('Clipboard error'));
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Clipboard error'));
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -78,9 +80,9 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('calls onCopySuccess callback when copy succeeds', async () => {
-      (navigator.clipboard.writeText as any).mockResolvedValueOnce(undefined);
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -90,9 +92,9 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('calls onCopyError callback when copy fails', async () => {
-      (navigator.clipboard.writeText as any).mockRejectedValueOnce(new Error('Clipboard error'));
+      vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error('Clipboard error'));
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -105,7 +107,7 @@ describe('EscrowLinkCard Component', () => {
 
   describe('QR Code Tests (AC #2)', () => {
     test('QR code renders with correct URL as value', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const qrCode = screen.getByTestId('qr-code');
       expect(qrCode).toBeInTheDocument();
@@ -113,17 +115,17 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('QR code updates when URL changes', () => {
-      const { rerender } = render(<EscrowLinkCard {...defaultProps} />);
+      const { rerender } = render(<EscrowLinkCardAny {...defaultProps} />);
       
       const newUrl = 'https://trustlink.example.com/escrow/ESC-999-888';
-      rerender(<EscrowLinkCard {...defaultProps} url={newUrl} />);
+      rerender(<EscrowLinkCardAny {...defaultProps} url={newUrl} />);
       
       const qrCode = screen.getByTestId('qr-code');
       expect(qrCode).toHaveAttribute('data-value', newUrl);
     });
 
     test('QR code is not rendered when showQRCode prop is false', () => {
-      render(<EscrowLinkCard {...defaultProps} showQRCode={false} />);
+      render(<EscrowLinkCardAny {...defaultProps} showQRCode={false} />);
       
       expect(screen.queryByTestId('qr-code')).not.toBeInTheDocument();
     });
@@ -131,7 +133,7 @@ describe('EscrowLinkCard Component', () => {
 
   describe('WhatsApp Link Tests (AC #3)', () => {
     test('WhatsApp link is correctly encoded with URL', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const whatsappLink = screen.getByTestId('whatsapp-link');
       
@@ -144,7 +146,7 @@ describe('EscrowLinkCard Component', () => {
 
     test('WhatsApp link includes custom message when provided', () => {
       const customMessage = 'Check out my escrow transaction!';
-      render(<EscrowLinkCard {...defaultProps} whatsappMessage={customMessage} />);
+      render(<EscrowLinkCardAny {...defaultProps} whatsappMessage={customMessage} />);
       
       const whatsappLink = screen.getByTestId('whatsapp-link');
       
@@ -154,7 +156,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('WhatsApp link opens in new tab', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const whatsappLink = screen.getByTestId('whatsapp-link');
       
@@ -163,7 +165,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('WhatsApp button is not rendered when showWhatsApp prop is false', () => {
-      render(<EscrowLinkCard {...defaultProps} showWhatsApp={false} />);
+      render(<EscrowLinkCardAny {...defaultProps} showWhatsApp={false} />);
       
       expect(screen.queryByTestId('whatsapp-link')).not.toBeInTheDocument();
     });
@@ -171,7 +173,7 @@ describe('EscrowLinkCard Component', () => {
 
   describe('Link Content Tests (AC #4)', () => {
     test('link contains correct escrow ID', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       // Check if the escrow ID is displayed
       expect(screen.getByText(/Escrow ID: ESC-123-456/i)).toBeInTheDocument();
@@ -182,7 +184,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('displays the full URL', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       // The URL should be visible in the input
       expect(screen.getByDisplayValue(mockUrl)).toBeInTheDocument();
@@ -198,7 +200,7 @@ describe('EscrowLinkCard Component', () => {
         configurable: true,
       });
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -215,11 +217,11 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('disables copy button while copying', async () => {
-      (navigator.clipboard.writeText as any).mockImplementationOnce(
+      vi.mocked(navigator.clipboard.writeText).mockImplementationOnce(
         () => new Promise(resolve => setTimeout(resolve, 100))
       );
       
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       await userEvent.click(copyButton);
@@ -232,7 +234,7 @@ describe('EscrowLinkCard Component', () => {
     });
 
     test('renders without optional props', () => {
-      render(<EscrowLinkCard escrowId="ESC-123" url={mockUrl} />);
+      render(<EscrowLinkCardAny escrowId="ESC-123" url={mockUrl} />);
       
       expect(screen.getByRole('button', { name: /copy link/i })).toBeInTheDocument();
       expect(screen.getByTestId('qr-code')).toBeInTheDocument();
@@ -241,21 +243,21 @@ describe('EscrowLinkCard Component', () => {
 
   describe('Accessibility Tests', () => {
     test('copy button has accessible label', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const copyButton = screen.getByRole('button', { name: /copy link/i });
       expect(copyButton).toBeInTheDocument();
     });
 
     test('WhatsApp link has accessible label', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const whatsappLink = screen.getByRole('link', { name: /share on whatsapp/i });
       expect(whatsappLink).toBeInTheDocument();
     });
 
     test('QR code has alt text or aria-label', () => {
-      render(<EscrowLinkCard {...defaultProps} />);
+      render(<EscrowLinkCardAny {...defaultProps} />);
       
       const qrCode = screen.getByTestId('qr-code');
       expect(qrCode).toHaveAttribute('aria-label', expect.stringContaining('QR'));

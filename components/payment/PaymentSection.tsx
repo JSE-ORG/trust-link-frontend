@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { useTranslation } from "react-i18next";
 
 async function fetchPaymentData() {
@@ -14,11 +15,24 @@ export default function PaymentSection({ loading = false }: { loading?: boolean 
   const [data, setData] = useState<{ status: string } | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setError(null);
     fetchPaymentData().then(setData).catch(setError);
   }, []);
 
-  if (error) throw error;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  if (error) {
+    return (
+      <FetchErrorState
+        title="We couldn't load payment details"
+        message={getFetchErrorMessage(error, "Failed to load payment details.")}
+        onRetry={loadData}
+      />
+    );
+  }
 
   if (loading || !data) {
     return (

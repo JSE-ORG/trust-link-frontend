@@ -105,6 +105,9 @@ export default function FocusTrap({
 
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
+    // Use a distinct variable name to avoid shadowing the `active` prop,
+    // which would create a Temporal Dead Zone and throw a ReferenceError
+    // before the `const` binding is initialised.
     const focused = document.activeElement;
 
     if (e.shiftKey) {

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import PaymentForm from "../PaymentForm";
 import useWallet from "@/hooks/useWallet";
@@ -23,14 +23,16 @@ vi.mock("sonner", () => ({
 
 vi.mock("@/lib/explorer", () => ({
   getStellarExpertUrl: vi.fn().mockImplementation((hash, network) => {
-    const prefix = network === "mainnet" ? "public" : "testnet";
     return `https://testnet.stellarexpert.io/contract/${hash}`;
+  }),
+  getStellarExpertTxUrl: vi.fn().mockImplementation((hash, network) => {
+    return `https://testnet.stellarexpert.io/tx/${hash}`;
   }),
 }));
 
 vi.mock("@/components/providers/NetworkProvider", () => ({
   useNetwork: vi.fn(() => ({ network: "testnet", isTestnet: true, isMainnet: false, toggleNetwork: vi.fn(), setNetwork: vi.fn() })),
-  NetworkProvider: ({ children }: any) => children,
+  NetworkProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 const defaultProps = {
@@ -47,20 +49,22 @@ const defaultProps = {
 describe("PaymentForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useWallet as any).mockReturnValue({ isConnected: true });
+    (useWallet as any).mockReturnValue({ isConnected: true, status: "connected" });
+    vi.mocked(useWallet).mockReturnValue({ isConnected: true });
   });
 
   it("renders payment summary and shows amount/fee/total correctly", () => {
     render(<PaymentForm {...defaultProps} />);
 
     expect(screen.getByText("Payment Details")).toBeInTheDocument();
-    expect(screen.getByText("XLM 10")).toBeInTheDocument();
-    expect(screen.getByText("XLM 0.5")).toBeInTheDocument();
-    expect(screen.getByText("XLM 10.5")).toBeInTheDocument();
+    expect(screen.getByText("10.00 USDC")).toBeInTheDocument();
+    expect(screen.getByText("0.50 USDC")).toBeInTheDocument();
+    expect(screen.getByText("10.50 USDC")).toBeInTheDocument();
   });
 
   it("is disabled when wallet is disconnected", () => {
-    (useWallet as any).mockReturnValue({ isConnected: false });
+    (useWallet as any).mockReturnValue({ isConnected: false, status: "disconnected" });
+    vi.mocked(useWallet).mockReturnValue({ isConnected: false });
     render(<PaymentForm {...defaultProps} />);
 
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
@@ -69,7 +73,7 @@ describe("PaymentForm", () => {
   });
 
   it("shows loading state and prevents duplicate submissions", async () => {
-    (signTransaction as any).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve("signed_xdr"), 100)));
+    vi.mocked(signTransaction).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve("signed_xdr"), 100)));
 
     render(<PaymentForm {...defaultProps} />);
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });
@@ -83,7 +87,7 @@ describe("PaymentForm", () => {
 
   it("renders success state with tx hash and explorer link", async () => {
     const onPaymentSuccess = vi.fn();
-    (signTransaction as any).mockResolvedValue("signed_xdr");
+    vi.mocked(signTransaction).mockResolvedValue("signed_xdr");
     
     // We override Math.random to make the hash predictable for the test
     const originalRandom = Math.random;
@@ -98,11 +102,7 @@ describe("PaymentForm", () => {
       expect(screen.getByText("Payment successful")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    // The hash generation in PaymentForm.tsx: "3f7a" + Math.random().toString(16).substring(2, 10) + "91bc"
-    // With 0.12345678, Math.random().toString(16) is "0.1f9a222a"
-    // .substring(2, 10) is "1f9a222a"
-    // Result: "3f7a1f9a222a91bc"
-    expect(screen.getByText(/Transaction: 3f7a1f9a222a91bc/)).toBeInTheDocument();
+    expect(screen.getByText(/Transaction: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")
@@ -114,7 +114,7 @@ describe("PaymentForm", () => {
   });
 
   it("shows error state on failure (wallet rejection)", async () => {
-    (signTransaction as any).mockRejectedValue(new Error("User rejected the transaction"));
+    vi.mocked(signTransaction).mockRejectedValue(new Error("User rejected the transaction"));
 
     render(<PaymentForm {...defaultProps} />);
     const button = screen.getByRole("button", { name: /Pay with Freighter/i });

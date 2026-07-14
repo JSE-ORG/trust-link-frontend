@@ -41,12 +41,12 @@ describe("useWallet", () => {
   });
 
   it("connects and populates publicKey", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(true);
-    (freighter.isConnected as any).mockResolvedValue(false);
-    (freighter.connectFreighter as any).mockResolvedValue("GABCDEF1234567890XYZ");
-    (stellarAuth.getChallenge as any).mockResolvedValue("challenge-tx");
-    (freighter.signTransaction as any).mockResolvedValue("signed-transaction");
-    (stellarAuth.verifyChallenge as any).mockResolvedValue("jwt-token");
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue(false);
+    vi.mocked(freighter.connectFreighter).mockResolvedValue("GABCDEF1234567890XYZ");
+    vi.mocked(stellarAuth.getChallenge).mockResolvedValue("challenge-tx");
+    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-transaction");
+    vi.mocked(stellarAuth.verifyChallenge).mockResolvedValue("jwt-token");
 
     render(
       <WalletProvider>
@@ -62,12 +62,12 @@ describe("useWallet", () => {
   });
 
   it("stores token after auth flow", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(true);
-    (freighter.isConnected as any).mockResolvedValue(false);
-    (freighter.connectFreighter as any).mockResolvedValue("GXYZ1234567890ABCD");
-    (stellarAuth.getChallenge as any).mockResolvedValue("challenge-transaction");
-    (freighter.signTransaction as any).mockResolvedValue("signed-challenge");
-    (stellarAuth.verifyChallenge as any).mockResolvedValue("sep10-jwt");
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue(false);
+    vi.mocked(freighter.connectFreighter).mockResolvedValue("GXYZ1234567890ABCD");
+    vi.mocked(stellarAuth.getChallenge).mockResolvedValue("challenge-transaction");
+    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-challenge");
+    vi.mocked(stellarAuth.verifyChallenge).mockResolvedValue("sep10-jwt");
 
     render(
       <WalletProvider>
@@ -82,8 +82,8 @@ describe("useWallet", () => {
   });
 
   it("disconnects and clears publicKey and token", async () => {
-    (freighter.isFreighterInstalled as any).mockResolvedValue(true);
-    (freighter.isConnected as any).mockResolvedValue(true);
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue(true);
     
     window.localStorage.setItem("wallet.token", "existing-jwt");
     window.localStorage.setItem("wallet.publicKey", "GDISCONNECT1234");

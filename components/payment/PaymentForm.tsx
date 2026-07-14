@@ -7,6 +7,7 @@ import { getStellarExpertTxUrl } from "@/lib/explorer";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useNetwork } from "@/components/providers/NetworkProvider";
+import { formatUSDC } from "@/utils/currency";
 
 export interface PaymentFormProps {
   escrowId: string;
@@ -47,7 +48,7 @@ export default function PaymentForm({
   status,
   onPaymentSuccess,
 }: PaymentFormProps) {
-  const { status: walletStatus } = useWallet();
+  const { isConnected } = useWallet();
   const { network } = useNetwork();
   const [formState, setFormState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -168,6 +169,12 @@ export default function PaymentForm({
           <button
             type="button"
             onClick={handlePayment}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handlePayment();
+              }
+            }}
             disabled={isDisconnected || isSubmitting}
             aria-disabled={isDisconnected || isSubmitting}
             className="flex w-full items-center justify-center rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"

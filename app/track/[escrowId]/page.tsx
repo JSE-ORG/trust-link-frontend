@@ -1,11 +1,30 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getEscrow } from "@/lib/api";
 import { formatUSDC } from "@/utils/currency";
 
 interface TrackPageProps {
   params: Promise<{ escrowId: string }>;
+}
+
+export async function generateMetadata({ params }: TrackPageProps): Promise<Metadata> {
+  const { escrowId } = await params;
+  try {
+    const escrow = await getEscrow(escrowId);
+    return {
+      title: `Track Order — ${escrow.item} | TrustLink`,
+      description: `Real-time tracking for your ${escrow.item} order. Monitor escrow status, shipment, and payment release on the Stellar network.`,
+    };
+  } catch {
+    return {
+      title: "Track Order | TrustLink",
+      description: "Track your escrow order and monitor shipment status on the Stellar network.",
+    };
+  }
 }
 
 export default async function TrackPage({ params }: TrackPageProps) {
@@ -76,7 +95,29 @@ export default async function TrackPage({ params }: TrackPageProps) {
 
         {/* Tracking Timeline */}
         <ErrorBoundary>
-          <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          <Suspense
+            fallback={
+              /* Timeline skeleton — each stage row is ~56px tall.
+                 This reserves the correct vertical space so the page height
+                 never jumps when the real timeline mounts (CLS = 0). */
+              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                <Skeleton className="mb-6 h-5 w-1/3" />
+                <div className="space-y-5">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            }
+          >
+            <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     </main>

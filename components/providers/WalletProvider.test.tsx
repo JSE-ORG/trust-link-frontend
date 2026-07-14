@@ -6,7 +6,7 @@ import * as freighter from "@/lib/stellar/freighter";
 import * as stellar from "@/lib/stellar";
 
 vi.mock("@/lib/stellar/freighter", () => ({
-  getPublicKey: vi.fn(),
+  getAddress: vi.fn(),
   signTransaction: vi.fn(),
   isConnected: vi.fn(),
   isFreighterInstalled: vi.fn(),
@@ -36,7 +36,11 @@ function TestComponent() {
 }
 
 function renderWithProviders(ui: React.ReactElement) {
-  return render(<NetworkProvider><WalletProvider>{ui}</WalletProvider></NetworkProvider>);
+  return render(
+    <NetworkProvider>
+      <WalletProvider>{ui}</WalletProvider>
+    </NetworkProvider>
+  );
 }
 
 describe("WalletProvider SEP-10 Flow", () => {
@@ -51,7 +55,7 @@ describe("WalletProvider SEP-10 Flow", () => {
     const mockToken = "jwt-token";
 
     vi.mocked(freighter.isConnected).mockResolvedValue(true);
-    vi.mocked(freighter.getPublicKey).mockResolvedValue(mockPubKey);
+    vi.mocked(freighter.getAddress!).mockResolvedValue({ address: mockPubKey });
     vi.mocked(stellar.getChallenge).mockResolvedValue(mockChallenge);
     vi.mocked(freighter.signTransaction).mockResolvedValue(mockSignedXdr);
     vi.mocked(stellar.verifyChallenge).mockResolvedValue(mockToken);
@@ -66,14 +70,19 @@ describe("WalletProvider SEP-10 Flow", () => {
     expect(screen.getByTestId("publicKey")).toHaveTextContent(mockPubKey);
     expect(screen.getByTestId("token")).toHaveTextContent(mockToken);
     expect(stellar.getChallenge).toHaveBeenCalledWith(mockPubKey);
-    expect(freighter.signTransaction).toHaveBeenCalledWith(mockChallenge, expect.stringMatching(/TESTNET|PUBLIC/));
+    expect(freighter.signTransaction).toHaveBeenCalledWith(
+      mockChallenge,
+      expect.stringMatching(/TESTNET|PUBLIC/)
+    );
     expect(stellar.verifyChallenge).toHaveBeenCalledWith(mockSignedXdr);
   });
 
   it("handles errors during authentication", async () => {
     vi.mocked(freighter.isConnected).mockResolvedValue(true);
-    vi.mocked(freighter.getPublicKey).mockResolvedValue("GABC123");
-    vi.mocked(stellar.getChallenge).mockRejectedValue(new Error("Challenge failed"));
+    vi.mocked(freighter.getAddress!).mockResolvedValue({ address: "GABC123" });
+    vi.mocked(stellar.getChallenge).mockRejectedValue(
+      new Error("Challenge failed")
+    );
 
     renderWithProviders(<TestComponent />);
 

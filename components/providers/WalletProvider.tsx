@@ -26,7 +26,14 @@ interface WalletContextType {
   disconnect: () => void;
   signTransaction: (xdr: string, network?: string) => Promise<string>;
   isLoading: boolean;
+  walletReady: boolean;
   error: string | null;
+}
+
+interface JwtPayload {
+  exp: number;
+  sub?: string;
+  iat?: number;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -40,6 +47,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const jwt = token;
   const [isInstalled, setIsInstalled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [walletReady, setWalletReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { network } = useNetwork();
 
@@ -55,21 +63,25 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       return jwt;
     } catch (err: unknown) {
       console.error("Authentication failed:", err);
+      Sentry.captureException(err);
       toast.error("Authentication failed");
       throw err;
     }
   }, [network]);
 
-  // Check if Freighter is installed and restore session
   useEffect(() => {
+    let isMounted = true;
+
     async function init() {
       const installed = await isFreighterInstalled();
+      if (!isMounted) return;
       setIsInstalled(installed);
       
       const storedPublicKey = typeof window !== "undefined" ? localStorage.getItem(PUBLIC_KEY_STORAGE_KEY) : null;
       if (storedPublicKey && installed) {
         try {
           const connected = await freighterIsConnected();
+          if (!isMounted) return;
           if (connected) {
             setPublicKey(storedPublicKey);
             Sentry.setUser({ id: storedPublicKey });
@@ -81,12 +93,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (e) {
-          console.error("Failed to restore session:", e);
+          Sentry.captureException(e);
         }
       }
+      if (!isMounted) return;
       setIsLoading(false);
+      setWalletReady(true);
     }
     init();
+    return () => { isMounted = false; };
   }, [authenticate]);
 
   const connect = useCallback(async () => {
@@ -142,17 +157,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [stellarNetworkLabel]);
 
-  // Auto-refresh token if it expires
   useEffect(() => {
     if (!token || !publicKey) return;
 
     try {
-      const decoded = jwtDecode<{ exp: number }>(token);
+      const decoded = jwtDecode<JwtPayload>(token);
       const expirationTime = decoded.exp * 1000;
       const now = Date.now();
       const timeLeft = expirationTime - now;
 
       if (timeLeft <= 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         authenticate(publicKey);
         return;
       }
@@ -163,7 +178,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeout);
     } catch (err) {
-      console.error("Token decode failed:", err);
+      Sentry.captureException(err);
       setToken(null);
     }
   }, [token, publicKey, authenticate]);
@@ -189,6 +204,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         disconnect,
         signTransaction,
         isLoading,
+        walletReady,
         error,
       }}
     >

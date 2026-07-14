@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useEscrow } from "@/hooks/useEscrow";
 import { ConfirmDeliveryButton } from "@/components/escrow/ConfirmDeliveryButton";
 import { track } from "@/lib/analytics";
+import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 
 interface TrackingStage {
   id: string;
@@ -78,7 +79,19 @@ export default function TrackingTimeline({
     window.location.href = `/dispute/${escrowId}`;
   };
 
-  if (fetchError || localError) throw fetchError || localError;
+  if (fetchError || localError) {
+    const activeError = fetchError || localError;
+    return (
+      <FetchErrorState
+        title="We couldn't load tracking status"
+        message={getFetchErrorMessage(activeError, "Failed to load tracking status.")}
+        onRetry={() => {
+          setLocalError(null);
+          void refetch();
+        }}
+      />
+    );
+  }
 
   if (loading || (!escrow && isLoading)) {
     return (

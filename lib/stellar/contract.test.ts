@@ -13,6 +13,7 @@ import {
   raiseDispute,
 } from "./contract";
 import * as freighter from "./freighter";
+import { rpc } from "@stellar/stellar-sdk";
 
 vi.mock("./freighter", () => ({
   signTransaction: vi.fn(),
@@ -52,6 +53,13 @@ vi.mock("@stellar/stellar-sdk", () => {
       },
     },
     rpc: {
+      Server: vi.fn().mockImplementation(() => ({
+        getAccount: vi.fn().mockResolvedValue({ accountId: "GTEST", sequenceNumber: "0" }),
+        sendTransaction: vi.fn(),
+        getTransaction: vi.fn(),
+      })),
+    },
+    SorobanRpc: {
       Server: vi.fn().mockImplementation(() => ({
         getAccount: vi.fn().mockResolvedValue({ accountId: "GTEST", sequenceNumber: "0" }),
         sendTransaction: vi.fn(),
@@ -170,9 +178,9 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("returns false for non-string input", () => {
-      expect(isValidContractId(null as any)).toBe(false);
-      expect(isValidContractId(undefined as any)).toBe(false);
-      expect(isValidContractId(123 as any)).toBe(false);
+      expect(isValidContractId(null as unknown as string)).toBe(false);
+      expect(isValidContractId(undefined as unknown as string)).toBe(false);
+      expect(isValidContractId(123 as unknown as string)).toBe(false);
     });
 
     it("returns false when not starting with C", () => {
@@ -256,7 +264,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-string method", () => {
-      const result = validateContractMethodCall(null as any, []);
+      const result = validateContractMethodCall(null as unknown as string, []);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("non-empty string");
     });
@@ -268,7 +276,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-array arguments", () => {
-      const result = validateContractMethodCall("transfer", "not-an-array" as any);
+      const result = validateContractMethodCall("transfer", "not-an-array" as unknown as unknown[]);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("Arguments must be an array");
     });
@@ -319,7 +327,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("throws error for null WASM buffer", () => {
-      expect(() => buildContractDeployment(null as any, validSourceAccount, "TESTNET")).toThrow(
+      expect(() => buildContractDeployment(null as unknown as Buffer, validSourceAccount, "TESTNET")).toThrow(
         "WASM buffer cannot be empty"
       );
     });
@@ -375,12 +383,14 @@ describe("lib/stellar/contract.ts", () => {
     const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
 
     it("fundEscrow returns hash and result XDR on success", async () => {
-      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
+      const server = rpc.Server;
       const mockSendTransaction = vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-1", resultXdr: "result-xdr" });
-      server.mockImplementationOnce(() => ({
-        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
-        sendTransaction: mockSendTransaction,
-      }));
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: mockSendTransaction,
+        } as unknown as rpc.Server;
+      });
 
       const result = await fundEscrow(validContractId, ["arg"], validSourceAccount, "TESTNET");
 
@@ -389,33 +399,39 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("propagates TxFailed errors", async () => {
-      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
-      server.mockImplementationOnce(() => ({
-        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
-        sendTransaction: vi.fn().mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: bad" }),
-      }));
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: bad" }),
+        } as unknown as rpc.Server;
+      });
 
       await expect(fundEscrow(validContractId, [], validSourceAccount, "TESTNET"))
         .rejects.toThrow("TxFailed");
     });
 
     it("propagates TxExpired errors", async () => {
-      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
-      server.mockImplementationOnce(() => ({
-        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
-        sendTransaction: vi.fn().mockResolvedValue({ status: "ERROR", error: "TxExpired: expired" }),
-      }));
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({ status: "ERROR", error: "TxExpired: expired" }),
+        } as unknown as rpc.Server;
+      });
 
       await expect(confirmDelivery(validContractId, [], validSourceAccount, "TESTNET"))
         .rejects.toThrow("TxExpired");
     });
 
     it("raises dispute through its contract method", async () => {
-      const server = require("@stellar/stellar-sdk").SorobanRpc.Server;
-      server.mockImplementationOnce(() => ({
-        getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
-        sendTransaction: vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-2", resultXdr: "result-xdr-2" }),
-      }));
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({ status: "SUCCESS", hash: "hash-2", resultXdr: "result-xdr-2" }),
+        } as unknown as rpc.Server;
+      });
 
       const result = await raiseDispute(validContractId, ["reason"], validSourceAccount, "TESTNET");
 

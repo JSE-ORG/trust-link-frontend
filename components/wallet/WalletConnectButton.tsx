@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import useWallet from "@/hooks/useWallet";
 import { truncateAddress } from "@/utils/truncateAddress";
 import { ChevronDown, LogOut, Wallet, ExternalLink } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function WalletConnectButton() {
-  const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, error } = useWallet();
+  const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, walletReady, error } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +33,10 @@ export default function WalletConnectButton() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  if (!walletReady) {
+    return <Skeleton className="h-10 w-40 rounded-full" aria-hidden />;
+  }
+
   if (!isInstalled) {
     return (
       <a
@@ -47,15 +52,18 @@ export default function WalletConnectButton() {
   }
 
   if (!isConnected) {
+    if (isLoading) {
+      return <Skeleton className="h-11 w-40 rounded-full" aria-hidden />;
+    }
+
     return (
       <button
         type="button"
         onClick={connect}
-        disabled={isLoading}
-        className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900"
       >
         <Wallet size={18} />
-        {isLoading ? "Connecting..." : "Connect Wallet"}
+        Connect Wallet
       </button>
     );
   }

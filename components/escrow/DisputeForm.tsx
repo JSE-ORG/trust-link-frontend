@@ -21,7 +21,7 @@ interface DisputeFormData {
 interface DisputeFormProps {
   onSubmit?: (data: DisputeFormData) => Promise<void>;
   apiEndpoint?: string;
-  onSuccess?: (response: unknown) => void;
+  onSuccess?: (response: Record<string, unknown>) => void;
   onError?: (error: Error) => void;
 }
 
@@ -152,14 +152,25 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
 
   // File upload handler
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      return validTypes.includes(file.type) && file.size <= maxSize;
-    });
-    
-    updateField('files', [...formData.files, ...validFiles]);
+    const selectedFiles = Array.from(e.target.files || []);
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const rejectedByType = selectedFiles.filter(file => !allowedTypes.includes(file.type));
+    const rejectedBySize = selectedFiles.filter(file => file.size > maxSize);
+
+    if (rejectedByType.length > 0) {
+      setErrors(prev => ({ ...prev, files: "Please upload an image (JPG, PNG, WebP) or PDF." }));
+      return;
+    }
+
+    if (rejectedBySize.length > 0) {
+      setErrors(prev => ({ ...prev, files: "Each file must be 10 MB or smaller." }));
+      return;
+    }
+
+    setErrors(prev => ({ ...prev, files: undefined }));
+    updateField('files', [...formData.files, ...selectedFiles]);
   }, [formData.files, updateField]);
 
   const removeFile = useCallback((index: number) => {
@@ -215,7 +226,7 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
       
       setSubmitStatus('success');
       setSubmitMessage('Your dispute has been submitted successfully!');
-    } catch (error) {
+    } catch (error: unknown) {
       setSubmitStatus('error');
       setSubmitMessage(error instanceof Error ? error.message : 'Failed to submit dispute');
       if (onError && error instanceof Error) {
@@ -378,14 +389,14 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                 id="files"
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/jpg,application/pdf"
+                accept="image/jpeg,image/png,image/jpg,image/webp,application/pdf"
                 onChange={handleFileUpload}
                 aria-label="upload files"
                 aria-invalid={!!errors.files}
                 aria-describedby={errors.files ? "files-error" : "files-hint"}
                 data-testid="file-input"
               />
-              <small id="files-hint">Accepted formats: JPEG, PNG, PDF (Max 5MB each)</small>
+              <small id="files-hint">Accepted formats: JPEG, PNG, WebP, PDF (Max 10MB each)</small>
             </div>
 
             {formData.files.length > 0 && (
@@ -398,6 +409,12 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            removeFile(index);
+                          }
+                        }}
                         aria-label={`Delete ${file.name}`}
                         data-testid={`delete-file-${index}`}
                       >
@@ -475,9 +492,15 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
           <h2>✓ Dispute Submitted Successfully!</h2>
           <p>{submitMessage}</p>
           <p>We will review your dispute and get back to you within 3-5 business days.</p>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={resetForm}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                resetForm();
+              }
+            }}
             data-testid="new-dispute-button"
           >
             Submit Another Dispute
@@ -494,9 +517,15 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
         <div className="error-message">
           <h2>✗ Submission Failed</h2>
           <p>{submitMessage}</p>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => setSubmitStatus('idle')}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSubmitStatus('idle');
+              }
+            }}
             data-testid="try-again-button"
           >
             Try Again
@@ -534,6 +563,12 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
             <button
               type="button"
               onClick={handleBack}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleBack();
+                }
+              }}
               disabled={isSubmitting}
               data-testid="back-button"
             >
@@ -545,6 +580,12 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
             <button
               type="button"
               onClick={handleNext}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNext();
+                }
+              }}
               disabled={isSubmitting}
               data-testid="next-button"
             >
@@ -554,6 +595,12 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
             <button
               type="button"
               onClick={handleSubmit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
               disabled={isSubmitting}
               data-testid="submit-button"
             >

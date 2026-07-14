@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
   Contract,
-  Keypair,
   TransactionBuilder,
   Networks,
   Operation,
@@ -22,7 +22,7 @@ import { signTransaction } from "./freighter";
  * @deprecated This is a simulated function for testing purposes
  * @example
  * const txHash = await submitPayment("100", "GXXXXXX...");
- * console.log("Transaction submitted:", txHash);
+ * // Use txHash for transaction tracking or UI display
  */
 export async function submitPayment(amount: string, destination: string) {
   // In a real implementation, this would involve building a transaction
@@ -39,10 +39,21 @@ export async function submitPayment(amount: string, destination: string) {
   return "b2d8e9f...a1c3b5d7";
 }
 
+export type ContractArg =
+  | xdr.ScVal
+  | string
+  | number
+  | boolean
+  | bigint
+  | Buffer
+  | Uint8Array
+  | { [key: string]: ContractArg }
+  | ContractArg[];
+
 export interface ContractCallOptions {
   contractId: string;
   method: string;
-  args: any[];
+  args: ContractArg[];
   sourceAccount: string;
   network: "TESTNET" | "PUBLIC";
   fee?: string;
@@ -55,7 +66,7 @@ export interface ContractDeployResult {
 
 export interface ContractInvocationResult {
   success: boolean;
-  result?: unknown;
+  result?: xdr.ScVal;
   error?: string;
   transactionHash?: string;
 }
@@ -68,11 +79,26 @@ export interface ContractTransactionResult {
 export interface SorobanContractCallOptions {
   contractId: string;
   method: string;
-  args?: any[];
+  args?: ContractArg[];
   sourceAccount: string;
   network?: "TESTNET" | "PUBLIC";
   rpcUrl?: string;
   fee?: string;
+}
+
+type ContractErrorResponse = {
+  message?: unknown;
+  type?: unknown;
+  details?: unknown;
+};
+
+type ContractResultResponse<TResult> = {
+  result?: TResult;
+  value?: TResult;
+};
+
+function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function getNetworkPassphrase(network: "TESTNET" | "PUBLIC") {
@@ -144,8 +170,9 @@ async function invokeSorobanContract(
       .build();
 
     const signedXdr = await signTransaction(tx.toXDR(), networkPassphrase);
-    const txEnvelope = xdr.TransactionEnvelope.fromXDR(signedXdr, "base64");
-    const response = await server.sendTransaction(txEnvelope as any);
+    const response = await server.sendTransaction(
+      TransactionBuilder.fromXDR(signedXdr, networkPassphrase)
+    );
 
     if ((response as any)?.status === "ERROR" || (response as any)?.status === "FAILED") {
       throw toTxError((response as any)?.errorResultXdr || (response as any)?.error, "Transaction failed");
@@ -173,7 +200,7 @@ async function invokeSorobanContract(
 
 export async function fundEscrow(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -188,7 +215,7 @@ export async function fundEscrow(
 
 export async function confirmDelivery(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -203,7 +230,7 @@ export async function confirmDelivery(
 
 export async function raiseDispute(
   contractId: string,
-  args: any[],
+  args: ContractArg[],
   sourceAccount: string,
   network: "TESTNET" | "PUBLIC" = "TESTNET"
 ): Promise<ContractTransactionResult> {
@@ -275,7 +302,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
   })
     .addOperation(
       Operation.invokeHostFunction({
-        func: contract.call(method, ...args) as any,
+        func: contract.call(method, ...(args as unknown as xdr.ScVal[])) as any,
       })
     )
     .setTimeout(30)
@@ -290,7 +317,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
  * @returns {boolean} True if valid, false otherwise
  * @example
  * if (isValidContractId("CXXXXXX...")) {
- *   console.log("Valid contract ID");
+ *   buildContractInvocation({ contractId: "CXXXXXX...", ... });
  * }
  */
 export function isValidContractId(contractId: string): boolean {
@@ -299,7 +326,7 @@ export function isValidContractId(contractId: string): boolean {
 
 /**
  * Parse contract error response
- * @param {any} error - The error from contract invocation
+ * @param {unknown} error - The error from contract invocation
  * @returns {string} Formatted error message
  * @example
  * try {
@@ -314,14 +341,18 @@ export function parseContractError(error: unknown): string {
     return error;
   }
 
-  if (error && typeof error === "object") {
-    const obj = error as Record<string, unknown>;
-    if (typeof obj.message === "string") {
-      return obj.message;
-    }
-    if (obj.type === "ContractError") {
-      return `Contract Error: ${String(obj.details ?? "Unknown error")}`;
-    }
+  if (!isRecord(error)) {
+    return "An unknown error occurred";
+  }
+
+  const contractError = error as ContractErrorResponse;
+
+  if (contractError.message) {
+    return String(contractError.message);
+  }
+
+  if (contractError.type === "ContractError") {
+    return `Contract Error: ${String(contractError.details ?? "Unknown error")}`;
   }
 
   return "An unknown error occurred";
@@ -329,29 +360,40 @@ export function parseContractError(error: unknown): string {
 
 /**
  * Extract result from contract response
- * @param {any} response - The contract response
- * @returns {any} Parsed result or null
+ * @param {unknown} response - The contract response
+ * @returns Parsed result or null
+ * @param {ContractInvocationResult} response - The contract response
+ * @returns {xdr.ScVal | null} Parsed result or null
  * @example
  * const response = await invokeContract();
  * const result = parseContractResult(response);
- * console.log("Contract returned:", result);
+ * if (result) {
+ *   // Process contract return value
+ * }
  */
-export function parseContractResult(response: unknown): unknown {
-  if (!response || typeof response !== "object") {
-    return response ?? null;
+export function parseContractResult<TResult = unknown>(
+  response: ContractResultResponse<TResult> | TResult | null | undefined
+): TResult | null {
+  if (!response) {
+    return null;
   }
 
-  const obj = response as Record<string, unknown>;
-
-  if (obj.result !== undefined) {
-    return obj.result;
+  if (!isRecord(response)) {
+    return response;
   }
 
-  if (obj.value !== undefined) {
-    return obj.value;
+  const contractResponse = response as ContractResultResponse<TResult>;
+
+  // Handle different response formats
+  if (contractResponse.result !== undefined) {
+    return contractResponse.result;
   }
 
-  return response;
+  if (contractResponse.value !== undefined) {
+    return contractResponse.value;
+  }
+
+  return response as TResult;
 }
 
 /**
@@ -367,7 +409,7 @@ export function parseContractResult(response: unknown): unknown {
  */
 export function validateContractMethodCall(
   method: string,
-  args: any[]
+  args: ContractArg[]
 ): { valid: boolean; error?: string } {
   if (!method || typeof method !== "string") {
     return { valid: false, error: "Method name must be a non-empty string" };
@@ -440,7 +482,7 @@ export function buildContractDeployment(
  * @example
  * const response = await invokeContract();
  * if (isContractSuccess(response)) {
- *   console.log("Contract executed successfully");
+ *   // Handle successful contract execution
  * }
  */
 export function isContractSuccess(response: unknown): boolean {

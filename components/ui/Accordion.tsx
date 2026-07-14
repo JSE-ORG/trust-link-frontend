@@ -34,7 +34,7 @@ export function Accordion({ items, className }: AccordionProps) {
               type="button"
               onClick={() => toggle(index)}
               aria-expanded={isOpen}
-              className="flex w-full items-center justify-between p-4 text-left text-sm font-medium text-zinc-900 dark:text-zinc-100"
+              className="flex w-full items-center justify-between p-4 text-left text-sm font-medium text-zinc-900 dark:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300 rounded-xl"
             >
               <span>{item.question}</span>
               <ChevronDown

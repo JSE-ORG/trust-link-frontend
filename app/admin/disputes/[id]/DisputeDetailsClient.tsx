@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Dispute } from "@/types";
 import { resolveDispute } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useWallet } from "@/components/providers/WalletProvider";
 import { ExternalLink, CheckCircle, XCircle, AlertCircle, Calendar, Package, DollarSign, User } from "lucide-react";
 import { formatUSDC } from "@/utils/currency";
@@ -28,8 +29,7 @@ export function DisputeDetailsClient({ dispute }: DisputeDetailsClientProps) {
       router.push("/admin/disputes");
       router.refresh();
     } catch (error) {
-      console.error("Failed to resolve dispute:", error);
-      alert("Failed to resolve dispute. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to resolve dispute. Please try again.");
     } finally {
       setIsResolving(false);
       setShowConfirm(null);

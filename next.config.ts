@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-// Validated at config-load time so `next build` and `next dev` fail immediately
-// with a clear message instead of surfacing a cryptic runtime undefined later.
 const REQUIRED_ENV_VARS = [
   "NEXT_PUBLIC_API_URL",
   "NEXT_PUBLIC_CONTRACT_ID",
@@ -13,25 +11,30 @@ const REQUIRED_ENV_VARS = [
 for (const key of REQUIRED_ENV_VARS) {
   if (!process.env[key]) {
     throw new Error(
-      `\n\nMissing required environment variable: ${key}\n` +
-        `Add it to .env.local or your deployment environment before building.\n`
+      `
+
+Missing required environment variable: ${key}
+` +
+        `Add it to .env.local or your deployment environment before building.
+`
     );
   }
 }
 
 const nextConfig: NextConfig = {
-  // swcMinify is always-on in Next.js 15+ and has no config toggle.
   compress: true,
 
   images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
     remotePatterns: [
-      // Stellar Expert contract explorer (mainnet)
       {
         protocol: "https",
         hostname: "stellarexpert.io",
         pathname: "/**",
       },
-      // Stellar Expert contract explorer (testnet)
       {
         protocol: "https",
         hostname: "testnet.stellarexpert.io",
@@ -42,13 +45,11 @@ const nextConfig: NextConfig = {
         hostname: "*.s3.amazonaws.com",
         pathname: "/**",
       },
-
       {
         protocol: "https",
         hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
-      // Common image hosting services for escrow item images
       {
         protocol: "https",
         hostname: "images.unsplash.com",
@@ -89,12 +90,6 @@ const nextConfig: NextConfig = {
     const preconnectTargets = [sorobanRpcUrl, apiUrl].filter(Boolean);
     const linkHeaderValue = preconnectTargets.map((url) => `<${url}>; rel=preconnect`).join(", ");
 
-    // ── Content-Security-Policy (issue #111) ─────────────────────────────────
-    // Restrictive policy that still permits the origins the app legitimately
-    // needs: the Stellar Soroban RPC, the backend API, Sentry ingestion, and the
-    // image hosts already whitelisted under images.remotePatterns. Next.js needs
-    // 'unsafe-inline' for its injected styles and (in dev) 'unsafe-eval' for the
-    // React Refresh runtime, so eval is only enabled outside production.
     const isProd = process.env.NODE_ENV === "production";
     const connectSrc = [
       "'self'",
@@ -121,6 +116,32 @@ const nextConfig: NextConfig = {
     ].join("; ");
 
     return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, must-revalidate" },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/:path*.(jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)",
+        locale: false,
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/:path*.(json|pdf|txt|xml|webmanifest)",
+        locale: false,
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
+      },
       {
         source: "/(.*)",
         headers: [
