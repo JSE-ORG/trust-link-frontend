@@ -142,6 +142,7 @@ export default function PaymentForm({
   protocolFee,
   total,
   status,
+  escrowContractId,
   onPaymentSuccess,
   previewFormState,
   previewErrorMessage,

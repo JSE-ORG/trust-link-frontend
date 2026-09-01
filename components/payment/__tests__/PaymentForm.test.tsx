@@ -1,13 +1,18 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import React from "react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, type Mock,vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import useWallet from "@/hooks/useWallet";
 import { patchBuyerContact } from "@/lib/api";
 import { signTransaction } from "@/lib/stellar/freighter";
 import { EscrowStatusConst } from "@/types";
 
-import PaymentForm from "../PaymentForm";
+type PaymentFormComponent = React.ComponentType<
+  Omit<React.ComponentProps<typeof import("../PaymentForm").default>, never>
+>;
+
+let PaymentForm: PaymentFormComponent;
 
 // Mock dependencies
 vi.mock("@/hooks/useWallet", () => ({
@@ -24,7 +29,14 @@ vi.mock("@/lib/api", () => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string) =>
+      ({
+        "payment.title": "Payment Details",
+        "payment.payNow": "Pay with Freighter",
+        "payment.submitting": "Processing payment...",
+        "payment.confirmationTitle": "Payment Confirmed!",
+        "payment.txHash": "Transaction Hash",
+      })[key] ?? key,
   }),
 }));
 
@@ -59,6 +71,18 @@ const defaultProps = {
   escrowContractId: "C123...",
   status: EscrowStatusConst.PENDING,
 };
+
+beforeAll(async () => {
+  vi.resetModules();
+  vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "true");
+  const mod = await import("../PaymentForm");
+  PaymentForm = mod.default;
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
 
 describe("PaymentForm", () => {
   beforeEach(() => {
@@ -164,10 +188,10 @@ describe("PaymentForm", () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(screen.getByText("payment.confirmationTitle")).toBeInTheDocument();
+      expect(screen.getByText("Payment Confirmed!")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    expect(screen.getByText(/payment.txHash: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
+    expect(screen.getByText(/Transaction Hash: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")

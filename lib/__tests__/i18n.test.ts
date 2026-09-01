@@ -6,7 +6,7 @@ describe("i18n Configuration", () => {
   it("initializes with default locale 'en' and supports 'fr'", async () => {
     expect(i18n.isInitialized).toBe(true);
     expect(i18n.languages).toContain("en");
-    expect(i18n.languages).toContain("fr");
+    expect(i18n.t("payment.title", { lng: "fr" })).toBe("Paiement");
   });
 
   it("returns correct English translations for payment flow", () => {
