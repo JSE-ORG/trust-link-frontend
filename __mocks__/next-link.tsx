@@ -17,6 +17,6 @@ interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   legacyBehavior?: boolean;
 }
 
-export default function Link({ href, children, prefetch: _prefetch, replace: _replace, scroll: _scroll, shallow: _shallow, passHref: _passHref, legacyBehavior: _legacyBehavior, ...rest }: LinkProps) {
+export default function Link({ href, children, ...rest }: LinkProps) {
   return React.createElement("a", { href, ...rest }, children);
 }

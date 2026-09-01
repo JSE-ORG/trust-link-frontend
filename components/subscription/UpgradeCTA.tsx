@@ -2,7 +2,7 @@
 
 import { Sparkles, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
@@ -22,16 +22,12 @@ function persistDismiss() {
 export default function UpgradeCTA() {
   const { t } = useTranslation();
   const { isPro, isLoading } = useSubscription();
-  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && !isPro && !isDismissed()) {
-      setVisible(true);
-    }
-  }, [isPro, isLoading]);
+  const visible = !isLoading && !isPro && !isDismissed() && !dismissed;
 
   const dismiss = useCallback(() => {
-    setVisible(false);
+    setDismissed(true);
     persistDismiss();
   }, []);
 

@@ -78,7 +78,7 @@ describe("api client", () => {
     await client.getEscrow("e1");
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
-    expect((init.headers as Headers).get("Authorization").toBe("Bearer jht-123");
+    expect((init.headers as Headers).get("Authorization")).toBe("Bearer jht-123");
   });
 
   it("returns typed JSON and surfaces ApiError on failure", async () => {

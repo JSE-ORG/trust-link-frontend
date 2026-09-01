@@ -5,7 +5,6 @@ import {
   type MockDispute,
   type MockEscrow,
   setupNetworkMocks,
-  setupNextOnFetch,
 } from "./helpers/mock-api";
 
 const TEST_ESCROW_ID = "test_escrow_dispute_001";

@@ -1,17 +1,9 @@
-import React, { useMemo } from "react";
-
-interface EscrowCreateFormProps {
-  value: string;
-}
 import { type FormEvent, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import ShareModal from "@/components/escrow/ShareModal";
 import { FormField } from "@/components/ui/FormField";
 import { QrCode } from "@/components/ui/QrCode";
-import { track } from "@/lib/analytics";
 import { createEscrow, type EscrowInput } from "@/lib/api";
-import { renderMarkdown } from "@/lib/markdown";
 import {
   EscrowCreateSchema,
   EscrowCreateValues,
@@ -94,30 +86,76 @@ export default function EscrowCreateForm() {
         throw new Error("The escrow service returned an invalid URL.");
       }
 
-// Mocking buildQrMatrix utility for demonstration
-const buildQrMatrix = (val: string) => {
-  // Heavy QR matrix computation simulation
-  return val ? Array(21).fill(Array(21).fill(0)) : [];
-};
+      setResultUrl(response.url);
+      setIsModalOpen(true);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Something went wrong."
+      );
+    } finally {
+      setIsSubmitting(false);
+      submittingRef.current = false;
+    }
+  };
 
-export const EscrowCreateForm: React.FC<EscrowCreateFormProps> = ({ value }) => {
-  // Memoize QR code matrix generation to prevent recalculating on every render
-  const qrMatrix = useMemo(() => {
-    return buildQrMatrix(value);
-  }, [value]);
+  const downloadQR = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "trustlink-qr.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <div className="border p-2 bg-white rounded-lg shadow-sm">
-        {/* Render QR Matrix using memoized value */}
-        <div className="grid grid-cols-21 gap-0.5">
-          {qrMatrix.length > 0 ? (
-            <p className="text-sm text-gray-600">QR Matrix loaded ({qrMatrix.length}x{qrMatrix.length})</p>
-          ) : (
-            <p className="text-sm text-gray-400">No value provided</p>
+    <div className="mx-auto max-w-2xl p-6">
+      <form onSubmit={onSubmit} className="space-y-6">
+        <FormField label="Item name" id="itemName">
+          <input
+            id="itemName"
+            name="itemName"
+            type="text"
+            value={values.itemName}
+            onChange={(e) => updateField("itemName", e.target.value)}
+            disabled={isSubmitting}
+            placeholder="e.g. Handmade leather wallet"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+          />
+          {errors.itemName && (
+            <p className="mt-1 text-sm text-red-600">{errors.itemName}</p>
           )}
-        </div>
-      </div>
+        </FormField>
+
+        <FormField label="Price (USDC)" id="priceUSDC">
+          <input
+            id="priceUSDC"
+            name="priceUSDC"
+            type="text"
+            value={values.priceUSDC}
+            onChange={(e) => updateField("priceUSDC", e.target.value)}
+            disabled={isSubmitting}
+            placeholder="0.00"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+          />
+          {errors.priceUSDC && (
+            <p className="mt-1 text-sm text-red-600">{errors.priceUSDC}</p>
+          )}
+        </FormField>
+
+        <FormField label="Description" id="description">
+          <textarea
+            id="description"
+            name="description"
+            value={values.description}
+            onChange={(e) => updateField("description", e.target.value)}
+            disabled={isSubmitting}
+            rows={3}
+            placeholder="Describe the item and delivery terms"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+          />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </FormField>
 
         <FormField label="Shipping window" id="shippingWindow">
@@ -153,7 +191,7 @@ export const EscrowCreateForm: React.FC<EscrowCreateFormProps> = ({ value }) => 
 
         <button
           type="submit"
-          disabled={isSubmitting || submittingRef.current}
+          disabled={isSubmitting}
           className="inline-flex w-full items-center justify-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
         >
           {isSubmitting ? "Creating link..." : "Create escrow link"}
@@ -242,5 +280,4 @@ export const EscrowCreateForm: React.FC<EscrowCreateFormProps> = ({ value }) => 
       )}
     </div>
   );
-};
-export default EscrowCreateForm;
+}

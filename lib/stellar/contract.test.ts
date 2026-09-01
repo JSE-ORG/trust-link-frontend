@@ -428,7 +428,7 @@ describe("lib/stellar/contract.ts", () => {
           getTransaction: mockGetTransaction,
         } as unknown as rpc.Server;
       });
-    }
+    });
 
     it("fundEscrow returns hash and result XDR on success", async () => {
       const mockSendTransaction = vi.fn().mockResolvedValue({ status: "PENDING", hash: "hash-1" });

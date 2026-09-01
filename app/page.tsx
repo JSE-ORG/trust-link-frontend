@@ -1,4 +1,37 @@
+import { ArrowRight, Lock, Shield, Zap } from "lucide-react";
+import Link from "next/link";
+
+import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 import HomePageContent from "@/components/home/HomePageContent";
+import FaqAccordion from "@/components/ui/FaqAccordion";
+
+const FAQ_ITEMS = [
+  {
+    question: "How does TrustLink protect my money?",
+    answer:
+      "TrustLink uses smart contracts on the Stellar network to hold funds in escrow. Your money is only released to the vendor after you confirm delivery, ensuring complete protection against fraud.",
+  },
+  {
+    question: "What payment methods are supported?",
+    answer:
+      "We support Stellar (XLM) and various Stellar-based assets. The Stellar network enables fast, low-cost transactions globally, making it perfect for cross-border trade.",
+  },
+  {
+    question: "How long does the escrow process take?",
+    answer:
+      "Most transactions complete within 2-5 business days depending on shipping. The escrow period automatically releases funds 7 days after delivery confirmation if no disputes are raised.",
+  },
+  {
+    question: "What happens if there's a dispute?",
+    answer:
+      "If you don't receive your order or it's not as described, you can raise a dispute within the escrow period. Our team will review the evidence and make a fair decision based on the terms.",
+  },
+  {
+    question: "Are there any hidden fees?",
+    answer:
+      "No hidden fees. TrustLink charges a transparent 1.5% escrow fee per transaction. What you see is what you pay.",
+  },
+];
 
 export const metadata = {
   title: "TrustLink — Secure Escrow for Every Transaction",
@@ -48,19 +81,19 @@ export default function Home() {
               required.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+              <Link
                 href="/vendor/signup"
                 className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[#7B68EE] rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
               >
                 Get Started as a Vendor
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/verify"
                 className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white border-2 border-white/30 rounded-lg hover:bg-white/10 transition-all"
               >
                 Verify Escrow Link
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -214,19 +247,19 @@ export default function Home() {
             transactions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
+            <Link
               href="/vendor/signup"
               className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[#7B68EE] rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
             >
               Start as a Vendor
               <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-            </a>
-            <a
+            </Link>
+            <Link
               href="/verify"
               className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-[#1B2A6B] bg-white rounded-lg hover:bg-white/90 transition-all"
             >
               Verify a Link
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -246,19 +279,19 @@ export default function Home() {
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-white/70">
                 <li>
-                  <a href="/vendor/signup" className="hover:text-white transition-colors">
+                  <Link href="/vendor/signup" className="hover:text-white transition-colors">
                     For Vendors
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/verify" className="hover:text-white transition-colors">
+                  <Link href="/verify" className="hover:text-white transition-colors">
                     Verify Link
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/pricing" className="hover:text-white transition-colors">
+                  <Link href="/pricing" className="hover:text-white transition-colors">
                     Pricing
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -266,19 +299,19 @@ export default function Home() {
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-white/70">
                 <li>
-                  <a href="/about" className="hover:text-white transition-colors">
+                  <Link href="/about" className="hover:text-white transition-colors">
                     About
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/docs" className="hover:text-white transition-colors">
+                  <Link href="/docs" className="hover:text-white transition-colors">
                     Documentation
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/contact" className="hover:text-white transition-colors">
+                  <Link href="/contact" className="hover:text-white transition-colors">
                     Contact
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

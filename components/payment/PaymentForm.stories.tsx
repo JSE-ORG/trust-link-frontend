@@ -50,7 +50,7 @@ const meta: Meta<typeof PaymentForm> = {
 };
 
 export default meta;
-type Story = StoryObj<of typeof PaymentForm>;
+type Story = StoryObj<typeof PaymentForm>;
 
 const defaultArgs = {
   escrowId: "escrow-12345",
@@ -79,7 +79,7 @@ export const Idle: Story = {
       description: {
         story:
           "Form is ready for payment. When Freighter is installed and the wallet is connected, " +
-          "the CTA Reads "\"Pay with Freighter\" and is fully enabled.",
+          "the CTA Reads \"Pay with Freighter\" and is fully enabled.",
       },
     },
   },

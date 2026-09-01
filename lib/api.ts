@@ -13,11 +13,16 @@
  */
 
 import {
+  type ApiClient,
   ApiError,
+  type ApiErrorShape,
   cancelEscrow as cancelEscrowRaw,
   createApiClient as createApiClientRaw,
   createDispute as createDisputeRaw,
+  type CreateDisputeInput,
   createEscrow as createEscrowRaw,
+  type EscrowInput,
+  type EscrowResponse,
   getAdminDisputes as getAdminDisputesRaw,
   getDispute as getDisputeRaw,
   getEscrow as getEscrowRaw,
@@ -32,13 +37,8 @@ import {
   patchVendorNotifications as patchVendorNotificationsRaw,
   resolveDispute as resolveDisputeRaw,
   shipEscrow as shipEscrowRaw,
-  upgradeSubscription as upgradeSubscriptionRaw,
-  type ApiClient,
-  type ApiErrorShape,
-  type CreateDisputeInput,
-  type EscrowInput,
-  type EscrowResponse,
   type ShipEscrowInput,
+  upgradeSubscription as upgradeSubscriptionRaw,
 } from "@/lib/api/client";
 
 // Re-export types that were historically defined here but now live in @/types
@@ -65,7 +65,9 @@ export type { ApiClient, ApiErrorShape, CreateDisputeInput, EscrowInput, EscrowR
  * @param fn the API function to wrap
  * @returns the wrapped function with identical signature
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function withSessionExpiryHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (async (...args: any[]) => {
     try {
       return await fn(...args);

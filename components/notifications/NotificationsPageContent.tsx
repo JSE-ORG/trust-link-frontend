@@ -125,15 +125,12 @@ function NotificationsContent() {
     Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE)
   );
 
-  // Live updates can shrink the list out from under the current page.
-  useEffect(() => {
-    setCurrentPage((p) => Math.min(p, totalPages));
-  }, [totalPages]);
+  const effectivePage = Math.min(currentPage, totalPages);
 
   const paginatedNotifications = useMemo(() => {
-    const startIndex = (currentPage - 1) * NOTIFICATIONS_PER_PAGE;
+    const startIndex = (effectivePage - 1) * NOTIFICATIONS_PER_PAGE;
     return notifications.slice(startIndex, startIndex + NOTIFICATIONS_PER_PAGE);
-  }, [notifications, currentPage]);
+  }, [notifications, effectivePage]);
 
   useEffect(() => {
     const jwt = window.localStorage.getItem("wallet.jwt");
@@ -228,7 +225,7 @@ function NotificationsContent() {
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                   Showing page{" "}
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {currentPage}
+                    {effectivePage}
                   </span>{" "}
                   of{" "}
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -239,7 +236,7 @@ function NotificationsContent() {
                   <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    disabled={effectivePage === 1}
                     className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                   >
                     Previous
@@ -249,7 +246,7 @@ function NotificationsContent() {
                     onClick={() =>
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={effectivePage === totalPages}
                     className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                   >
                     Next

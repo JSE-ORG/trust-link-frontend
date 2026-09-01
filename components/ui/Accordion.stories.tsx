@@ -1,6 +1,6 @@
-import React from "react";
 import { Meta, StoryObj } from "@storybook/react";
 import { Star } from "lucide-react";
+import React from "react";
 
 import { Accordion } from "./Accordion";
 

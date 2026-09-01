@@ -1,12 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Monitor,Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-const themes = ["light", "dark", "system"] as const;
-type Theme = (typeof themes)[number];
+type Theme = "light" | "dark" | "system";
 
 const themeOrder: Record<Theme, Theme> = {
   light: "dark",

@@ -51,8 +51,6 @@ export function setupNextOnFetch(next: NextFixture, options?: MockApiOptions) {
       } catch {
         // ignore JSON parse error
       }
-      const itemName = encodeURIComponent((payload.itemName as string) || "ESCROW-12345");
-      const url = escrowsFixture.createEscrow.urlTemplate.replace("{itemName}", itemName);
       return new Response(
         JSON.stringify({
           url: `https://trustlink.example.com/escrow/${encodeURIComponent(
@@ -94,8 +92,6 @@ export async function setupNetworkMocks(page: Page, next: NextFixture, options?:
       } catch {
         // ignore JSON parse error
       }
-      const itemName = encodeURIComponent((payload.itemName as string) || "ESCROW-12345");
-      const url = escrowsFixture.createEscrow.urlTemplate.replace("{itemName}", itemName);
       return route.fulfill({
         status: 200,
         contentType: "application/json",

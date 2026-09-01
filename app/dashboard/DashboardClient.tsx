@@ -5,7 +5,7 @@ import { BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useTranslation from "react-i18next";
+import { useTranslation } from "react-i18next";
 
 import CurrencyDropdown from "@/components/dashboard/CurrencyDropdown";
 import DashboardSection from "@/components/dashboard/DashboardSection";

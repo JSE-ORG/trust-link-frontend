@@ -2,9 +2,6 @@
 
 import { Download, LayoutGrid, Search, Table2 } from "lucide-react";
 import Link from "next/link";
-
-import { useCurrency } from "@/components/providers/CurrencyProvider";
-import { formatTimeAgo } from "@/lib/utils";
 import {
   startTransition,
   useCallback,
@@ -17,12 +14,14 @@ import { toast } from "sonner";
 
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import FetchErrorState, {
   getFetchErrorMessage,
 } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cancelEscrow, getVendorEscrows } from "@/lib/api";
+import { formatTimeAgo } from "@/lib/utils";
 import { type Escrow, EscrowStatusConst } from "@/types";
 import { downloadCsv } from "@/utils/exportCsv";
 
@@ -60,20 +59,16 @@ export default function VendorDashboardList({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>("card");
-  const { formatAmount } = useCurrency();
-
-  // Load persisted view preference
-  useEffect(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
       const saved = window.localStorage.getItem(VIEW_PREF_KEY);
-      if (saved === "card" || saved === "table") {
-        setViewMode(saved);
-      }
+      if (saved === "card" || saved === "table") return saved;
     } catch {
       // ignore - localStorage unavailable
     }
-  }, []);
+    return "card";
+  });
+  const { formatAmount } = useCurrency();
 
   // Persist view preference
   useEffect(() => {
@@ -132,7 +127,7 @@ export default function VendorDashboardList({
     return filteredEscrows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredEscrows, currentPage]);
 
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     try {
       setError(null);
       const token = window.localStorage.getItem("wallet.jwt") || undefined;
@@ -143,11 +138,11 @@ export default function VendorDashboardList({
         err instanceof Error ? err : new Error(t("dashboard.loadEscrowsError"))
       );
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     startTransition(() => loadItems());
-  }, []);
+  }, [loadItems]);
 
   const handleShipmentSuccess = (escrowId: string) => {
     setEscrows(

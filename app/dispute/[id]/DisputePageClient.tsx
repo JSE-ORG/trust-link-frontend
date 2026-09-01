@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 
-import { Skeleton } from "@/components/ui/Skeleton";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import useEscrow from "@/hooks/useEscrow";
 import { formatUSDC } from "@/utils/currency";
 
