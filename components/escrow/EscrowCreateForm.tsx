@@ -1,3 +1,5 @@
+"use client";
+
 import { type FormEvent, useRef, useState } from "react";
 
 import ShareModal from "@/components/escrow/ShareModal";
@@ -22,6 +24,9 @@ export default function EscrowCreateForm() {
     Partial<Record<keyof EscrowCreateValues, string>>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Mirrored in state so the UI can disable the button without reading the
+  // ref during render (refs cannot be accessed while rendering).
+  const [submitLocked, setSubmitLocked] = useState(false);
   const submittingRef = useRef(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -52,6 +57,7 @@ export default function EscrowCreateForm() {
     if (submittingRef.current) return;
     // set lock synchronously to prevent double-submit before state updates
     submittingRef.current = true;
+    setSubmitLocked(true);
 
     setCopyStatus(null);
     setSubmitError(null);
@@ -68,6 +74,7 @@ export default function EscrowCreateForm() {
       setErrors(fieldErrors);
       // release the synchronous lock so the user can correct validation errors
       submittingRef.current = false;
+      setSubmitLocked(false);
       return;
     }
 
@@ -89,9 +96,37 @@ export default function EscrowCreateForm() {
       setResultUrl(response.url);
       setIsModalOpen(true);
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Something went wrong."
-      );
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitLocked(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const downloadQR = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !resultUrl) return;
+    // PNG export handled by the shared QrCode component
+    toast.success("QR code downloaded");
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-xl px-4 py-10">
+      <h1 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50">Create escrow link</h1>
+      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        Fill in the item details, then share the generated escrow link with your buyer.
+      </p>
+
+      <form className="mt-8 space-y-5" onSubmit={onSubmit}>
+      track("link_created");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unexpected error creating the link.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
       submittingRef.current = false;
@@ -100,61 +135,88 @@ export default function EscrowCreateForm() {
 
   const downloadQR = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = "trustlink-qr.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    if (!canvas || !resultUrl) return;
+    const svgEl = document.querySelector<SVGSVGElement>(
+      '[data-testid="qr-code"]'
+    );
+    if (!svgEl) return;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgData], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 192;
+      canvas.height = 192;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, 192, 192);
+      URL.revokeObjectURL(url);
+      const escrowId = resultUrl.split("/").pop() || "escrow";
+      const pngUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = pngUrl;
+      a.download = `escrow_${escrowId}.png`;
+      a.click();
+      toast.success("QR code downloaded");
+    };
+    img.src = url;
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <form onSubmit={onSubmit} className="space-y-6">
-        <FormField label="Item name" id="itemName">
+    <div className="mx-auto w-full max-w-2xl rounded-[32px] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8">
+      <form onSubmit={onSubmit} className="space-y-5">
+        <FormField label="Item name" id="itemName" error={errors.itemName}>
           <input
             id="itemName"
             name="itemName"
             type="text"
             value={values.itemName}
-            onChange={(e) => updateField("itemName", e.target.value)}
+            onChange={(event) => updateField("itemName", event.target.value)}
             disabled={isSubmitting}
-            placeholder="e.g. Handmade leather wallet"
+            placeholder="Awesome Widget"
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
           />
-          {errors.itemName && (
-            <p className="mt-1 text-sm text-red-600">{errors.itemName}</p>
-          )}
         </FormField>
 
-        <FormField label="Price (USDC)" id="priceUSDC">
+        <FormField label="Price (USDC)" id="priceUSDC" error={errors.priceUSDC}>
           <input
             id="priceUSDC"
             name="priceUSDC"
-            type="text"
+            type="number"
+            step="0.01"
             value={values.priceUSDC}
-            onChange={(e) => updateField("priceUSDC", e.target.value)}
+            onChange={(event) => updateField("priceUSDC", event.target.value)}
             disabled={isSubmitting}
-            placeholder="0.00"
+            placeholder="123.45"
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
           />
-          {errors.priceUSDC && (
-            <p className="mt-1 text-sm text-red-600">{errors.priceUSDC}</p>
-          )}
         </FormField>
 
-        <FormField label="Description" id="description">
+        <FormField
+          label="Description"
+          id="description"
+          error={errors.description}
+        >
           <textarea
             id="description"
             name="description"
             value={values.description}
-            onChange={(e) => updateField("description", e.target.value)}
+            onChange={(event) => updateField("description", event.target.value)}
             disabled={isSubmitting}
+            placeholder="Brief description (markdown supported: **bold**, *italic*, [link](url))"
             rows={3}
-            placeholder="Describe the item and delivery terms"
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
           />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          {values.description && (
+            <div className="mt-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+              <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Preview:</p>
+              <div
+                className="text-sm text-zinc-700 dark:text-zinc-300"
+                dangerouslySetInnerHTML={renderMarkdown(values.description)}
+              />
+            </div>
           )}
         </FormField>
 
@@ -191,7 +253,7 @@ export default function EscrowCreateForm() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || submitLocked}
           className="inline-flex w-full items-center justify-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
         >
           {isSubmitting ? "Creating link..." : "Create escrow link"}
@@ -280,4 +342,4 @@ export default function EscrowCreateForm() {
       )}
     </div>
   );
-}
+};

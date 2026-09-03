@@ -65,7 +65,7 @@ export type { ApiClient, ApiErrorShape, CreateDisputeInput, EscrowInput, EscrowR
  * @param fn the API function to wrap
  * @returns the wrapped function with identical signature
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any -- generic wrapper preserves caller signatures */
 function withSessionExpiryHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (async (...args: any[]) => {

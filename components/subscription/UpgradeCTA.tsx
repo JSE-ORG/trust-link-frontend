@@ -24,7 +24,7 @@ export default function UpgradeCTA() {
   const { isPro, isLoading } = useSubscription();
   const [dismissed, setDismissed] = useState(false);
 
-  const visible = !isLoading && !isPro && !isDismissed() && !dismissed;
+  const visible = !isLoading && !isPro && !dismissed && !isDismissed();
 
   const dismiss = useCallback(() => {
     setDismissed(true);

@@ -8,11 +8,9 @@ import { patchBuyerContact } from "@/lib/api";
 import { signTransaction } from "@/lib/stellar/freighter";
 import { EscrowStatusConst } from "@/types";
 
-type PaymentFormComponent = React.ComponentType<
-  Omit<React.ComponentProps<typeof import("../PaymentForm").default>, never>
->;
+import type { PaymentFormProps } from "../PaymentForm";
 
-let PaymentForm: PaymentFormComponent;
+let PaymentForm: React.ComponentType<PaymentFormProps>;
 
 // Mock dependencies
 vi.mock("@/hooks/useWallet", () => ({
@@ -27,18 +25,23 @@ vi.mock("@/lib/api", () => ({
   patchBuyerContact: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) =>
-      ({
-        "payment.title": "Payment Details",
-        "payment.payNow": "Pay with Freighter",
-        "payment.submitting": "Processing payment...",
-        "payment.confirmationTitle": "Payment Confirmed!",
-        "payment.txHash": "Transaction Hash",
-      })[key] ?? key,
-  }),
-}));
+vi.mock("react-i18next", () => {
+  const translations: Record<string, string> = {
+    "payment.title": "Payment Details",
+    "payment.item": "Item",
+    "payment.platformFee": "Protocol Fee",
+    "payment.total": "Total",
+    "payment.confirmationTitle": "Payment Confirmed!",
+    "payment.txHash": "Transaction Hash",
+    "payment.submitting": "Processing payment...",
+    "payment.payNow": "Pay with Freighter",
+  };
+  return {
+    useTranslation: () => ({
+      t: (key: string) => translations[key] ?? key,
+    }),
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: {
@@ -85,6 +88,16 @@ afterAll(() => {
 });
 
 describe("PaymentForm", () => {
+  beforeAll(async () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "true");
+    const mod = await import("../PaymentForm");
+    PaymentForm = mod.default;
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     (useWallet as unknown as Mock).mockReturnValue({ isConnected: true, status: "connected" });

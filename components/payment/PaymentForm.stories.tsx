@@ -79,7 +79,7 @@ export const Idle: Story = {
       description: {
         story:
           "Form is ready for payment. When Freighter is installed and the wallet is connected, " +
-          "the CTA Reads \"Pay with Freighter\" and is fully enabled.",
+          "the CTA reads \"Pay with Freighter\" and is fully enabled.",
       },
     },
   },

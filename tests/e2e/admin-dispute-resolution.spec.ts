@@ -2,10 +2,9 @@ import { expect, test } from "next/experimental/testmode/playwright";
 
 import { authenticatePage } from "./helpers/auth";
 import { BUYER_KEY, VENDOR_KEY } from "./helpers/constants";
-import { type MockDispute,setupNetworkMocks } from "./helpers/mock-api";
+import { type MockDispute, setupNetworkMocks } from "./helpers/mock-api";
 
 const disputeId = "dispute-1";
-let isResolved = false;
 
 const mockDispute: MockDispute = {
   id: disputeId,
@@ -30,57 +29,16 @@ const mockDispute: MockDispute = {
 };
 
 test("admin can resolve a dispute and the dispute list updates", async ({ page, next }) => {
-  isResolved = false;
-
   await authenticatePage(page);
 
-  await setupNetworkMocks(page, next);
-  
-  await page.route("**/api/disputes**", async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    // Client-side fetch for dispute list
-    if (url.searchParams.has("status")) {
-      const body = isResolved ? [] : [mockDispute];
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(body),
-      });
-    }
-
-    // Client-side resolve action — deliberately slow so the assertions below
-    // prove the badge updates optimistically rather than after the response.
-    if (url.pathname.includes(`/disputes/${disputeId}/resolve`)) {
-      isResolved = true;
-      await new Promise((resolve) => setTimeout(resolve, 1_500));
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ...mockDispute,
-          status: "RESOLVED",
-          resolution: "RELEASE_TO_VENDOR",
-        }),
-      });
-    }
-
-    return route.continue();
-  });
-
-  next.onFetch(async (request) => {
-    const url = new URL(request.url);
-
-    // Server-side fetch for the dispute detail page
-    if (url.pathname.endsWith(`/disputes/${disputeId}`)) {
-      return new Response(JSON.stringify(mockDispute), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    return "continue";
+  // Mocked entirely through the shared options so it works identically for
+  // same-origin and cross-origin API setups. The resolve POST is deliberately
+  // slow (1.5s) so the assertions below prove the badge updates optimistically
+  // rather than after the response, and the list automatically empties once
+  // the dispute is resolved.
+  await setupNetworkMocks(page, next, {
+    mockDispute,
+    adminResolveDispute: { disputeId, delayMs: 1_500 },
   });
 
   await page.goto("/admin/disputes");
@@ -90,14 +48,20 @@ test("admin can resolve a dispute and the dispute list updates", async ({ page, 
   // Navigate directly to the dispute details page to avoid Next.js RSC client navigation issues
   await page.goto(`/admin/disputes/${disputeId}`);
 
-  await expect(page.getByText(/release to vendor/i)).toBeVisible({ timeout: 10_000 });
+  const releaseButton = page.getByRole("button", { name: "Release to Vendor", exact: true });
+  await expect(releaseButton.first()).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("dispute-status-badge")).toHaveText("OPEN");
 
-  await page.getByRole("button", { name: /release to vendor/i }).click();
-  await page.getByRole("button", { name: "Confirm" }).click();
-
-  // Optimistic update: badges flip while the 1.5s resolve request is still in flight.
-  await expect(page.getByTestId("dispute-status-badge")).toHaveText("RESOLVED", { timeout: 1_000 });
+  // Retry the whole interaction: the action buttons exist in the SSR HTML
+  // before React hydrates, so a click landing early silently does nothing.
+  // Once the first click lands post-hydration, the badges flip optimistically
+  // while the (deliberately slow) 1.5s resolve request is still in flight.
+  const confirmButton = page.getByRole("button", { name: "Confirm", exact: true });
+  await expect(async () => {
+    await releaseButton.first().click({ timeout: 2_000 });
+    await confirmButton.first().click({ timeout: 2_000 });
+    await expect(page.getByTestId("dispute-status-badge")).toHaveText("RESOLVED", { timeout: 500 });
+  }).toPass({ timeout: 15_000 });
   await expect(page.getByTestId("escrow-status-badge")).toHaveText("RELEASED", { timeout: 1_000 });
 
   await expect(page.getByText(/no open disputes right now/i)).toBeVisible({ timeout: 10_000 });

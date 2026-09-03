@@ -8,11 +8,12 @@ import EscrowTableRow from "../EscrowTableRow";
 
 const mockEscrow: Escrow = {
   id: "escrow-1",
-  vendorId: "GVENDOR...",
-  buyerId: "GBUYER...",
+  vendorId: "v1",
   item: "Test Product",
+  buyerId: "GBUYER...",
   amount: 100,
-  status: "PENDING",
+  item: "Test Product",
+  status: "PENDING" as const,
   createdAt: "2026-05-01",
   updatedAt: "2026-05-01",
   history: [],
@@ -27,8 +28,9 @@ describe("EscrowTableRow", () => {
         <tbody>
           <EscrowTableRow
             escrow={mockEscrow}
-            onCancelEscrow={handleCancel}
             onMarkShipped={vi.fn()}
+            onCancelEscrow={handleCancel}
+            onMarkShipped={handleCopy}
           />
         </tbody>
       </table>
@@ -44,15 +46,16 @@ describe("EscrowTableRow", () => {
   it("does not render cancel button for non-PENDING escrows", () => {
     const handleCancel = vi.fn();
 
-    const activeEscrow: Escrow = { ...mockEscrow, status: "FUNDED" };
+    const activeEscrow = { ...mockEscrow, status: "FUNDED" as const };
 
     render(
       <table>
         <tbody>
           <EscrowTableRow
             escrow={activeEscrow}
-            onCancelEscrow={handleCancel}
             onMarkShipped={vi.fn()}
+            onCancelEscrow={handleCancel}
+            onMarkShipped={handleCopy}
           />
         </tbody>
       </table>

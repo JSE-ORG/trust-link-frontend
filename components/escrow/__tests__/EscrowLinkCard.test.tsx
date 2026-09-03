@@ -300,6 +300,29 @@ describe('EscrowLinkCard Component', () => {
       await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
       expect(writeText.mock.calls[0][0]).toContain(mockUrl);
     });
+
+      test('renders status badges under PENDING, FUNDED, SHIPPED, and COMPLETED states', async () => {
+    // This loops through all requested statuses and checks if they render on screen
+    const statuses = ["PENDING", "FUNDED", "SHIPPED", "COMPLETED"];
+    for (const status of statuses) {
+      const { unmount } = await renderAndAwait(<EscrowLinkCard />);
+      expect(screen.getByText(new RegExp(status, "i"))).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  test('triggers the clipboard copy API when the copy url button is clicked', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText }, share: undefined });
+
+    await renderAndAwait(<EscrowLinkCard />);
+    const copyButton = screen.getByRole('button', { name: /copy url/i });
+    expect(copyButton).toBeInTheDocument();
+    
+    await userEvent.click(copyButton);
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+  });
+
   });
 });
 

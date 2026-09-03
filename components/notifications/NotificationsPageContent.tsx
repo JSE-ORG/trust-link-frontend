@@ -10,6 +10,7 @@ import {
   Clock,
   Package,
   RotateCcw,
+  Search,
   ShieldAlert,
   Truck,
 } from "lucide-react";
@@ -119,13 +120,29 @@ function NotificationsContent() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading } =
     useNotifications();
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredNotifications = useMemo(() => {
+    if (!searchQuery.trim()) return notifications;
+    const query = searchQuery.toLowerCase();
+    return notifications.filter(
+      (n) =>
+        n.escrowItem.toLowerCase().includes(query) ||
+        n.message.toLowerCase().includes(query)
+    );
+  }, [notifications, searchQuery]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE)
+    Math.ceil(filteredNotifications.length / NOTIFICATIONS_PER_PAGE)
   );
 
+  // Live updates can shrink the list out from under the current page.
   const effectivePage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const paginatedNotifications = useMemo(() => {
     const startIndex = (effectivePage - 1) * NOTIFICATIONS_PER_PAGE;
@@ -214,11 +231,40 @@ function NotificationsContent() {
           </div>
         ) : (
           <>
-            <div className="space-y-2">
-              {paginatedNotifications.map((n) => (
-                <NotificationRow key={n.id} n={n} onRead={markAsRead} />
-              ))}
+            <div className="mb-4">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search notifications..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-white dark:focus:ring-white dark:focus-visible:ring-zinc-300"
+                  data-testid="notifications-search"
+                />
+              </div>
             </div>
+
+            {filteredNotifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-200 bg-white py-12 dark:border-zinc-800 dark:bg-zinc-950">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  No notifications match your search.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4 text-sm font-medium text-black hover:underline dark:text-white"
+                >
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {paginatedNotifications.map((n) => (
+                    <NotificationRow key={n.id} n={n} onRead={markAsRead} />
+                  ))}
+                </div>
 
             {totalPages > 1 && (
               <div className="mt-8 flex items-center justify-between border-t border-zinc-200 pt-6 dark:border-zinc-800">
@@ -253,6 +299,8 @@ function NotificationsContent() {
                   </button>
                 </div>
               </div>
+            )}
+              </>
             )}
           </>
         )}

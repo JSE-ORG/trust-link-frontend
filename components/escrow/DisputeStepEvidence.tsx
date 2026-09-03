@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { FormField } from "@/components/ui/FormField";
 import type { DisputeFormValues } from "@/lib/validations/dispute";
@@ -10,13 +10,32 @@ interface Props {
   removeFile: (index: number) => void;
 }
 
-const inputClass =
-  "w-full rounded border border-zinc-300 bg-white p-2.5 text-base text-foreground outline-none transition focus:border-success dark:border-zinc-700 dark:bg-zinc-900";
+const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+
+function isImageFile(file: File): boolean {
+  return IMAGE_MIME_TYPES.includes(file.type);
+}
 
 export function DisputeStepEvidence({ formData, errors, handleFileUpload, removeFile }: Props) {
+  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const newUrls: Record<number, string> = {};
+    formData.files.forEach((file, index) => {
+      if (isImageFile(file)) {
+        newUrls[index] = URL.createObjectURL(file);
+      }
+    });
+    setPreviewUrls(newUrls);
+
+    return () => {
+      Object.values(newUrls).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [formData.files]);
   return (
-    <div data-testid="step-3">
-      <h2 className="mb-4 text-xl font-semibold text-foreground">Step 3: Upload Evidence</h2>
+    <div className="step step-3" data-testid="step-3">
+      <h2>Step 3: Upload Evidence</h2>
+      <div className="form-group">
       <FormField
         id="files"
         label="Upload Supporting Documents *"
@@ -34,6 +53,7 @@ export function DisputeStepEvidence({ formData, errors, handleFileUpload, remove
           className={inputClass}
         />
       </FormField>
+      </div>
 
       {formData.files.length > 0 && (
         <div className="mb-5">
@@ -43,8 +63,16 @@ export function DisputeStepEvidence({ formData, errors, handleFileUpload, remove
               <li
                 key={index}
                 data-testid={`file-${index}`}
-                className="flex items-center justify-between rounded border border-zinc-300 bg-zinc-50 p-2.5 text-sm text-foreground dark:border-zinc-700 dark:bg-zinc-800"
+                className="flex items-center gap-3"
               >
+                {isImageFile(file) && previewUrls[index] && (
+                  <img
+                    src={previewUrls[index]}
+                    alt={`Preview of ${file.name}`}
+                    className="h-16 w-16 rounded object-cover border border-zinc-200 dark:border-zinc-700"
+                    data-testid={`preview-${index}`}
+                  />
+                )}
                 <span>
                   {file.name} ({(file.size / 1024).toFixed(1)} KB)
                 </span>

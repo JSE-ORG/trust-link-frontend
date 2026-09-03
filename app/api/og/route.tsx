@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
                 }}>
                   Status: {status}
                 </div>
+                Status: {status}
               </div>
             )}
           </div>
