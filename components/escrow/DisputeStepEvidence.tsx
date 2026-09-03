@@ -50,14 +50,15 @@ export function DisputeStepEvidence({ formData, errors, handleFileUpload, remove
           onChange={handleFileUpload}
           aria-label="upload files"
           data-testid="file-input"
+          className={inputClass}
         />
       </FormField>
       </div>
 
       {formData.files.length > 0 && (
-        <div className="file-list" data-testid="file-list">
-          <h4>Uploaded Files:</h4>
-          <ul>
+        <div className="mb-5">
+          <h4 className="mb-2 font-semibold text-foreground">Uploaded Files:</h4>
+          <ul className="list-none space-y-2 p-0">
             {formData.files.map((file, index) => (
               <li
                 key={index}
@@ -86,6 +87,7 @@ export function DisputeStepEvidence({ formData, errors, handleFileUpload, remove
                   }}
                   aria-label={`Delete ${file.name}`}
                   data-testid={`delete-file-${index}`}
+                  className="ml-2 cursor-pointer rounded bg-destructive px-2.5 py-1 text-sm text-white transition-colors hover:bg-red-700"
                 >
                   Remove
                 </button>

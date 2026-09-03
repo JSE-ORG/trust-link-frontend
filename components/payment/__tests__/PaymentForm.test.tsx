@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import React from "react";
 import { toast } from "sonner";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
@@ -73,6 +74,18 @@ const defaultProps = {
   escrowContractId: "C123...",
   status: EscrowStatusConst.PENDING,
 };
+
+beforeAll(async () => {
+  vi.resetModules();
+  vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "true");
+  const mod = await import("../PaymentForm");
+  PaymentForm = mod.default;
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
 
 describe("PaymentForm", () => {
   beforeAll(async () => {

@@ -1,12 +1,10 @@
 "use client";
 
 import { type FormEvent, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import ShareModal from "@/components/escrow/ShareModal";
 import { FormField } from "@/components/ui/FormField";
 import { QrCode } from "@/components/ui/QrCode";
-import { track } from "@/lib/analytics";
 import { createEscrow, type EscrowInput } from "@/lib/api";
 import {
   EscrowCreateSchema,

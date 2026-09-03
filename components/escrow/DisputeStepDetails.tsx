@@ -9,6 +9,9 @@ interface Props {
   updateField: <K extends keyof DisputeFormValues>(field: K, value: DisputeFormValues[K]) => void;
 }
 
+const inputClass =
+  "w-full rounded border border-zinc-300 bg-white p-2.5 text-base text-foreground outline-none transition focus:border-success dark:border-zinc-700 dark:bg-zinc-900";
+
 export function DisputeStepDetails({ formData, errors, updateField }: Props) {
   return (
     <div className="step step-2" data-testid="step-2">

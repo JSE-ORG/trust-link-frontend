@@ -2,9 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { Escrow } from "@/types";
+
 import EscrowTableRow from "../EscrowTableRow";
 
-const mockEscrow = {
+const mockEscrow: Escrow = {
   id: "escrow-1",
   vendorId: "v1",
   item: "Test Product",

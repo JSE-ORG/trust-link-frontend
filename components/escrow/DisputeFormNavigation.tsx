@@ -18,7 +18,7 @@ export function DisputeFormNavigation({
   onSubmit,
 }: Props) {
   return (
-    <div className="navigation-buttons">
+    <div className="mt-[30px] flex justify-between">
       {currentStep > 1 && (
         <button
           type="button"
@@ -31,6 +31,7 @@ export function DisputeFormNavigation({
           }}
           disabled={isSubmitting}
           data-testid="back-button"
+          className="cursor-pointer rounded bg-success px-5 py-2.5 text-base text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           Back
         </button>
@@ -48,6 +49,7 @@ export function DisputeFormNavigation({
           }}
           disabled={isSubmitting}
           data-testid="next-button"
+          className="cursor-pointer rounded bg-success px-5 py-2.5 text-base text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           Next
         </button>
@@ -63,6 +65,7 @@ export function DisputeFormNavigation({
           }}
           disabled={isSubmitting}
           data-testid="submit-button"
+          className="cursor-pointer rounded bg-success px-5 py-2.5 text-base text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           {isSubmitting ? "Submitting..." : "Submit Dispute"}
         </button>

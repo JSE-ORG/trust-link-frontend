@@ -63,6 +63,10 @@ export default function VendorDashboardList({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const saved = window.localStorage.getItem(VIEW_PREF_KEY);
+      if (saved === "card" || saved === "table") return saved;
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const { formatAmount } = useCurrency();

@@ -21,5 +21,6 @@
  */
 export async function replaySession(sessionId: string): Promise<void> {
   console.log(`Starting replay for session: ${sessionId}`);
+  console.log(`Options: ${JSON.stringify(options ?? null)}`);
   // Implement playback logic here
 }
