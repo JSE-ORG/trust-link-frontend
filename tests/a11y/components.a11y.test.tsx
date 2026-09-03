@@ -7,6 +7,7 @@ import { describe, expect,it } from "vitest";
 import EmptyVendorState from "@/components/dashboard/EmptyVendorState";
 import DisputeForm from "@/components/escrow/DisputeForm";
 import { Badge } from "@/components/ui/Badge";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -28,6 +29,18 @@ async function expectNoA11yViolations(ui: React.ReactElement) {
 }
 
 describe("accessibility — UI components have no axe violations", () => {
+  it("Breadcrumb", async () => {
+    await expectNoA11yViolations(
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Track Order", href: "/tracking" },
+          { label: "Order esc_1234567890" },
+        ]}
+      />
+    );
+  });
+
   it("Badge", async () => {
     await expectNoA11yViolations(<Badge>Active</Badge>);
   });

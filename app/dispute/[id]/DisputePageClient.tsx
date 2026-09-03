@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 
+
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import useEscrow from "@/hooks/useEscrow";
 import { formatUSDC } from "@/utils/currency";
 
 import DisputeForm from "./DisputeForm";
+
+/** Shortens a (potentially very long) escrow id for use inside UI labels. */
+function shortEscrowId(id: string): string {
+  return id.length > 16 ? `${id.slice(0, 16)}…` : id;
+}
 
 function DisputePageSkeleton() {
   return (
@@ -83,6 +91,17 @@ export default function DisputePageClient({ id }: { id: string }) {
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-black py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
+        <Breadcrumb
+          className="mb-8"
+          items={[
+            { label: "Home", href: "/" },
+            {
+              label: `Order ${shortEscrowId(escrow.id)}`,
+              href: `/track/${escrow.id}`,
+            },
+            { label: "Raise a Dispute" },
+          ]}
+        />
         <header className="mb-10 text-center">
           <h1 className="text-3xl sm:text-4xl font-black text-zinc-950 dark:text-white mb-3">
             Raise a Dispute
