@@ -1,9 +1,11 @@
 "use client";
 
+import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Skeleton } from "@/components/ui/Skeleton";
+import EmailPreview from "@/components/notifications/EmailPreview";
 import useWallet from "@/hooks/useWallet";
 import {
   getVendorNotificationPreferences,
@@ -35,6 +37,7 @@ export default function NotificationSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<EventKey | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -80,7 +83,7 @@ export default function NotificationSettingsPage() {
 
       <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         {/* Header row */}
-        <div className="grid grid-cols-[1fr_80px_80px] items-center border-b border-zinc-100 px-6 py-3 dark:border-zinc-800">
+        <div className="grid grid-cols-[1fr_80px_80px_72px] items-center border-b border-zinc-100 px-6 py-3 dark:border-zinc-800">
           <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Event
           </span>
@@ -90,6 +93,9 @@ export default function NotificationSettingsPage() {
           <span className="text-center text-xs font-semibold uppercase tracking-wide text-zinc-500">
             SMS
           </span>
+          <span className="text-center text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Preview
+          </span>
         </div>
 
         {/* Event rows */}
@@ -98,7 +104,7 @@ export default function NotificationSettingsPage() {
             {EVENTS.map(({ key }) => (
               <div
                 key={key}
-                className="grid grid-cols-[1fr_80px_80px] items-center px-6 py-4"
+                className="grid grid-cols-[1fr_80px_80px_72px] items-center px-6 py-4"
               >
                 <Skeleton className="h-4 w-24" />
                 <div className="flex justify-center">
@@ -106,6 +112,9 @@ export default function NotificationSettingsPage() {
                 </div>
                 <div className="flex justify-center">
                   <Skeleton className="h-6 w-11 rounded-full" />
+                </div>
+                <div className="flex justify-center">
+                  <Skeleton className="h-6 w-14 rounded-md" />
                 </div>
               </div>
             ))}
@@ -119,7 +128,7 @@ export default function NotificationSettingsPage() {
             {EVENTS.map(({ key, label }) => (
               <div
                 key={key}
-                className="grid grid-cols-[1fr_80px_80px] items-center px-6 py-4"
+                className="grid grid-cols-[1fr_80px_80px_72px] items-center px-6 py-4"
               >
                 <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                   {label}
@@ -145,6 +154,17 @@ export default function NotificationSettingsPage() {
                     </button>
                   </div>
                 ))}
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewEvent(key)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    aria-label={`Preview ${label} email`}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -161,6 +181,16 @@ export default function NotificationSettingsPage() {
           </button>
         </div>
       </div>
+
+      {previewEvent && (
+        <EmailPreview
+          eventKey={previewEvent}
+          open={!!previewEvent}
+          onOpenChange={(open) => {
+            if (!open) setPreviewEvent(null);
+          }}
+        />
+      )}
     </div>
   );
 }
