@@ -26,15 +26,6 @@ export async function GET(request: NextRequest) {
             
             {status && (
               <div className="text-[32px] mt-[20px] bg-white/10 px-[20px] py-[10px] rounded-[20px] flex w-max">
-              <div style={{ 
-                fontSize: 32, 
-                marginTop: 20, 
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                padding: '10px 20px',
-                borderRadius: '20px',
-                display: 'flex',
-                width: 'auto'
-              }}>
                 Status: {status}
               </div>
             )}

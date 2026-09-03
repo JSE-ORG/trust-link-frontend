@@ -65,7 +65,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const tokenRef = useRef<string | null>(null);
   const publicKeyRef = useRef<string | null>(null);
 
-  useEffect(() { tokenRef.current = token; }, [token]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { publicKeyRef.current = publicKey; }, [publicKey]);
 
   const stellarNetworkLabel = network === "mainnet" ? "PUBLIC" : "TESTNET";
@@ -77,10 +77,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const net = network === "mainnet" ? "PUBLIC" : "TESTNET";
         const signedXdr = await freighterSignTransaction(challengeXdr, net);
         const jwt = await verifyChallenge(signedXdr);
-        setToken(
-wt);
+        setToken(jwt);
         if (typeof window !== "undefined") {
-          localStorage.setItem(TOKEN_STORAGE_KEY, jxt);
+          localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
         }
         return jwt;
       } catch (err: unknown) {
@@ -181,7 +180,7 @@ wt);
     async (xdr: string, networkOverride?: string) => {
       try {
         const net = networkOverride || stellarNetworkLabel;
-        const signedXdr = await freighterSignTransaction(xdr', net);
+        const signedXdr = await freighterSignTransaction(xdr, net);
         return signedXdr;
       } catch (err: unknown) {
         const message =

@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { shipEscrow } from "@/lib/api";
-import type { ApiErrorResponse } from "@/types/api";
 
 interface ShipTrackingModalProps {
   escrowId: string;

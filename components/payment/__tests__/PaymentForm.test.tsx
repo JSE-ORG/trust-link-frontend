@@ -1,13 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, type Mock,vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import useWallet from "@/hooks/useWallet";
 import { patchBuyerContact } from "@/lib/api";
 import { signTransaction } from "@/lib/stellar/freighter";
 import { EscrowStatusConst } from "@/types";
 
-import PaymentForm from "../PaymentForm";
+import type { PaymentFormProps } from "../PaymentForm";
+
+let PaymentForm: React.ComponentType<PaymentFormProps>;
 
 // Mock dependencies
 vi.mock("@/hooks/useWallet", () => ({
@@ -22,11 +24,23 @@ vi.mock("@/lib/api", () => ({
   patchBuyerContact: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
+vi.mock("react-i18next", () => {
+  const translations: Record<string, string> = {
+    "payment.title": "Payment Details",
+    "payment.item": "Item",
+    "payment.platformFee": "Protocol Fee",
+    "payment.total": "Total",
+    "payment.confirmationTitle": "Payment Confirmed!",
+    "payment.txHash": "Transaction Hash",
+    "payment.submitting": "Processing payment...",
+    "payment.payNow": "Pay with Freighter",
+  };
+  return {
+    useTranslation: () => ({
+      t: (key: string) => translations[key] ?? key,
+    }),
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: {
@@ -61,6 +75,16 @@ const defaultProps = {
 };
 
 describe("PaymentForm", () => {
+  beforeAll(async () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCKS", "true");
+    const mod = await import("../PaymentForm");
+    PaymentForm = mod.default;
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     (useWallet as unknown as Mock).mockReturnValue({ isConnected: true, status: "connected" });
@@ -164,10 +188,10 @@ describe("PaymentForm", () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(screen.getByText("payment.confirmationTitle")).toBeInTheDocument();
+      expect(screen.getByText("Payment Confirmed!")).toBeInTheDocument();
     }, { timeout: 5000 });
 
-    expect(screen.getByText(/payment.txHash: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
+    expect(screen.getByText(/Transaction Hash: 3f7a1f\.\.\.91bc/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View on Stellar Expert/i })).toHaveAttribute(
       "href",
       expect.stringContaining("testnet.stellarexpert.io")

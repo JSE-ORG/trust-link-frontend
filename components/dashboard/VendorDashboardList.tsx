@@ -1,28 +1,29 @@
 "use client";
 
-import { Download, LayoutGrid, Search, Table2 } from "lucide-react";
+import { Download, LayoutGrid, Search, Table2, X } from "lucide-react";
 import Link from "next/link";
-
-import { useCurrency } from "@/components/providers/CurrencyProvider";
-import { formatTimeAgo } from "@/lib/utils";
 import {
   startTransition,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
 import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import FetchErrorState, {
   getFetchErrorMessage,
 } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cancelEscrow, getVendorEscrows } from "@/lib/api";
+import { formatTimeAgo } from "@/lib/utils";
 import { type Escrow, EscrowStatusConst } from "@/types";
 import { downloadCsv } from "@/utils/exportCsv";
 
@@ -42,6 +43,8 @@ const STATUS_TABS = [
 ] as const;
 const ITEMS_PER_PAGE = 10;
 const VIEW_PREF_KEY = "vendor.dashboard.viewMode";
+const CHECKBOX_CLASS =
+  "h-4 w-4 cursor-pointer rounded border-zinc-300 accent-zinc-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:accent-white dark:focus-visible:ring-zinc-300";
 type ViewMode = "card" | "table";
 
 export default function VendorDashboardList({
@@ -61,6 +64,7 @@ export default function VendorDashboardList({
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const { formatAmount } = useCurrency();
 
   // Load persisted view preference
@@ -68,12 +72,17 @@ export default function VendorDashboardList({
     try {
       const saved = window.localStorage.getItem(VIEW_PREF_KEY);
       if (saved === "card" || saved === "table") {
+        // Syncing state from an external system (localStorage) is the intended
+        // use of an effect; this rule is over-strict for this legitimate case.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setViewMode(saved);
       }
     } catch {
       // ignore - localStorage unavailable
     }
-  }, []);
+    return "card";
+  });
+  const { formatAmount } = useCurrency();
 
   // Persist view preference
   useEffect(() => {
@@ -132,7 +141,62 @@ export default function VendorDashboardList({
     return filteredEscrows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredEscrows, currentPage]);
 
-  const loadItems = async () => {
+  // --- Bulk selection ----------------------------------------------------
+  const allFilteredIds = useMemo(
+    () => (filteredEscrows ? filteredEscrows.map((escrow) => escrow.id) : []),
+    [filteredEscrows]
+  );
+  const selectedEscrows = useMemo(
+    () =>
+      filteredEscrows
+        ? filteredEscrows.filter((escrow) => selectedIds.has(escrow.id))
+        : [],
+    [filteredEscrows, selectedIds]
+  );
+  const selectedCount = selectedEscrows.length;
+  const areAllFilteredSelected =
+    filteredEscrows !== null &&
+    filteredEscrows.length > 0 &&
+    filteredEscrows.every((escrow) => selectedIds.has(escrow.id));
+  const someFilteredSelected = selectedCount > 0 && !areAllFilteredSelected;
+
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someFilteredSelected;
+    }
+  }, [someFilteredSelected]);
+
+  const toggleSelectEscrow = useCallback((escrow: Escrow) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(escrow.id)) {
+        next.delete(escrow.id);
+      } else {
+        next.add(escrow.id);
+      }
+      return next;
+    });
+  }, []);
+
+  // "Select All" targets every currently visible (filtered) escrow.
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (areAllFilteredSelected) {
+        allFilteredIds.forEach((id) => next.delete(id));
+      } else {
+        allFilteredIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, [areAllFilteredSelected, allFilteredIds]);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+  // ----------------------------------------------------------------------
+
+  
+  const loadItems = useCallback(async () => {
     try {
       setError(null);
       const token = window.localStorage.getItem("wallet.jwt") || undefined;
@@ -143,11 +207,11 @@ export default function VendorDashboardList({
         err instanceof Error ? err : new Error(t("dashboard.loadEscrowsError"))
       );
     }
-  };
+  , [t]);
 
   useEffect(() => {
     startTransition(() => loadItems());
-  }, []);
+  }, [loadItems]);
 
   const handleShipmentSuccess = (escrowId: string) => {
     setEscrows(
@@ -166,17 +230,17 @@ export default function VendorDashboardList({
 
   const confirmCancelEscrow = async () => {
     if (!escrowToCancel) return;
-    
+
     setIsCancelling(true);
     try {
       const token = window.localStorage.getItem("wallet.jwt") || undefined;
       await cancelEscrow(escrowToCancel.id, token);
-      
+
       // Remove cancelled escrow from the list
-      setEscrows((current) => 
+      setEscrows((current) =>
         current?.filter((item) => item.id !== escrowToCancel.id) ?? current
       );
-      
+
       toast.success(t("dashboard.cancelEscrowSuccess"));
       setEscrowToCancel(null);
     } catch (err) {
@@ -188,21 +252,51 @@ export default function VendorDashboardList({
     }
   };
 
+  const getCsvColumns = useCallback(
+    () => [
+      { key: "id", header: t("dashboard.csvHeaders.escrowId") },
+      { key: "item", header: t("dashboard.csvHeaders.item") },
+      { key: "buyerId", header: t("dashboard.csvHeaders.buyer") },
+      { key: "amount", header: t("dashboard.csvHeaders.amount") },
+      { key: "status", header: t("dashboard.csvHeaders.status") },
+      { key: "createdAt", header: t("dashboard.csvHeaders.createdAt") },
+    ] as const,
+    [t]
+  );
+
   const handleExportCsv = useCallback(() => {
     if (!filteredEscrows || filteredEscrows.length === 0) return;
     downloadCsv(
       filteredEscrows as unknown as Record<string, unknown>[],
-      [
-        { key: "id", header: t("dashboard.csvHeaders.escrowId") },
-        { key: "item", header: t("dashboard.csvHeaders.item") },
-        { key: "buyerId", header: t("dashboard.csvHeaders.buyer") },
-        { key: "amount", header: t("dashboard.csvHeaders.amount") },
-        { key: "status", header: t("dashboard.csvHeaders.status") },
-        { key: "createdAt", header: t("dashboard.csvHeaders.createdAt") },
-      ],
+      getCsvColumns() as unknown as { key: string; header: string }[],
       `trustlink-escrows-${new Date().toISOString().slice(0, 10)}.csv`
     );
-  }, [filteredEscrows, t]);
+  }, [filteredEscrows, getCsvColumns]);
+
+  const handleExportSelected = useCallback(() => {
+    if (selectedCount === 0) return;
+    downloadCsv(
+      selectedEscrows as unknown as Record<string, unknown>[],
+      getCsvColumns() as unknown as { key: string; header: string }[],
+      `trustlink-escrows-${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    toast.success(
+      t("dashboard.exportSelectedSuccess", { count: selectedCount })
+    );
+  }, [selectedCount, selectedEscrows, getCsvColumns]);
+
+  const selectAllCheckbox = (id: string) => (
+    <input
+      id={id}
+      ref={selectAllRef}
+      type="checkbox"
+      aria-label={t("dashboard.selectAll")}
+      className={CHECKBOX_CLASS}
+      checked={areAllFilteredSelected}
+      onChange={toggleSelectAll}
+      disabled={!filteredEscrows || filteredEscrows.length === 0}
+    />
+  );
 
   if (error) {
     return (
@@ -240,13 +334,31 @@ export default function VendorDashboardList({
     return <EmptyVendorState />;
   }
 
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      nextIndex = (index + 1) % STATUS_TABS.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (index - 1 + STATUS_TABS.length) % STATUS_TABS.length;
+    }
+    
+    if (nextIndex !== index) {
+      e.preventDefault();
+      tabRefs.current[nextIndex]?.focus();
+    }
+  };
+
   return (
     <>
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
+            id="escrow-search"
             type="text"
+            aria-label={t("dashboard.searchPlaceholder") || "Search escrows"}
             placeholder={t("dashboard.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -310,8 +422,8 @@ export default function VendorDashboardList({
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {STATUS_TABS.map((s) => {
+      <div className="mb-4 flex flex-wrap gap-2" role="tablist">
+        {STATUS_TABS.map((s, index) => {
           const count =
             s === "ALL"
               ? escrows.length
@@ -319,12 +431,19 @@ export default function VendorDashboardList({
           return (
             <button
               key={s}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
+              role="tab"
+              aria-selected={statusFilter === s}
               type="button"
               onClick={() => setStatusFilter(s)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   setStatusFilter(s);
+                } else {
+                  handleTabKeyDown(e, index);
                 }
               }}
               className={`rounded-full px-3 py-1 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300 ${
@@ -417,22 +536,43 @@ export default function VendorDashboardList({
           </button>
         </div>
       ) : viewMode === "card" ? (
-        <div className="space-y-4">
-          {paginatedEscrows.map((escrow) => (
-            <EscrowTableRow
-              key={escrow.id}
-              escrow={escrow}
-              onMarkShipped={handleMarkShipped}
-              onCancelEscrow={handleCancelEscrow}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mb-3 flex items-center gap-2">
+            {selectAllCheckbox("escrow-select-all")}
+            <label
+              htmlFor="escrow-select-all"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              {t("dashboard.selectAll")}
+            </label>
+            {someFilteredSelected && (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                {t("dashboard.selectedCount", { count: selectedCount })}
+              </span>
+            )}
+          </div>
+          <div className="space-y-4">
+            {paginatedEscrows.map((escrow) => (
+              <EscrowTableRow
+                key={escrow.id}
+                escrow={escrow}
+                isSelected={selectedIds.has(escrow.id)}
+                onToggleSelect={toggleSelectEscrow}
+                onMarkShipped={handleMarkShipped}
+                onCancelEscrow={handleCancelEscrow}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <div className="min-w-[720px] px-4 sm:px-0">
             <table className="w-full border-collapse rounded-2xl border border-zinc-200 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-950">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  <th className="w-12 px-4 py-3 whitespace-nowrap">
+                    {selectAllCheckbox("escrow-select-all-table")}
+                  </th>
                   <th className="px-4 py-3 whitespace-nowrap">{t("dashboard.tableHeaders.item") || "Item"}</th>
                   <th className="px-4 py-3 whitespace-nowrap">{t("dashboard.tableHeaders.buyer") || "Buyer"}</th>
                   <th className="px-4 py-3 whitespace-nowrap">{t("dashboard.tableHeaders.amount") || "Amount"}</th>
@@ -450,6 +590,15 @@ export default function VendorDashboardList({
                       key={escrow.id}
                       className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50"
                     >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          aria-label={t("dashboard.selectRow", { item: escrow.item })}
+                          className={CHECKBOX_CLASS}
+                          checked={selectedIds.has(escrow.id)}
+                          onChange={() => toggleSelectEscrow(escrow)}
+                        />
+                      </td>
                       <td className="px-4 py-3 max-w-[180px] truncate font-medium text-zinc-900 dark:text-zinc-100">
                         {escrow.item}
                       </td>
@@ -539,6 +688,44 @@ export default function VendorDashboardList({
               className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
               {t("dashboard.next")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating bulk-action bar */}
+      {selectedCount > 0 && (
+        <div
+          role="toolbar"
+          aria-label={t("dashboard.bulkActions")}
+          className="fixed inset-x-0 bottom-6 z-40 flex justify-center px-4"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-3 rounded-full border border-zinc-200 bg-white px-5 py-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              {t("dashboard.selectedCount", { count: selectedCount })}
+            </span>
+            <button
+              type="button"
+              onClick={handleExportSelected}
+              className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-300"
+            >
+              <Download className="h-4 w-4" />
+              {t("dashboard.exportSelected")}
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  clearSelection();
+                }
+              }}
+              aria-label={t("dashboard.clearSelection")}
+              className="inline-flex items-center gap-1 rounded-full border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-300"
+            >
+              <X className="h-4 w-4" />
+              {t("dashboard.clearSelection")}
             </button>
           </div>
         </div>

@@ -164,8 +164,10 @@ export default function TrackingTimeline({
           onTouchEnd={onTouchEnd}
         >
           <div 
-            className="flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none"
-            style={{ transform: `translateX(-${swipeIndex * 100}%)` }}
+            className={`flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none ${
+              ["translate-x-0", "-translate-x-full", "-translate-x-[200%]", "-translate-x-[300%]", "-translate-x-[400%]"][swipeIndex] ??
+              "translate-x-0"
+            }`}
           >
             {TRACKING_STAGES.map((stage, index) => {
               const isCompleted = index < currentStageIndex;

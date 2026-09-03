@@ -16,7 +16,7 @@ import {
   upgradeSubscription,
   type VendorNotificationPreferences,
 } from "@/lib/api";
-import { DisputeStatusConst } from "@/types";
+import { type DisputeStatus,DisputeStatusConst } from "@/types";
 
 function mockResponse(
   body: unknown,
@@ -43,7 +43,7 @@ const escrow = {
   history: [],
 };
 
-function dispute(id: string, status = DisputeStatusConst.OPEN) {
+function dispute(id: string, status: Dispute["status"] = DisputeStatusConst.OPEN) {
   return {
     id,
     escrowId: escrow.id,
