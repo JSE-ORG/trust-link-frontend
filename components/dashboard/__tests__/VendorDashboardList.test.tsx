@@ -1,7 +1,9 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import VendorDashboardList from "../VendorDashboardList";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import { getVendorEscrows } from "@/lib/api";
+
+import VendorDashboardList from "../VendorDashboardList";
 
 // Mock external dependencies
 vi.mock("@/lib/api", () => ({
