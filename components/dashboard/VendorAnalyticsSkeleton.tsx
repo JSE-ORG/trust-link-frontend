@@ -1,5 +1,13 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 
+/**
+ * VendorAnalyticsSkeleton
+ * 
+ * Displays a loading skeleton for the vendor analytics page. It mimics the structure
+ * of the VendorAnalytics component, including the header, metric cards, and the main chart area.
+ *
+ * @returns A loading skeleton view.
+ */
 export default function VendorAnalyticsSkeleton() {
   return (
     <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
