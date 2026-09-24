@@ -46,11 +46,26 @@ const CHECKBOX_CLASS =
   "h-4 w-4 cursor-pointer rounded border-zinc-300 accent-zinc-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:accent-white dark:focus-visible:ring-zinc-300";
 type ViewMode = "card" | "table";
 
+/**
+ * Props for the VendorDashboardList component.
+ */
+export interface VendorDashboardListProps {
+  /** Indicates if the list is currently loading data. Defaults to false. */
+  loading?: boolean;
+}
+
+/**
+ * VendorDashboardList
+ *
+ * Displays a list of escrows for a vendor, allowing filtering, searching,
+ * pagination, and view toggling (card vs. table). Supports bulk actions like CSV export.
+ *
+ * @param props - Component properties.
+ * @returns The rendered dashboard list.
+ */
 export default function VendorDashboardList({
   loading = false,
-}: {
-  loading?: boolean;
-}) {
+}: VendorDashboardListProps) {
   const { t, i18n } = useTranslation();
   const [escrows, setEscrows] = useState<Escrow[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
