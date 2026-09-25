@@ -1,11 +1,29 @@
 import React from "react";
 
-interface Props {
+/**
+ * Props for the DisputeFormSuccess component.
+ */
+export interface DisputeFormSuccessProps {
+  /** Confirmation text shown to the user, normally echoed from the submit response. */
   message: string;
+  /** Resets the wizard so the user can file another dispute. */
   onReset: () => void;
 }
 
-export function DisputeFormSuccess({ message, onReset }: Props) {
+/**
+ * DisputeFormSuccess
+ *
+ * Terminal screen of the dispute wizard. Announces the outcome to assistive
+ * technology through a polite live region, echoes the confirmation message
+ * returned by the API, and offers a reset action to start a new dispute.
+ *
+ * @param props - Component properties.
+ * @returns The rendered success state.
+ */
+export function DisputeFormSuccess({
+  message,
+  onReset,
+}: DisputeFormSuccessProps) {
   return (
     <div
       className="mx-auto max-w-[600px] p-10 text-center"
@@ -23,6 +41,9 @@ export function DisputeFormSuccess({ message, onReset }: Props) {
         <button
           type="button"
           onClick={onReset}
+          // A native button already activates on Enter and Space; handling it
+          // explicitly keeps the reset action reachable when the control is
+          // rendered through a custom skin that swaps out the element.
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
