@@ -10,41 +10,88 @@ import { createEscrow, type EscrowInput } from "@/lib/api";
 import { renderMarkdown } from "@/lib/markdown";
 import {
   EscrowCreateSchema,
-  EscrowCreateValues,
+  type EscrowCreateValues,
   shippingOptions,
   type ShippingWindow,
 } from "@/lib/validations";
 
-export default function EscrowCreateForm() {
+/**
+ * Configuration properties for the {@link EscrowCreateForm} component.
+ */
+export interface EscrowCreateFormProps {
+  /**
+   * Optional callback invoked when an escrow link is successfully generated.
+   *
+   * @param url - The fully qualified shareable URL for the newly created escrow.
+   */
+  onSuccess?: (url: string) => void;
+  /**
+   * Optional custom CSS class name to append to the outer form container.
+   */
+  className?: string;
+  /**
+   * Optional initial form values for pre-populating fields.
+   */
+  initialValues?: Partial<EscrowCreateValues>;
+}
+
+/**
+ * EscrowCreateForm provides an interactive form interface for merchants and buyers
+ * to initiate smart contract escrows on the Stellar network with USDC pricing.
+ *
+ * Features:
+ * - Real-time client-side schema validation via Zod (`EscrowCreateSchema`)
+ * - Live markdown preview for item descriptions
+ * - Duplicate submission prevention using synchronous ref lock and disabled button states
+ * - Shareable payment link and QR code generation with clipboard copy and WhatsApp integration
+ *
+ * @param props - Component configuration properties {@link EscrowCreateFormProps}.
+ * @returns The rendered escrow creation form and shareable result section.
+ */
+export default function EscrowCreateForm({
+  onSuccess,
+  className = "",
+  initialValues,
+}: EscrowCreateFormProps = {}) {
   const [values, setValues] = useState<EscrowCreateValues>({
-    itemName: "",
-    priceUSDC: "",
-    description: "",
-    shippingWindow: shippingOptions[0],
+    itemName: initialValues?.itemName ?? "",
+    priceUSDC: initialValues?.priceUSDC ?? "",
+    description: initialValues?.description ?? "",
+    shippingWindow: initialValues?.shippingWindow ?? shippingOptions[0],
   });
   const [errors, setErrors] = useState<
     Partial<Record<keyof EscrowCreateValues, string>>
   >({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   // Mirrored in state so the UI can disable the button without reading the
   // ref during render (refs cannot be accessed while rendering).
-  const [submitLocked, setSubmitLocked] = useState(false);
-  const submittingRef = useRef(false);
+  const [submitLocked, setSubmitLocked] = useState<boolean>(false);
+  const submittingRef = useRef<boolean>(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  /**
+   * Updates a single form field value and clears any associated error state.
+   *
+   * @template K - Key of `EscrowCreateValues` being updated.
+   * @param field - The field key to update.
+   * @param value - The new value matching the field type.
+   */
   const updateField = <K extends keyof EscrowCreateValues>(
     field: K,
     value: EscrowCreateValues[K]
-  ) => {
+  ): void => {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const copyResultUrl = async () => {
+  /**
+   * Copies the generated escrow result URL to the system clipboard and displays a confirmation status.
+   */
+  const copyResultUrl = async (): Promise<void> => {
     if (!resultUrl) {
       return;
     }
@@ -53,7 +100,12 @@ export default function EscrowCreateForm() {
     setCopyStatus("Link copied to clipboard.");
   };
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  /**
+   * Handles form submission: validates inputs, invokes API, and reveals the payment link.
+   *
+   * @param event - React FormEvent submitted by the user.
+   */
+  const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
     if (submittingRef.current) return;
@@ -97,6 +149,7 @@ export default function EscrowCreateForm() {
 
       setResultUrl(response.url);
       setIsModalOpen(true);
+      onSuccess?.(response.url);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -106,7 +159,10 @@ export default function EscrowCreateForm() {
     }
   };
 
-  const downloadQR = async () => {
+  /**
+   * Triggers a toast confirmation for QR code download.
+   */
+  const downloadQR = async (): Promise<void> => {
     const canvas = canvasRef.current;
     if (!canvas || !resultUrl) return;
     // PNG export handled by the shared QrCode component
@@ -114,7 +170,7 @@ export default function EscrowCreateForm() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-2xl rounded-[32px] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8">
+    <div className={`mx-auto w-full max-w-2xl rounded-[32px] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8 ${className}`}>
       <form onSubmit={onSubmit} className="space-y-5">
         <FormField label="Item name" id="itemName" error={errors.itemName}>
           <input
@@ -123,53 +179,79 @@ export default function EscrowCreateForm() {
             type="text"
             value={values.itemName}
             onChange={(event) => updateField("itemName", event.target.value)}
+            placeholder="e.g. Vintage mechanical keyboard"
             disabled={isSubmitting}
-            placeholder="Awesome Widget"
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition placeholder:text-zinc-400 focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-300"
           />
         </FormField>
 
-        <FormField label="Price (USDC)" id="priceUSDC" error={errors.priceUSDC}>
-          <input
-            id="priceUSDC"
-            name="priceUSDC"
-            type="number"
-            step="0.01"
-            value={values.priceUSDC}
-            onChange={(event) => updateField("priceUSDC", event.target.value)}
-            disabled={isSubmitting}
-            placeholder="123.45"
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
-          />
+        <FormField
+          label="Price (USDC)"
+          id="priceUSDC"
+          error={errors.priceUSDC}
+          hint="Funds will be locked until delivery is confirmed."
+        >
+          <div className="relative">
+            <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm font-semibold text-zinc-400">
+              $
+            </span>
+            <input
+              id="priceUSDC"
+              name="priceUSDC"
+              type="text"
+              inputMode="decimal"
+              value={values.priceUSDC}
+              onChange={(event) => updateField("priceUSDC", event.target.value)}
+              placeholder="120.00"
+              disabled={isSubmitting}
+              className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-8 pr-16 text-zinc-950 outline-none ring-0 transition placeholder:text-zinc-400 focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-300"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              USDC
+            </span>
+          </div>
         </FormField>
 
         <FormField
           label="Description"
           id="description"
           error={errors.description}
+          hint="Supports markdown formatting."
         >
-          <textarea
-            id="description"
-            name="description"
-            value={values.description}
-            onChange={(event) => updateField("description", event.target.value)}
-            disabled={isSubmitting}
-            placeholder="Brief description (markdown supported: **bold**, *italic*, [link](url))"
-            rows={3}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
-          />
-          {values.description && (
-            <div className="mt-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
-              <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Preview:</p>
-              <div
-                className="text-sm text-zinc-700 dark:text-zinc-300"
-                dangerouslySetInnerHTML={renderMarkdown(values.description)}
-              />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <textarea
+              id="description"
+              name="description"
+              rows={4}
+              value={values.description}
+              onChange={(event) => updateField("description", event.target.value)}
+              placeholder="Detailed description of the item, condition, and any terms..."
+              disabled={isSubmitting}
+              className="w-full rounded-2xl border border-zinc-200 bg-white p-4 text-zinc-950 outline-none ring-0 transition placeholder:text-zinc-400 focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-300"
+            />
+            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-300">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Preview
+              </p>
+              {values.description.trim() ? (
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(values.description),
+                  }}
+                />
+              ) : (
+                <p className="text-zinc-400 italic">No description entered yet.</p>
+              )}
             </div>
-          )}
+          </div>
         </FormField>
 
-        <FormField label="Shipping window" id="shippingWindow">
+        <FormField
+          label="Shipping window"
+          id="shippingWindow"
+          hint="Auto-release timeout if buyer takes no action after confirmation."
+        >
           <select
             id="shippingWindow"
             name="shippingWindow"
@@ -291,4 +373,4 @@ export default function EscrowCreateForm() {
       )}
     </div>
   );
-};
+}
