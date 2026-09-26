@@ -15,7 +15,6 @@ const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
   url: "https://trustlink.example/pay/escrow-123",
-  escrowId: "escrow-123",
 };
 
 describe("ShareModal keyboard accessibility", () => {

@@ -15,19 +15,15 @@ interface ShareModalProps {
   onClose: () => void;
   /** The payment URL shown, copied, and shared by the dialog. */
   url: string;
-  /** Identifier of the escrow associated with this payment URL. */
-  escrowId: string;
 }
 
 /**
  * Displays an escrow payment link with QR code, clipboard, and sharing actions.
  *
  * Copy feedback is kept briefly and reset by a cleaned-up timeout. Native sharing
- * is offered when supported, with WhatsApp URL sharing as a fallback.
  */
-export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModalProps) {
-  /** Success/error announcement shown after a clipboard attempt. */
 export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
+  /** Success/error announcement shown after a clipboard attempt. */
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   /** Controls the copy icon and success styling while feedback is visible. */
   const [copied, setCopied] = useState(false);
