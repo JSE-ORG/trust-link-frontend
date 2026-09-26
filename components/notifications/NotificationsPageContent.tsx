@@ -24,6 +24,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { relativeTime, statusLabel } from "@/lib/notifications";
 import type { AppNotification, EscrowStatus } from "@/types";
 
+/**
+ * Renders an icon corresponding to the given escrow status.
+ *
+ * @param props - Component props.
+ * @param props.type - The {@link EscrowStatus} value to display an icon for.
+ * @returns A Lucide icon element representing the status.
+ */
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-5 w-5 shrink-0";
   const map: Record<EscrowStatus, JSX.Element> = {
@@ -39,6 +46,10 @@ function StatusIcon({ type }: { type: EscrowStatus }) {
   return <>{map[type] ?? <Package className={cls} />}</>;
 }
 
+/**
+ * Maps each {@link EscrowStatus} to Tailwind CSS classes for the
+ * notification icon's background and text colours (light + dark mode).
+ */
 const STATUS_BG: Record<string, string> = {
   PENDING:   "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
   FUNDED:    "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
@@ -50,8 +61,17 @@ const STATUS_BG: Record<string, string> = {
   EXPIRED:   "bg-zinc-100 text-zinc-400 dark:bg-zinc-800",
 };
 
+/** Number of notification items displayed per page. */
 const NOTIFICATIONS_PER_PAGE = 20;
 
+/**
+ * Renders a single notification row as a clickable link to the associated escrow.
+ *
+ * @param props - Component props.
+ * @param props.n - The {@link AppNotification} to display.
+ * @param props.onRead - Callback invoked with the notification ID when the row is clicked.
+ * @returns A styled link element representing one notification.
+ */
 function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: string) => void }) {
   return (
     <Link
@@ -93,6 +113,12 @@ function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: strin
   );
 }
 
+/**
+ * Placeholder skeleton shown while notifications are loading.
+ * Renders five blurred rows to indicate content is incoming.
+ *
+ * @returns A set of skeleton notification rows.
+ */
 function NotificationsSkeleton() {
   return (
     <div className="space-y-3" role="status" aria-live="polite" aria-label="Loading notifications">
@@ -114,6 +140,17 @@ function NotificationsSkeleton() {
   );
 }
 
+/**
+ * Core notifications page content. Handles authentication gating,
+ * notification fetching, search filtering, and pagination.
+ *
+ * Renders one of three states:
+ * 1. **Loading** — skeleton UI while checking JWT and fetching notifications.
+ * 2. **Empty** — prompt to go to the dashboard when no notifications exist.
+ * 3. **Populated** — searchable, paginated list of notification rows.
+ *
+ * @returns The full notifications page markup.
+ */
 function NotificationsContent() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
@@ -310,6 +347,13 @@ function NotificationsContent() {
   );
 }
 
+/**
+ * Page-level entry point for the notifications view.
+ * Wraps {@link NotificationsContent} in a React `Suspense` boundary
+ * so that Next.js streaming / server-component hydration works correctly.
+ *
+ * @returns The notifications page wrapped in a suspense fallback.
+ */
 export default function NotificationsPageContent() {
   return (
     <Suspense fallback={null}>
