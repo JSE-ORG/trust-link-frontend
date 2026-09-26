@@ -1,8 +1,15 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 
-export default function Footer() {
+/**
+ * Site-wide footer.
+ *
+ * Shows a copyright line (current year + translated brand string) and a
+ * language `<select>` that switches the active i18next locale on change.
+ */
+export default function Footer(): ReactElement {
   const { t, i18n } = useTranslation();
 
   return (

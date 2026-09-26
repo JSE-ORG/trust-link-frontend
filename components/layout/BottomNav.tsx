@@ -3,10 +3,22 @@
 import { Bell, LayoutDashboard, MapPin, PlusCircle, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType, ReactElement, SVGProps } from "react";
 
 import { useNotifications } from "@/components/providers/NotificationProvider";
 
-const STATIC_NAV = [
+/** A single entry in the mobile bottom navigation bar. */
+interface NavItem {
+  /** Route the link points to, also used to derive the active state. */
+  href: string;
+  /** Visible label and accessible name base for the link. */
+  label: string;
+  /** Icon component rendered before the label. */
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+}
+
+/** Fixed list of destinations shown in {@link BottomNav}. */
+const STATIC_NAV: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/create", label: "Create Link", icon: PlusCircle },
   { href: "/tracking", label: "Track Order", icon: MapPin },
@@ -14,7 +26,14 @@ const STATIC_NAV = [
   { href: "/profile", label: "Profile", icon: User },
 ] as const;
 
-export default function BottomNav() {
+/**
+ * Fixed, mobile-only bottom navigation bar (`md:hidden`).
+ *
+ * Highlights the link matching the current route (exact match or a nested
+ * path under it) and overlays an unread-count badge on the notifications
+ * icon, sourced from {@link useNotifications}.
+ */
+export default function BottomNav(): ReactElement {
   const pathname = usePathname();
   const { unreadCount } = useNotifications();
 
