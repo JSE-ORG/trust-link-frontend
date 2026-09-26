@@ -4,7 +4,22 @@ import Link from "next/link";
 import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 import FaqAccordion from "@/components/ui/FaqAccordion";
 
-const FAQ_ITEMS = [
+/**
+ * A single frequently-asked-question entry rendered by {@link FaqAccordion}.
+ */
+interface FaqItem {
+  /** The question text shown as the accordion trigger. */
+  question: string;
+  /** The answer text revealed when the accordion item is expanded. */
+  answer: string;
+}
+
+/**
+ * Static list of FAQ entries displayed in the "Frequently Asked Questions"
+ * section of the home page. This content is authored inline (rather than
+ * fetched) because it rarely changes and is specific to this page.
+ */
+const FAQ_ITEMS: FaqItem[] = [
   {
     question: "How does TrustLink protect my money?",
     answer:
@@ -37,6 +52,17 @@ const FAQ_ITEMS = [
   },
 ];
 
+/**
+ * Renders the marketing home page content for TrustLink.
+ *
+ * This is a static, presentational component with no props, no internal
+ * state, and no side effects: it composes a hero section, a three-step
+ * "How It Works" explainer, a trust-signals grid, the
+ * {@link FeaturedArtistSection}, an FAQ section (driven by {@link FAQ_ITEMS}
+ * via {@link FaqAccordion}), a closing call-to-action, and the site footer.
+ *
+ * @returns The rendered home page markup.
+ */
 export default function HomePageContent() {
   return (
     <div className="min-h-screen bg-[var(--muted-bg)]">
