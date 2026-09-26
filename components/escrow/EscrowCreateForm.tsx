@@ -15,6 +15,14 @@ import {
   type ShippingWindow,
 } from "@/lib/validations";
 
+/**
+ * Form for creating a new escrow link.
+ *
+ * Collects item name, price (USDC), description (markdown), and shipping
+ * window from the seller, validates input via `EscrowCreateSchema`, calls the
+ * API to create the escrow, and displays the resulting shareable link with a
+ * QR code and sharing options.
+ */
 export default function EscrowCreateForm() {
   const [values, setValues] = useState<EscrowCreateValues>({
     itemName: "",
@@ -36,6 +44,7 @@ export default function EscrowCreateForm() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  /** Update a single field value and clear its validation error. */
   const updateField = <K extends keyof EscrowCreateValues>(
     field: K,
     value: EscrowCreateValues[K]
@@ -44,6 +53,7 @@ export default function EscrowCreateForm() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
+  /** Copy the generated escrow URL to the clipboard. */
   const copyResultUrl = async () => {
     if (!resultUrl) {
       return;
@@ -106,6 +116,7 @@ export default function EscrowCreateForm() {
     }
   };
 
+  /** Trigger a QR code download for the generated escrow URL. */
   const downloadQR = async () => {
     const canvas = canvasRef.current;
     if (!canvas || !resultUrl) return;
@@ -286,7 +297,6 @@ export default function EscrowCreateForm() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           url={resultUrl}
-          escrowId={resultUrl.split("/").pop() || "escrow"}
         />
       )}
     </div>
