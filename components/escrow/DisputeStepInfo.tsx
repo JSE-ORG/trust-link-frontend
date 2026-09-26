@@ -2,13 +2,50 @@ import React from "react";
 
 import type { DisputeFormValues } from "@/lib/validations/dispute";
 
-interface Props {
+/**
+ * Props for {@link DisputeStepInfo}.
+ *
+ * State is managed by the parent dispute form component; this component acts
+ * as a controlled, presentational view for collecting buyer personal information.
+ */
+export interface DisputeStepInfoProps {
+  /** Current dispute form values (`name`, `email`, and `orderNumber` are managed by Step 1). */
   formData: DisputeFormValues;
+  /**
+   * Validation messages keyed by form field name. `errors.name`, `errors.email`,
+   * and `errors.orderNumber` are displayed below their corresponding inputs.
+   */
   errors: Partial<Record<keyof DisputeFormValues, string>>;
+  /**
+   * Type-safe callback to update a single form field value.
+   *
+   * @template K - The form field key extending `keyof DisputeFormValues`.
+   * @param field - The field name being updated.
+   * @param value - The updated value matching the type of `field`.
+   */
   updateField: <K extends keyof DisputeFormValues>(field: K, value: DisputeFormValues[K]) => void;
 }
 
-export function DisputeStepInfo({ formData, errors, updateField }: Props) {
+/**
+ * Step 1 of the dispute form: Personal Information.
+ *
+ * Renders controlled text/email input fields for Full Name, Email Address, and Order Number,
+ * including accessibility tags (`aria-invalid`, `aria-describedby`, `role="alert"`)
+ * and inline validation error feedback.
+ *
+ * @param props - Component props matching {@link DisputeStepInfoProps}.
+ * @returns The rendered Step 1 personal information form section.
+ *
+ * @example
+ * ```tsx
+ * <DisputeStepInfo
+ *   formData={formData}
+ *   errors={errors}
+ *   updateField={updateField}
+ * />
+ * ```
+ */
+export function DisputeStepInfo({ formData, errors, updateField }: DisputeStepInfoProps) {
   return (
     <div data-testid="step-1">
       <h2 className="mb-4 text-xl font-semibold text-foreground">Step 1: Personal Information</h2>
@@ -18,7 +55,7 @@ export function DisputeStepInfo({ formData, errors, updateField }: Props) {
           id="name"
           type="text"
           value={formData.name}
-          onChange={(e) => updateField("name", e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("name", e.target.value)}
           aria-label="name"
           aria-invalid={!!errors.name}
           aria-describedby={errors.name ? "name-error" : undefined}
@@ -37,7 +74,7 @@ export function DisputeStepInfo({ formData, errors, updateField }: Props) {
           id="email"
           type="email"
           value={formData.email}
-          onChange={(e) => updateField("email", e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("email", e.target.value)}
           aria-label="email"
           aria-invalid={!!errors.email}
           aria-describedby={errors.email ? "email-error" : undefined}
@@ -56,7 +93,7 @@ export function DisputeStepInfo({ formData, errors, updateField }: Props) {
           id="orderNumber"
           type="text"
           value={formData.orderNumber}
-          onChange={(e) => updateField("orderNumber", e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField("orderNumber", e.target.value)}
           aria-label="order number"
           aria-invalid={!!errors.orderNumber}
           aria-describedby={errors.orderNumber ? "orderNumber-error" : undefined}
@@ -71,3 +108,4 @@ export function DisputeStepInfo({ formData, errors, updateField }: Props) {
     </div>
   );
 }
+
