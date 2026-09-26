@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
 
 vi.mock("@/components/ui/QRCodeComponent", () => ({
   default: ({ value }: { value: string }) => (
@@ -14,18 +14,6 @@ vi.mock("@/lib/analytics", () => ({
 }));
 
 import ShareModal from "../ShareModal";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import ShareModal from "../ShareModal";
-
-vi.mock("@/lib/analytics", () => ({
-  track: vi.fn(),
-}));
-vi.mock("@/components/ui/QRCodeComponent", () => ({
-  default: () => null,
-}));
 
 const defaultProps = {
   isOpen: true,
@@ -200,8 +188,6 @@ describe("ShareModal", () => {
     });
   });
 });
-  url: "https://trustlink.example/pay/escrow-123",
-};
 
 describe("ShareModal keyboard accessibility", () => {
   beforeEach(() => {

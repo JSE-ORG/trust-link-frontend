@@ -18,6 +18,17 @@ const {
   mockState: { isLoading: false },
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  })),
+}));
+
 vi.mock("@/components/providers/NotificationProvider", () => ({
   useNotifications: () => ({
     notifications: mockNotifications,
@@ -60,15 +71,13 @@ describe("NotificationsPageContent", () => {
   it("redirects to home when no JWT is present", async () => {
     const { useRouter } = await import("next/navigation");
     const mockPush = vi.fn();
-    useRouter.mockReturnValue({
+    vi.mocked(useRouter).mockReturnValue({
       push: mockPush,
       replace: vi.fn(),
       prefetch: vi.fn(),
       back: vi.fn(),
       forward: vi.fn(),
       refresh: vi.fn(),
-      pathname: "/",
-      query: {},
     });
     render(<NotificationsPageContent />);
     await waitFor(() => {

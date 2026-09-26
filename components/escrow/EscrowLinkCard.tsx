@@ -12,15 +12,6 @@ import EscrowLinkDetails from "./EscrowLinkDetails";
 import EscrowLinkHeader from "./EscrowLinkHeader";
 import EscrowLinkQRCode from "./EscrowLinkQRCode";
 import EscrowLinkShareButtons from "./EscrowLinkShareButtons";
-const QRCodeSVG = dynamic(
-  () => import("qrcode.react").then((m) => m.QRCodeSVG),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[200px] w-[200px] animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-    ),
-  }
-);
 
 /** Copy text to the system clipboard. Throws if the Clipboard API is unavailable. */
 async function copyToClipboard(text: string): Promise<void> {
