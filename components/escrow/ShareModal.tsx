@@ -7,16 +7,30 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import QRCodeComponent from "@/components/ui/QRCodeComponent";
 import { track } from "@/lib/analytics";
 
+/** Props for the escrow link sharing dialog. */
 interface ShareModalProps {
+  /** Whether the dialog is currently visible. */
   isOpen: boolean;
+  /** Closes the dialog. */
   onClose: () => void;
+  /** The payment URL shown, copied, and shared by the dialog. */
   url: string;
+  /** Identifier of the escrow associated with this payment URL. */
   escrowId: string;
 }
 
+/**
+ * Displays an escrow payment link with QR code, clipboard, and sharing actions.
+ *
+ * Copy feedback is kept briefly and reset by a cleaned-up timeout. Native sharing
+ * is offered when supported, with WhatsApp URL sharing as a fallback.
+ */
 export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModalProps) {
+  /** Success/error announcement shown after a clipboard attempt. */
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  /** Controls the copy icon and success styling while feedback is visible. */
   const [copied, setCopied] = useState(false);
+  /** Pending timer for clearing transient clipboard feedback. */
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canShare = typeof navigator !== "undefined" && navigator.share;
 
@@ -53,9 +67,9 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
         url: url,
       });
       track("link_shared", { platform: "native", method: "share_modal" });
-    } catch (err) {
+    } catch (err: unknown) {
       // User cancelled or share failed
-      if ((err as Error).name !== "AbortError") {
+      if (!isAbortError(err)) {
         console.error("Share failed:", err);
       }
     }
@@ -74,9 +88,9 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
         });
         track("link_shared", { platform: "whatsapp", method: "native" });
         return;
-      } catch (err) {
+      } catch (err: unknown) {
         // User cancelled or share failed, fall through to WhatsApp URL
-        if ((err as Error).name !== "AbortError") {
+        if (!isAbortError(err)) {
           console.error("Share failed:", err);
         }
       }
@@ -171,4 +185,9 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Returns whether a browser-share rejection represents user cancellation. */
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
