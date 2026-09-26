@@ -111,12 +111,19 @@ describe("ShipTrackingModal", () => {
     );
 
     await user.type(screen.getByLabelText(/tracking id/i), "TRACK-001");
+    await user.selectOptions(
+      screen.getByLabelText(/logistics carrier/i),
+      "GIGL"
+    );
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith("escrow-123");
       expect(onClose).toHaveBeenCalled();
     });
+
+    expect(screen.getByLabelText(/tracking id/i)).toHaveValue("");
+    expect(screen.getByLabelText(/logistics carrier/i)).toHaveValue("Terminal Africa");
   });
 
   it("sends correct payload to the ship endpoint", async () => {
@@ -170,6 +177,21 @@ describe("ShipTrackingModal", () => {
         screen.getByText(/invalid json/i)
       ).toBeInTheDocument();
     });
+  });
+
+  it("displays a generic error when submission rejects with a non-Error value", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(shipEscrow).mockRejectedValueOnce("unexpected rejection");
+
+    render(<ShipTrackingModal {...defaultProps} />);
+
+    await user.type(screen.getByLabelText(/tracking id/i), "TRACK-001");
+    await user.click(screen.getByRole("button", { name: /submit/i }));
+
+    const errorMessage = await screen.findByRole("alert");
+    expect(errorMessage).not.toHaveTextContent("unexpected rejection");
+    expect(errorMessage).not.toBeEmptyDOMElement();
   });
 
   it("disables submit button while submitting", async () => {
