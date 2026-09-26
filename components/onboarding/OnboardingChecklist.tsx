@@ -4,6 +4,49 @@ import { Link as LinkIcon } from "lucide-react";
 
 import type { OnboardingStepMeta } from "@/components/onboarding/OnboardingStepper";
 
+/**
+ * Props for the OnboardingChecklist component.
+ * Displays a sidebar checklist during the vendor onboarding flow,
+ * showing step descriptions and navigation controls.
+ */
+interface OnboardingChecklistProps {
+  /** Array of step metadata (title + icon) for each onboarding step */
+  steps: OnboardingStepMeta[];
+  /** Zero-based index of the currently active step */
+  currentStep: number;
+  /** Whether to show the "Back" navigation button */
+  showBack: boolean;
+  /** Whether to show the "Next" / "Continue" button (false shows "Complete Onboarding") */
+  showNext: boolean;
+  /** Disables the next button (e.g. when required fields are incomplete) */
+  nextDisabled: boolean;
+  /** Callback fired when the user clicks "Back" */
+  onBack: () => void;
+  /** Callback fired when the user clicks "Next" or "Continue" */
+  onNext: () => void;
+  /** Callback fired when the user clicks "Complete Onboarding" */
+  onFinish: () => void;
+}
+
+/**
+ * OnboardingChecklist renders a sidebar panel that guides new vendors
+ * through the multi-step onboarding process. It displays step
+ * descriptions, the current step title, and Back / Next / Finish buttons.
+ *
+ * @example
+ * ```tsx
+ * <OnboardingChecklist
+ *   steps={steps}
+ *   currentStep={1}
+ *   showBack={true}
+ *   showNext={true}
+ *   nextDisabled={false}
+ *   onBack={() => goToStep(0)}
+ *   onNext={() => goToStep(2)}
+ *   onFinish={completeOnboarding}
+ * />
+ * ```
+ */
 interface OnboardingChecklistProps {
   steps: OnboardingStepMeta[];
   currentStep: number;
