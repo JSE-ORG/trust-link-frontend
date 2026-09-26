@@ -18,6 +18,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { JSX, KeyboardEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import type { JSX } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { useNotifications } from "@/components/providers/NotificationProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -71,6 +73,7 @@ function NotificationRow({ n, onRead }: { n: AppNotification; onRead: (id: strin
       tabIndex={0}
       role="link"
       className={`group flex items-start gap-4 rounded-2xl border p-4 transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white ${
+      className={`group flex items-start gap-4 rounded-2xl border p-4 transition hover:shadow-md ${
         n.read
           ? "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
           : "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20"

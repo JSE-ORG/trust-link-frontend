@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle,Banknote, Bell, CheckCheck, CircleCheck, Clock, Package, RotateCcw, ShieldAlert, Truck } from "lucide-react";
 import Link from "next/link";
-import { Bell, CheckCheck, Package, Banknote, Truck, ShieldAlert, RotateCcw, CircleCheck, Clock, AlertCircle } from "lucide-react";
+import type { JSX } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import { useNotifications } from "@/components/providers/NotificationProvider";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { relativeTime, statusLabel } from "@/lib/notifications";
-import type { EscrowStatus } from "@/types";
+import type { AppNotification, EscrowStatus } from "@/types";
 
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-4 w-4 shrink-0";
@@ -50,13 +53,17 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  // Close on Escape
+  const closeNotifications = useCallback(() => setOpen(false), []);
+  useFocusTrap(ref, open, { onEscape: closeNotifications });
+
+  // Restore focus to toggle button when closing
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const prevOpen = useRef(open);
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+    if (prevOpen.current && !open) {
+      toggleRef.current?.focus();
     }
-    if (open) document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    prevOpen.current = open;
   }, [open]);
 
   return (
@@ -66,7 +73,7 @@ export default function NotificationBell() {
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-haspopup="true"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((v: boolean) => !v)}
         className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
         <Bell className="h-5 w-5" />
@@ -107,8 +114,11 @@ export default function NotificationBell() {
                 No notifications yet
               </li>
             ) : (
-              preview.map((n) => (
-                <li key={n.id}>
+              preview.map((n: AppNotification, index: number) => (
+                // `n.id` (the escrow history event id) is expected to be unique,
+                // but append the index as a defensive fallback so duplicate ids
+                // can never produce duplicate React keys or console warnings.
+                <li key={`${n.id}-${index}`}>
                   <Link
                     href={`/escrow/${n.escrowId}`}
                     onClick={() => {
@@ -119,12 +129,12 @@ export default function NotificationBell() {
                       !n.read ? "bg-blue-50/60 dark:bg-blue-950/20" : ""
                     }`}
                   >
-                    <span className={`mt-0.5 ${STATUS_COLORS[n.type]}`}>
+                    <span className={`mt-0.5 ${STATUS_COLORS[n.type as EscrowStatus]}`}>
                       <StatusIcon type={n.type} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                        {statusLabel(n.type)} — {n.escrowItem}
+                        {statusLabel(n.type as EscrowStatus)} — {n.escrowItem}
                       </p>
                       <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
                         {n.message}

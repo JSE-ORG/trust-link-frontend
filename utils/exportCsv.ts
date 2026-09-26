@@ -1,3 +1,5 @@
+import { sanitizeCsvCell } from "@/lib/sanitize";
+
 /**
  * Convert an array of objects to a CSV string and trigger a browser download.
  *
@@ -6,15 +8,15 @@
  *                  fields appear and what the column headers are called.
  * @param filename - Name of the downloaded file (should end with `.csv`).
  */
-export function downloadCsv<T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function downloadCsv<T extends Record<string, any>>(
   rows: T[],
   columns: { key: keyof T; header: string }[],
   filename: string
 ): void {
-  if (rows.length === 0) return;
-
   const escape = (value: unknown): string => {
-    const str = String(value ?? "");
+    // Neutralise spreadsheet formula injection before quoting.
+    const str = sanitizeCsvCell(value);
     // Wrap in quotes if the value contains a comma, quote, or newline
     if (str.includes(",") || str.includes('"') || str.includes("\n")) {
       return `"${str.replace(/"/g, '""')}"`;

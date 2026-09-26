@@ -1,7 +1,13 @@
+import * as Sentry from "@sentry/nextjs";
 import { render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import ErrorBoundary from "./ErrorBoundary";
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+}));
 
 function FailingApiSection() {
   const [error, setError] = useState<Error | null>(null);
@@ -22,6 +28,7 @@ function SuccessfulSection() {
 describe("ErrorBoundary", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(Sentry.captureException).mockClear();
   });
 
   afterEach(() => {
@@ -37,6 +44,34 @@ describe("ErrorBoundary", () => {
 
     expect(await screen.findByText(/Something went wrong/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Try Again/i })).toBeTruthy();
+  });
+
+  it("reports caught errors through Sentry", async () => {
+    render(
+      <ErrorBoundary>
+        <FailingApiSection />
+      </ErrorBoundary>
+    );
+
+    await screen.findByText(/Something went wrong/i);
+
+    const captureException = vi.mocked(Sentry.captureException);
+    expect(captureException).toHaveBeenCalledTimes(1);
+
+    const [capturedError, context] = captureException.mock.calls[0];
+    expect(capturedError).toBeInstanceOf(Error);
+    expect((capturedError as Error).message).toBe("Simulated API failure");
+    // Issue #424: every capture now carries the standardized scope/action tags.
+    expect(context).toEqual(
+      expect.objectContaining({
+        tags: expect.objectContaining({ scope: "ui", action: "ErrorBoundary" }),
+        extra: {
+          errorInfo: expect.objectContaining({
+            componentStack: expect.any(String),
+          }),
+        },
+      })
+    );
   });
 
   it("matches snapshot when error boundary shows error state", async () => {
@@ -74,7 +109,7 @@ describe("ErrorBoundary", () => {
   });
 
   it("displays error message with proper styling", async () => {
-    const { container } = render(
+    render(
       <ErrorBoundary>
         <FailingApiSection />
       </ErrorBoundary>

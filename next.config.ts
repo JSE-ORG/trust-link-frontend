@@ -1,10 +1,9 @@
-import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
 import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
 
-// Validated at config-load time so `next build` and `next dev` fail immediately
-// with a clear message instead of surfacing a cryptic undefined at runtime.
-// Validated at config-load time (next build / next dev). Fail fast with a
-// clear message rather than surfacing a cryptic runtime undefined later.
+loadEnvConfig(process.cwd());
+
 const REQUIRED_ENV_VARS = [
   "NEXT_PUBLIC_API_URL",
   "NEXT_PUBLIC_CONTRACT_ID",
@@ -15,46 +14,49 @@ const REQUIRED_ENV_VARS = [
 for (const key of REQUIRED_ENV_VARS) {
   if (!process.env[key]) {
     throw new Error(
-      `\n\nMissing required environment variable: ${key}\n` +
-        `Add it to .env.local or your deployment environment before building.\n`
+      `
+
+Missing required environment variable: ${key}
+` +
+        `Add it to .env.local or your deployment environment before building.
+`
     );
   }
 }
 
 const nextConfig: NextConfig = {
-  // swcMinify is always-on in Next.js 15+ and has no config toggle.
-  // swcMinify is always-on in Next.js 15+ and cannot be set explicitly.
   compress: true,
+  experimental: { testProxy: true },
+  turbopack: {
+    root: process.cwd(),
+  },
 
   images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
     remotePatterns: [
-      // Stellar Expert contract explorer (mainnet)
       {
         protocol: "https",
         hostname: "stellarexpert.io",
         pathname: "/**",
       },
-      // Stellar Expert contract explorer (testnet)
       {
         protocol: "https",
         hostname: "testnet.stellarexpert.io",
         pathname: "/**",
       },
-      // S3 evidence bucket — virtual-hosted-style, global endpoint
-      // S3 evidence bucket — virtual-hosted-style (us-east-1 and global)
       {
         protocol: "https",
         hostname: "*.s3.amazonaws.com",
         pathname: "/**",
       },
-      // S3 evidence bucket — virtual-hosted-style, region-scoped endpoint
-      // S3 evidence bucket — virtual-hosted-style with explicit region
       {
         protocol: "https",
         hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
-      // Common image hosting services for escrow item images
       {
         protocol: "https",
         hostname: "images.unsplash.com",
@@ -73,6 +75,21 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async redirects() {
+    return [
+      {
+        source: "/vendor/signup",
+        destination: "/create",
+        permanent: true,
+      },
+      {
+        source: "/verify",
+        destination: "/track",
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     const sorobanRpcUrl =
       process.env.NEXT_PUBLIC_SOROBAN_RPC_URL ?? "https://soroban-testnet.stellar.org";
@@ -80,13 +97,93 @@ const nextConfig: NextConfig = {
     const preconnectTargets = [sorobanRpcUrl, apiUrl].filter(Boolean);
     const linkHeaderValue = preconnectTargets.map((url) => `<${url}>; rel=preconnect`).join(", ");
 
+    const isProd = process.env.NODE_ENV === "production";
+    const connectSrc = [
+      "'self'",
+      sorobanRpcUrl,
+      apiUrl,
+      "https://horizon.stellar.org",
+      "https://horizon-testnet.stellar.org",
+      "https://*.sentry.io",
+      "https://*.ingest.sentry.io",
+      // PostHog analytics (lib/analytics.ts) — posthog-js sends events to the
+      // default ingest endpoint https://us.i.posthog.com when no custom
+      // `api_host` is configured.
+      "https://us.i.posthog.com",
+    ].filter(Boolean);
+
+    // Content Security Policy (CSP) — established 2026-08-27, issue #449.
+    //
+    // Every directive below maps to a resource or behaviour verified against
+    // the application's actual usage:
+    //   - 'unsafe-inline' script-src: Next.js RSC payload scripts + the inline
+    //     theme-init script in app/layout.tsx. TODO(#next): migrate to nonce
+    //     or hash-based CSP.
+    //   - 'unsafe-eval' (dev only): Next.js/React dev tooling.
+    //   - img-src hosts: next/image remotePatterns in this file.
+    //   - connect-src hosts: Stellar Horizon/Soroban RPC, backend API
+    //     (NEXT_PUBLIC_API_URL), Sentry, and PostHog (lib/analytics.ts).
+    //   - frame-ancestors 'self' is kept in lockstep with X-Frame-Options:
+    //     SAMEORIGIN below (legacy fallback for non-CSP browsers).
+    const csp = [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://stellarexpert.io https://testnet.stellarexpert.io https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com https://images.unsplash.com https://*.cloudinary.com https://*.imgix.net",
+      "font-src 'self' data:",
+      `connect-src ${connectSrc.join(" ")}`,
+      // Modern clickjacking defence. Kept in lockstep with the X-Frame-Options
+      // header below so browsers converge on the same framing policy: only
+      // pages served from this origin may embed the app in a frame/iframe.
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, must-revalidate" },
+        ],
+      },
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/_next/static/:path*",
+              headers: [
+                { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+              ],
+            },
+          ]
+        : []),
+      {
+        source: "/:path*.(jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)",
+        locale: false,
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/:path*.(json|pdf|txt|xml|webmanifest)",
+        locale: false,
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
+      },
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
+          // Prevents UI redress / clickjacking attacks: third-party sites cannot
+          // load TrustLink in a frame and trick users into clicking through to
+          // escrow or dispute actions. Legacy fallback for browsers that do not
+          // support the CSP `frame-ancestors` directive above.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Content-Security-Policy", value: csp },
           { key: "Link", value: linkHeaderValue },
         ],
       },
@@ -96,5 +193,5 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(nextConfig, {
   silent: true,
-  hideSourceMaps: true,
+  sourcemaps: { disable: true },
 });

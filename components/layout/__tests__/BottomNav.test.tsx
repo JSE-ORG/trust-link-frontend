@@ -1,10 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach,describe, expect, it, vi } from "vitest";
 
 const mockUsePathname = vi.fn();
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
+}));
+
+vi.mock("@/components/providers/NotificationProvider", () => ({
+  useNotifications: () => ({ unreadCount: 0 }),
+  NotificationProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("next/link", () => ({

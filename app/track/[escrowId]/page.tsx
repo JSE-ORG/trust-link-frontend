@@ -1,23 +1,46 @@
-import * as Sentry from "@sentry/nextjs";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import TrackingTimeline from "@/components/tracking/TrackingTimeline";
+import TrackingTimelineSkeleton from "@/components/tracking/TrackingTimelineSkeleton";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getEscrow } from "@/lib/api";
+import { setEscrowContext } from "@/lib/logger";
+import type { GetEscrowResponse } from "@/types/api";
+import { formatUSDC } from "@/utils/currency";
 
 interface TrackPageProps {
   params: Promise<{ escrowId: string }>;
 }
 
+export async function generateMetadata({ params }: TrackPageProps): Promise<Metadata> {
+  const { escrowId } = await params;
+  try {
+    const escrow = await getEscrow(escrowId);
+    return {
+      title: `Track Order — ${escrow.item} | TrustLink`,
+      description: `Real-time tracking for your ${escrow.item} order. Monitor escrow status, shipment, and payment release on the Stellar network.`,
+    };
+  } catch {
+    return {
+      title: "Track Order | TrustLink",
+      description: "Track your escrow order and monitor shipment status on the Stellar network.",
+    };
+  }
+}
+
 export default async function TrackPage({ params }: TrackPageProps) {
   const { escrowId } = await params;
   
-  Sentry.setTag("escrow.id", escrowId);
-  Sentry.setContext("tracking", { escrowId });
-  
+  setEscrowContext(escrowId);
+
   // Fetch initial escrow data
-  let initialEscrow;
+  let initialEscrow: GetEscrowResponse;
   try {
     initialEscrow = await getEscrow(escrowId);
-  } catch (error) {
+  } catch {
     return (
       <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
         <div className="mx-auto max-w-4xl">
@@ -26,7 +49,7 @@ export default async function TrackPage({ params }: TrackPageProps) {
               Order Not Found
             </h1>
             <p className="text-red-700 dark:text-red-300">
-              We couldn't find an order with ID: {escrowId}
+              We couldn&apos;t find an order with ID: {escrowId}
             </p>
           </div>
         </div>
@@ -37,6 +60,16 @@ export default async function TrackPage({ params }: TrackPageProps) {
   return (
     <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
+        <Breadcrumb
+          className="mb-6"
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Track Order", href: "/tracking" },
+            {
+              label: `Order ${escrowId.length > 16 ? `${escrowId.slice(0, 16)}…` : escrowId}`,
+            },
+          ]}
+        />
         <div className="mb-6">
           <h1 className="text-3xl font-semibold text-zinc-950 dark:text-white">
             Track Your Order
@@ -61,7 +94,7 @@ export default async function TrackPage({ params }: TrackPageProps) {
             <div className="flex justify-between">
               <span className="text-zinc-600 dark:text-zinc-400">Amount:</span>
               <span className="font-medium text-zinc-950 dark:text-zinc-100">
-                ${initialEscrow.amount.toFixed(2)}
+                {formatUSDC(initialEscrow.amount)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -75,7 +108,18 @@ export default async function TrackPage({ params }: TrackPageProps) {
 
         {/* Tracking Timeline */}
         <ErrorBoundary>
-          <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          <Suspense
+            fallback={
+              /* Timeline skeleton reserves the correct vertical space so the
+                 page height never jumps when the real timeline mounts (CLS = 0). */
+              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                <Skeleton className="mb-6 h-5 w-1/3" />
+                <TrackingTimelineSkeleton />
+              </div>
+            }
+          >
+            <TrackingTimeline escrowId={escrowId} initialEscrow={initialEscrow} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     </main>

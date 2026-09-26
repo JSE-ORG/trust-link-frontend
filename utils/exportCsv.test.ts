@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import { downloadCsv } from "./exportCsv";
 
 describe("downloadCsv", () => {
@@ -28,9 +29,22 @@ describe("downloadCsv", () => {
     vi.spyOn(document.body, "removeChild").mockImplementation((node) => node);
   });
 
-  it("does nothing when rows is empty", () => {
-    downloadCsv([], [{ key: "a", header: "A" }], "test.csv");
-    expect(appendedLink).toBeNull();
+  it("generates a header-only CSV when rows is empty", () => {
+    let blobContent = "";
+    const OrigBlob = globalThis.Blob;
+    const BlobSpy = vi.fn(function (this: Blob, parts: BlobPart[]) {
+      blobContent = parts.join("");
+      return new OrigBlob(parts);
+    });
+    vi.stubGlobal("Blob", BlobSpy);
+
+    downloadCsv([], [{ key: "a", header: "A" }, { key: "b", header: "B" }], "test.csv");
+
+    const lines = blobContent.split("\n");
+    expect(lines.length).toBe(1);
+    expect(lines[0]).toBe("A,B");
+    expect(appendedLink).not.toBeNull();
+    expect(appendedLink!.download).toBe("test.csv");
   });
 
   it("generates correct CSV content and triggers download", () => {
@@ -46,9 +60,10 @@ describe("downloadCsv", () => {
 
     // Capture Blob content
     let blobContent = "";
-    const BlobSpy = vi.fn((parts: BlobPart[]) => {
+    const OrigBlob = globalThis.Blob;
+    const BlobSpy = vi.fn(function (this: Blob, parts: BlobPart[]) {
       blobContent = parts.join("");
-      return new Blob(parts);
+      return new OrigBlob(parts);
     });
     vi.stubGlobal("Blob", BlobSpy);
 
@@ -68,6 +83,52 @@ describe("downloadCsv", () => {
     expect(revokedUrl).toBe("blob:http://localhost/fake");
   });
 
+  it("escapes fields with newlines properly", () => {
+    const rows = [
+      { id: "1", note: "Line 1\nLine 2" },
+    ];
+    const columns: { key: keyof (typeof rows)[0]; header: string }[] = [
+      { key: "id", header: "ID" },
+      { key: "note", header: "Note" },
+    ];
+
+    let blobContent = "";
+    const OrigBlob = globalThis.Blob;
+    const BlobSpy = vi.fn(function (this: Blob, parts: BlobPart[]) {
+      blobContent = parts.join("");
+      return new OrigBlob(parts);
+    });
+    vi.stubGlobal("Blob", BlobSpy);
+
+    downloadCsv(rows, columns, "newlines.csv");
+
+    const lines = blobContent.split("\n");
+    expect(lines[0]).toBe("ID,Note");
+    expect(lines[1]).toBe('1,"Line 1');
+    expect(lines[2]).toBe('Line 2"');
+  });
+
+  it("handles missing column keys gracefully", () => {
+    const rows: Record<string, unknown>[] = [{ id: "1" }]; // missing 'missingKey'
+    const columns = [
+      { key: "id", header: "ID" },
+      { key: "missingKey", header: "Missing Key" },
+    ];
+
+    let blobContent = "";
+    const OrigBlob = globalThis.Blob;
+    const BlobSpy = vi.fn(function (this: Blob, parts: BlobPart[]) {
+      blobContent = parts.join("");
+      return new OrigBlob(parts);
+    });
+    vi.stubGlobal("Blob", BlobSpy);
+
+    downloadCsv(rows, columns, "missing.csv");
+
+    const lines = blobContent.split("\n");
+    expect(lines[1]).toBe("1,");
+  });
+
   it("handles undefined/null values gracefully", () => {
     const rows = [{ id: "1", value: undefined }, { id: "2", value: null }];
     const columns: { key: keyof (typeof rows)[0]; header: string }[] = [
@@ -76,9 +137,10 @@ describe("downloadCsv", () => {
     ];
 
     let blobContent = "";
-    const BlobSpy = vi.fn((parts: BlobPart[]) => {
+    const OrigBlob = globalThis.Blob;
+    const BlobSpy = vi.fn(function (this: Blob, parts: BlobPart[]) {
       blobContent = parts.join("");
-      return new Blob(parts);
+      return new OrigBlob(parts);
     });
     vi.stubGlobal("Blob", BlobSpy);
 

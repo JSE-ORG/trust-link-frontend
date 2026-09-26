@@ -1,162 +1,122 @@
-import { Dispute, Escrow, Tracking } from "@/types";
+/**
+ * API client — consolidated wrapper around lib/api/client.ts
+ *
+ * All implementation lives in lib/api/client.ts (typed, ApiError class,
+ * centralized request helper). This module re-exports every public binding
+ * so existing imports from "@/lib/api" keep working.
+ *
+ * The following type-only bindings are re-exported from @/types to avoid
+ * duplication (they were historically defined inline in this file):
+ *   - VendorNotificationPreferences
+ *   - VendorAnalyticsPoint
+ *   - VendorAnalyticsResponse
+ */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import {
+  type ApiClient,
+  ApiError,
+  type ApiErrorShape,
+  cancelEscrow as cancelEscrowRaw,
+  createApiClient as createApiClientRaw,
+  createDispute as createDisputeRaw,
+  type CreateDisputeInput,
+  createEscrow as createEscrowRaw,
+  type EscrowInput,
+  type EscrowResponse,
+  getAdminDisputes as getAdminDisputesRaw,
+  getDispute as getDisputeRaw,
+  getEscrow as getEscrowRaw,
+  getPublicVendorEscrows as getPublicVendorEscrowsRaw,
+  getSubscription as getSubscriptionRaw,
+  getTracking as getTrackingRaw,
+  getVendorAnalytics as getVendorAnalyticsRaw,
+  getVendorEscrows as getVendorEscrowsRaw,
+  getVendorNotificationPreferences as getVendorNotificationPreferencesRaw,
+  getVendorProfile as getVendorProfileRaw,
+  patchBuyerContact as patchBuyerContactRaw,
+  patchVendorNotifications as patchVendorNotificationsRaw,
+  resolveDispute as resolveDisputeRaw,
+  shipEscrow as shipEscrowRaw,
+  type ShipEscrowInput,
+  upgradeSubscription as upgradeSubscriptionRaw,
+} from "@/lib/api/client";
 
-export async function getEscrow(id: string): Promise<Escrow> {
-  const primaryRes = await fetch(`${API_URL}/escrow/${id}`, {
-    cache: 'no-store',
-  });
-
-  if (primaryRes.ok) {
-    return primaryRes.json();
-  }
-
-  const fallbackRes = await fetch(`${API_URL}/escrows/${id}`, {
-    cache: 'no-store',
-  });
-
-  if (!fallbackRes.ok) {
-    throw new Error('Failed to fetch escrow');
-  }
-
-  return fallbackRes.json();
-}
-
-export async function getDispute(id: string, token?: string): Promise<Dispute> {
-  const headers: HeadersInit = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}/disputes/${id}`, {
-    cache: 'no-store',
-    headers,
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch dispute');
-  }
-  return res.json();
-}
-
-export async function getAdminDisputes(token?: string): Promise<Dispute[]> {
-  const headers: HeadersInit = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}/disputes?status=OPEN,UNDER_REVIEW`, {
-    cache: 'no-store',
-    headers,
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch disputes');
-  }
-
-  const disputes = (await res.json()) as Dispute[];
-  return disputes.filter(
-    (dispute) => dispute.status === 'OPEN' || dispute.status === 'UNDER_REVIEW'
-  );
-}
-
-export async function resolveDispute(id: string, resolution: 'RELEASE_TO_VENDOR' | 'REFUND_BUYER', token?: string): Promise<Dispute> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}/disputes/${id}/resolve`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ resolution }),
-  });
-  if (!res.ok) {
-    throw new Error('Failed to resolve dispute');
-  }
-  return res.json();
-}
-
-export interface EscrowInput {
-  itemName: string;
-  priceUSDC: string;
-  description: string;
-  shippingWindow: string;
-}
-
-export interface EscrowResponse {
-  url: string;
-}
-
-export async function createEscrow(data: EscrowInput): Promise<EscrowResponse> {
-  const res = await fetch(`${API_URL}/escrow`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Failed to create escrow: ${err}`);
-  }
-  return res.json();
-}
-
-export async function getVendorEscrows(token?: string): Promise<Escrow[]> {
-  const headers: HeadersInit = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}/vendor/escrows`, {
-    cache: 'no-store',
-    headers,
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch vendor escrows');
-  }
-  return res.json();
-}
-
-export async function createDispute(escrowId: string, data: { reason: string; description: string; evidence: string[] }): Promise<Dispute> {
-  const res = await fetch(`${API_URL}/escrows/${escrowId}/dispute`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Failed to raise dispute: ${err}`);
-  }
-  return res.json();
-}
-
-export async function getTracking(escrowId: string): Promise<Tracking> {
-  const res = await fetch(`${API_URL}/escrows/${escrowId}/tracking`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch tracking details');
-  }
-  return res.json();
-}
+// Re-export types that were historically defined here but now live in @/types
+export type {
+  VendorAnalyticsApiResponse,
+  VendorAnalyticsPoint,
+  VendorAnalyticsResponse,
+  VendorNotificationPreferences,
+} from "@/types";
 
 export interface BuyerContactInput {
   email?: string;
   phone?: string;
 }
 
-export async function patchBuyerContact(escrowId: string, data: BuyerContactInput): Promise<void> {
-  const res = await fetch(`${API_URL}/escrow/${escrowId}/buyer-contact`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Failed to save contact info: ${err}`);
+export { ApiError };
+export type { ApiClient, ApiErrorShape, CreateDisputeInput, EscrowInput, EscrowResponse, ShipEscrowInput };
+
+/**
+ * Wraps an API call so that 401 responses are handled gracefully:
+ * - clears the expired JWT from localStorage
+ * - redirects the user to reconnect their wallet
+ *
+ * @param fn the API function to wrap
+ * @returns the wrapped function with identical signature
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any -- generic wrapper preserves caller signatures */
+function withSessionExpiryHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+   
+  return (async (...args: any[]) => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        // Only manipulate the browser environment if available
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("wallet.jwk");
+          // Direct the user to reconnect their wallet
+          window.location.assign("/wallet/reconnect?reason=session_expired");
+        }
+      }
+      throw error;
+    }
+  }) as T;
+}
+
+// Wrap each individual API function
+export const cancelEscrow = withSessionExpiryHandling(cancelEscrowRaw);
+export const createDispute = withSessionExpiryHandling(createDisputeRaw);
+export const createEscrow = withSessionExpiryHandling(createEscrowRaw);
+export const getAdminDisputes = withSessionExpiryHandling(getAdminDisputesRaw);
+export const getDispute = withSessionExpiryHandling(getDisputeRaw);
+export const getEscrow = withSessionExpiryHandling(getEscrowRaw);
+export const getPublicVendorEscrows = withSessionExpiryHandling(getPublicVendorEscrowsRaw);
+export const getSubscription = withSessionExpiryHandling(getSubscriptionRaw);
+export const getTracking = withSessionExpiryHandling(getTrackingRaw);
+export const getVendorAnalytics = withSessionExpiryHandling(getVendorAnalyticsRaw);
+export const getVendorEscrows = withSessionExpiryHandling(getVendorEscrowsRaw);
+export const getVendorNotificationPreferences = withSessionExpiryHandling(getVendorNotificationPreferencesRaw);
+export const getVendorProfile = withSessionExpiryHandling(getVendorProfileRaw);
+export const patchBuyerContact = withSessionExpiryHandling(patchBuyerContactRaw);
+export const patchVendorNotifications = withSessionExpiryHandling(patchVendorNotificationsRaw);
+export const resolveDispute = withSessionExpiryHandling(resolveDisputeRaw);
+export const shipEscrow = withSessionExpiryHandling(shipEscrowRaw);
+export const upgradeSubscription = withSessionExpiryHandling(upgradeSubscriptionRaw);
+
+/**
+ * Creates a new API client and wraps all of its methods with
+ * session-expiry handling.
+ */
+export function createApiClient(...args: Parameters<typeof createApiClientRaw>): ApiClient {
+  const client = createApiClientRaw(...args);
+  const wrappedClient = { ...client } as ApiClient & Record<string, unknown>;
+  for (const key of Object.keys(wrappedClient)) {
+    const value = wrappedClient[key];
+    if (typeof value === "function") {
+      wrappedClient[key] = withSessionExpiryHandling(value as never);
+    }
   }
+  return wrappedClient;
 }

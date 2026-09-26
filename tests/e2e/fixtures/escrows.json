@@ -1,0 +1,21 @@
+{
+  "authChallenge": {
+    "transaction": "challenge-xdr",
+    "network_passphrase": "Test SDF Network ; September 2015"
+  },
+  "authVerify": {
+    "token": "jwt-token"
+  },
+  "fundEscrow": {
+    "txHash": "abc123def456tx789hash_mock_payment_confirmed",
+    "status": "FUNDED"
+  },
+  "shipEscrow": {
+    "status": "SHIPPED",
+    "trackingId": "TRACK-123",
+    "carrier": "Terminal Africa"
+  },
+  "createEscrow": {
+    "urlTemplate": "https://trustlink.example.com/escrow/{itemName}"
+  }
+}

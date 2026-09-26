@@ -1,81 +1,51 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import React from "react";
+import { describe, expect,it } from "vitest";
+
+import { ESCROW_STATUS_MAP, EscrowState } from "../escrow-status";
 import { EscrowStatusBadge } from "../EscrowStatusBadge";
 
+const VARIANT_CLASSES: Record<string, string> = {
+  default: "bg-zinc-900",
+  secondary: "bg-zinc-100",
+  destructive: "bg-red-500",
+  outline: "text-zinc-950",
+  success: "bg-emerald-500",
+  warning: "bg-amber-500",
+};
+
+const states = Object.keys(ESCROW_STATUS_MAP) as EscrowState[];
+
 describe("EscrowStatusBadge", () => {
-  it("renders Pending state correctly", () => {
-    render(<EscrowStatusBadge status="Pending" />);
-    const badge = screen.getByText("Pending");
-    expect(badge).toBeInTheDocument();
-    // 'secondary' variant uses zinc-100/800
-    expect(badge.className).toContain("bg-zinc-100");
-  });
-
-  it("renders Funded state correctly", () => {
-    render(<EscrowStatusBadge status="Funded" />);
-    const badge = screen.getByText("Funded");
-    expect(badge).toBeInTheDocument();
-    // 'default' variant uses zinc-900
-    expect(badge.className).toContain("bg-zinc-900");
-  });
-
-  it("renders Shipped state correctly", () => {
-    render(<EscrowStatusBadge status="Shipped" />);
-    const badge = screen.getByText("Shipped");
-    expect(badge).toBeInTheDocument();
-    // 'outline' variant text-zinc-950
-    expect(badge.className).toContain("text-zinc-950");
-  });
-
-  it("renders Completed state correctly", () => {
-    render(<EscrowStatusBadge status="Completed" />);
-    const badge = screen.getByText("Completed");
-    expect(badge).toBeInTheDocument();
-    // 'success' variant uses emerald-500
-    expect(badge.className).toContain("bg-emerald-500");
-  });
-
-  it("renders Disputed state correctly", () => {
-    render(<EscrowStatusBadge status="Disputed" />);
-    const badge = screen.getByText("Disputed");
-    expect(badge).toBeInTheDocument();
-    // 'destructive' variant uses red-500
-    expect(badge.className).toContain("bg-red-500");
-  });
-
-  it("renders Refunded state correctly", () => {
-    render(<EscrowStatusBadge status="Refunded" />);
-    const badge = screen.getByText("Refunded");
-    expect(badge).toBeInTheDocument();
-    // 'warning' variant uses amber-500
-    expect(badge.className).toContain("bg-amber-500");
-  });
-
-  it("renders Cancelled state correctly", () => {
-    render(<EscrowStatusBadge status="Cancelled" />);
-    const badge = screen.getByText("Cancelled");
-    expect(badge).toBeInTheDocument();
-    // 'secondary' variant
-    expect(badge.className).toContain("bg-zinc-100");
-  });
+  it.each(states)(
+    "renders %s with correct label and variant class",
+    (state) => {
+      const { label, variant } = ESCROW_STATUS_MAP[state];
+      render(<EscrowStatusBadge status={state} />);
+      const liveRegion = screen.getByRole("status");
+      expect(liveRegion).toHaveAccessibleName(`Escrow status updated to: ${label}`);
+      expect(liveRegion).toHaveAttribute("aria-live", "polite");
+      expect(liveRegion).toHaveAttribute("aria-atomic", "true");
+      expect(liveRegion.closest("div")?.className).toContain(VARIANT_CLASSES[variant as string]);
+    }
+  );
 
   it("normalizes case-insensitive status strings", () => {
     render(<EscrowStatusBadge status="pEnDiNg" />);
-    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveAccessibleName("Escrow status updated to: Pending");
   });
 
   it("handles unknown states safely", () => {
     render(<EscrowStatusBadge status="UNKNOWN_STATE" />);
-    const badge = screen.getByText("UNKNOWN_STATE");
-    expect(badge).toBeInTheDocument();
-    // falls back to secondary
-    expect(badge.className).toContain("bg-zinc-100");
+    const liveRegion = screen.getByRole("status");
+    expect(liveRegion).toHaveAccessibleName("Escrow status updated to: UNKNOWN_STATE");
+    expect(liveRegion.closest("div")?.className).toContain("bg-zinc-100");
   });
 
   it("accepts and applies custom className", () => {
     render(<EscrowStatusBadge status="Funded" className="custom-class" />);
-    const badge = screen.getByText("Funded");
-    expect(badge.className).toContain("custom-class");
+    const badge = screen.getByRole("status");
+    expect(badge.closest("div")?.className).toContain("custom-class");
+    expect(badge).toHaveAccessibleName("Escrow status updated to: Funded");
   });
 });

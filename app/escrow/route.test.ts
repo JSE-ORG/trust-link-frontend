@@ -1,24 +1,30 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { GET } from "./route";
 
-vi.mock("@/lib/escrowStore", () => ({
-  getEscrowItems: vi.fn(),
+vi.mock("@/lib/api", () => ({
+  getVendorEscrows: vi.fn(),
 }));
 
-import { getEscrowItems } from "@/lib/escrowStore";
+vi.mock("@/lib/rateLimit", () => ({
+  enforceRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
+import { getVendorEscrows } from "@/lib/api";
 
 describe("GET /api/escrow", () => {
   beforeEach(() => {
-    vi.mocked(getEscrowItems).mockReset();
+    vi.mocked(getVendorEscrows).mockReset();
   });
 
   it("returns escrow items with a 200 status", async () => {
     const escrowItems = [
       { escrowId: "escrow-1", vendor: "Alliance Logistics", orders: 24, status: "Ready" },
     ];
-    vi.mocked(getEscrowItems).mockReturnValue(escrowItems);
+    // Changed to mockResolvedValue because the real API functions are asynchronous
+    vi.mocked(getVendorEscrows).mockResolvedValue(escrowItems as never);
 
-    const response = GET();
+    const response = await GET(new Request("https://test.local/escrow"));
     const body = await response.json();
 
     expect(response.status).toBe(200);

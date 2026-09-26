@@ -1,66 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import FetchErrorState, {
+  getFetchErrorMessage,
+} from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import OptimizedImage from "@/components/ui/OptimizedImage";
-import ShipTrackingModal from "@/components/dashboard/ShipTrackingModal";
-import TransactionHistoryExport from "@/components/dashboard/TransactionHistoryExport";
-import { getVendorEscrows } from "@/lib/api";
-import { downloadCsv } from "@/utils/exportCsv";
-import type { Escrow } from "@/types";
+
 import EmptyVendorState from "./EmptyVendorState";
-export default function VendorDashboardList({ loading = false }: { loading?: boolean }) {
-  const [escrows, setEscrows] = useState<Escrow[] | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [selectedEscrow, setSelectedEscrow] = useState<Escrow | null>(null);
+import { useCancelEscrow } from "./useCancelEscrow";
+import { useEscrowCsvExport } from "./useEscrowCsvExport";
+import { useEscrowFilters } from "./useEscrowFilters";
+import { useEscrowSelection } from "./useEscrowSelection";
+import { useShipTracking } from "./useShipTracking";
+import { useVendorEscrows } from "./useVendorEscrows";
+import { useViewModePreference } from "./useViewModePreference";
+import VendorBulkActionBar from "./VendorBulkActionBar";
+import VendorDateFilter from "./VendorDateFilter";
+import VendorEscrowCardList from "./VendorEscrowCardList";
+import VendorEscrowModals from "./VendorEscrowModals";
+import VendorEscrowTable from "./VendorEscrowTable";
+import VendorListToolbar from "./VendorListToolbar";
+import VendorNoResults from "./VendorNoResults";
+import VendorPagination from "./VendorPagination";
+import VendorStatusTabs from "./VendorStatusTabs";
 
-  const loadItems = async () => {
-    try {
-      const token = window.localStorage.getItem("wallet.jwt") || undefined;
-      const data = await getVendorEscrows(token);
-      setEscrows(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to load vendor escrows."));
-    }
-  };
+/**
+ * Props for the VendorDashboardList component.
+ */
+export interface VendorDashboardListProps {
+  /** Indicates if the list is currently loading data. Defaults to false. */
+  loading?: boolean;
+}
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+/**
+ * VendorDashboardList
+ *
+ * Displays a list of escrows for a vendor, allowing filtering, searching,
+ * pagination, and view toggling (card vs. table), plus bulk CSV export. All
+ * state lives in focused hooks and each visual section is an isolated
+ * sub-component; this file only wires them together.
+ *
+ * @param props - Component properties.
+ * @returns The rendered dashboard list.
+ */
+export default function VendorDashboardList({
+  loading = false,
+}: VendorDashboardListProps) {
+  const { t } = useTranslation();
 
-  const handleShipmentSuccess = (escrowId: string) => {
-    setEscrows((current) =>
-      current?.map((item) =>
-        item.id === escrowId ? { ...item, status: "SHIPPED" } : item
-      ) ?? current
+  const { escrows, setEscrows, error, setError, loadItems, retry } =
+    useVendorEscrows({ errorMessage: t("dashboard.loadEscrowsError") });
+  const filters = useEscrowFilters(escrows);
+  const selection = useEscrowSelection(filters.filteredEscrows);
+  const [viewMode, setViewMode] = useViewModePreference();
+  const { handleExportCsv, handleExportSelected } = useEscrowCsvExport({
+    filteredEscrows: filters.filteredEscrows,
+    selectedEscrows: selection.selectedEscrows,
+    selectedCount: selection.selectedCount,
+    translate: t,
+  });
+  const cancel = useCancelEscrow({ translate: t, setEscrows, setError });
+  const ship = useShipTracking({ setEscrows, reload: loadItems });
+
+  if (error) {
+    return (
+      <FetchErrorState
+        title={t("dashboard.loadEscrowsTitle")}
+        message={getFetchErrorMessage(error, t("dashboard.loadEscrowsError"))}
+        onRetry={retry}
+      />
     );
-  };
-
-  const handleExportCsv = () => {
-    if (!escrows || escrows.length === 0) return;
-    downloadCsv(
-      escrows,
-      [
-        { key: "id", header: "Escrow ID" },
-        { key: "item", header: "Item" },
-        { key: "buyerId", header: "Buyer" },
-        { key: "amount", header: "Amount (USDC)" },
-        { key: "status", header: "Status" },
-        { key: "createdAt", header: "Created At" },
-      ],
-      `trustlink-escrows-${new Date().toISOString().slice(0, 10)}.csv`
-    );
-  };
-
-  if (error) throw error;
+  }
 
   if (loading || !escrows) {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, index) => (
-          <div key={index} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div
+            key={index}
+            className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+          >
             <Skeleton className="mb-4 h-5 w-1/3" />
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
@@ -76,94 +96,83 @@ export default function VendorDashboardList({ loading = false }: { loading?: boo
     return <EmptyVendorState />;
   }
 
+  const hasFilteredResults = (filters.filteredEscrows?.length ?? 0) > 0;
+  const sharedListProps = {
+    paginatedEscrows: filters.paginatedEscrows,
+    selectedIds: selection.selectedIds,
+    onToggleSelect: selection.toggleSelectEscrow,
+    onMarkShipped: ship.handleMarkShipped,
+    onCancelEscrow: cancel.handleCancelEscrow,
+    selectAllRef: selection.selectAllRef,
+    areAllFilteredSelected: selection.areAllFilteredSelected,
+    onToggleSelectAll: selection.toggleSelectAll,
+    selectAllDisabled: !hasFilteredResults,
+  };
+
   return (
     <>
-      {escrows.length > 0 && (
-        <div className="mb-4 flex justify-end">
-          <TransactionHistoryExport
-            escrows={escrows}
-            vendorId={escrows[0]?.vendorId || "vendor"}
-          />
-        </div>
-      )}
-      <div className="mb-4 flex justify-end">
-        <button
-          id="export-csv-button"
-          type="button"
-          onClick={handleExportCsv}
-          className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
-      </div>
-      <div className="space-y-4">
-        {escrows.map((escrow) => (
-          <div key={escrow.id} className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-4">
-                {/* Optional Escrow Item Thumbnail */}
-                {escrow.imageUrl && (
-                  <div className="flex-shrink-0 overflow-hidden rounded-xl">
-                    <OptimizedImage
-                      src={escrow.imageUrl}
-                      alt={`${escrow.item} thumbnail`}
-                      width={80}
-                      height={80}
-                      className="h-20 w-20 object-cover"
-                      sizes="80px"
-                    />
-                  </div>
-                )}
-                <div>
-                  <p className="text-base font-semibold text-zinc-950 dark:text-zinc-100">{escrow.item}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    <span>Buyer: {escrow.buyerId ? `${escrow.buyerId.slice(0, 4)}...${escrow.buyerId.slice(-4)}` : 'Unknown'}</span>
-                    <span>•</span>
-                    <span>Amount: {escrow.amount} USDC</span>
-                    <span>•</span>
-                    <span>Created: {new Date(escrow.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                  {escrow.status}
-                </span>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/escrow/${escrow.id}`}
-                    className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-white dark:hover:bg-zinc-900"
-                  >
-                    View
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedEscrow(escrow)}
-                    disabled={escrow.status !== "FUNDED"}
-                    className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                  >
-                    Mark Shipped
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <VendorListToolbar
+        escrows={escrows}
+        searchQuery={filters.searchQuery}
+        onSearchChange={filters.setSearchQuery}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onExportCsv={handleExportCsv}
+      />
 
-      {selectedEscrow && (
-        <ShipTrackingModal
-          escrowId={selectedEscrow.id}
-          vendorName={selectedEscrow.item}
-          open={Boolean(selectedEscrow)}
-          onClose={() => setSelectedEscrow(null)}
-          onSuccess={(escrowId) => {
-            handleShipmentSuccess(escrowId);
-            loadItems();
-          }}
+      <VendorStatusTabs
+        escrows={escrows}
+        statusFilter={filters.statusFilter}
+        onStatusFilterChange={filters.setStatusFilter}
+      />
+
+      <VendorDateFilter
+        fromDate={filters.fromDate}
+        toDate={filters.toDate}
+        onFromDateChange={filters.setFromDate}
+        onToDateChange={filters.setToDate}
+        onClear={filters.clearDateFilter}
+      />
+
+      {!hasFilteredResults ? (
+        <VendorNoResults onReset={filters.resetFilters} />
+      ) : viewMode === "card" ? (
+        <VendorEscrowCardList
+          {...sharedListProps}
+          someFilteredSelected={selection.someFilteredSelected}
+          selectedCount={selection.selectedCount}
+        />
+      ) : (
+        <VendorEscrowTable {...sharedListProps} />
+      )}
+
+      {hasFilteredResults && filters.totalPages > 1 && (
+        <VendorPagination
+          currentPage={filters.currentPage}
+          totalPages={filters.totalPages}
+          onPrevious={filters.goToPreviousPage}
+          onNext={filters.goToNextPage}
         />
       )}
+
+      {selection.selectedCount > 0 && (
+        <VendorBulkActionBar
+          selectedCount={selection.selectedCount}
+          onExportSelected={handleExportSelected}
+          onClearSelection={selection.clearSelection}
+        />
+      )}
+
+      <VendorEscrowModals
+        translate={t}
+        selectedEscrow={ship.selectedEscrow}
+        onCloseShipModal={ship.closeShipModal}
+        onShipmentSuccess={ship.handleShipmentSuccess}
+        escrowToCancel={cancel.escrowToCancel}
+        isCancelling={cancel.isCancelling}
+        onConfirmCancel={cancel.confirmCancelEscrow}
+        onCloseCancelDialog={cancel.closeCancelDialog}
+      />
     </>
   );
 }

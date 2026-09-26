@@ -27,6 +27,7 @@ export default function Footer() {
           >
             <option value="en">English</option>
             <option value="fr">Français</option>
+            <option value="pcm">Pidgin</option>
           </select>
         </div>
       </div>

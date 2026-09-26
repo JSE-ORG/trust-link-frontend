@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Pre-commit git hooks via Husky + lint-staged that run ESLint and project-wide TypeScript checking on staged files (#448).
+- Base Content Security Policy (CSP) established across all routes with directive justifications, extended connect-src to the PostHog analytics ingest endpoint (#449).
+
 ## [0.1.0] - 2026-05-28
 
 ### Added

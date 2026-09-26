@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
+import { formatTimeAgo } from "@/lib/utils";
+
 export type ShipmentStage =
   | "ORDER_PLACED"
   | "PICKED_UP"
@@ -117,48 +121,19 @@ function getStageStatus(stageId: ShipmentStage, currentStage: ShipmentStage): St
 }
 
 function StageIcon({ stageId, status }: { stageId: ShipmentStage; status: StageStatus }) {
-  const baseStyle: React.CSSProperties = {
-    width: 44,
-    height: 44,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    position: "relative",
-    transition: "background 0.3s, border-color 0.3s",
-  };
+  const baseClasses =
+    "w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0 relative transition-colors duration-300 [&>span]:w-5 [&>span]:h-5 [&>span>svg]:w-5 [&>span>svg]:h-5";
 
-  const completedStyle: React.CSSProperties = {
-    ...baseStyle,
-    background: "var(--success)",
-    border: "2px solid var(--success)",
-    color: "#fff",
-  };
-
-  const currentStyle: React.CSSProperties = {
-    ...baseStyle,
-    background: "#fff",
-    border: "2.5px solid var(--warning)",
-    color: "var(--warning)",
-    animation: "timeline-pulse 1.8s ease-in-out infinite",
-  };
-
-  const upcomingStyle: React.CSSProperties = {
-    ...baseStyle,
-    background: "var(--muted-bg)",
-    border: "2px solid var(--border)",
-    color: "var(--muted)",
-  };
-
-  const iconStyle: React.CSSProperties = { width: 20, height: 20 };
-
-  const resolvedStyle =
-    status === "completed" ? completedStyle : status === "current" ? currentStyle : upcomingStyle;
+  const statusClasses =
+    status === "completed"
+      ? "bg-[var(--success)] border-2 border-[var(--success)] text-white"
+      : status === "current"
+      ? "bg-white border-[2.5px] border-[var(--warning)] text-[var(--warning)] animate-[timeline-pulse_1.8s_ease-in-out_infinite]"
+      : "bg-[var(--muted-bg)] border-2 border-[var(--border)] text-[var(--muted)]";
 
   return (
-    <span style={resolvedStyle}>
-      <span style={iconStyle}>
+    <span className={`${baseClasses} ${statusClasses}`}>
+      <span>
         {status === "completed" ? CHECKMARK_ICON : STAGE_ICONS[stageId]}
       </span>
     </span>
@@ -170,6 +145,7 @@ export default function TrackingTimeline({
   stages = DEFAULT_STAGES,
   className = "",
 }: TrackingTimelineProps) {
+  const { i18n } = useTranslation();
   const currentIndex = STAGE_ORDER.indexOf(currentStage);
 
   const liveMessage = (() => {
@@ -179,39 +155,19 @@ export default function TrackingTimeline({
 
   return (
     <section
-      className={className}
-      style={{ fontFamily: "var(--font-geist-sans, Arial, sans-serif)" }}
+      className={`font-[family-name:var(--font-geist-sans,Arial,sans-serif)] ${className}`}
       aria-label="Shipment tracking timeline"
     >
       <div
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        style={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: "hidden",
-          clip: "rect(0,0,0,0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
+        className="sr-only"
       >
         {liveMessage}
       </div>
 
-      <ol
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 0,
-        }}
-      >
+      <ol className="list-none m-0 p-0 flex flex-col gap-0">
         {stages.map((stage, index) => {
           const status = getStageStatus(stage.id, currentStage);
           const isLast = index === stages.length - 1;
@@ -219,113 +175,55 @@ export default function TrackingTimeline({
           return (
             <li
               key={stage.id}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                gap: 0,
-                alignItems: "stretch",
-              }}
+              className="flex flex-row gap-0 items-stretch"
               aria-current={status === "current" ? "step" : undefined}
             >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  width: 44,
-                  flexShrink: 0,
-                }}
-              >
+              <div className="flex flex-col items-center w-[44px] shrink-0">
                 <StageIcon stageId={stage.id} status={status} />
                 {!isLast && (
                   <div
                     aria-hidden="true"
-                    style={{
-                      width: 2,
-                      flex: 1,
-                      minHeight: 24,
-                      background:
-                        index < currentIndex
-                          ? "var(--success)"
-                          : "var(--border)",
-                      transition: "background 0.3s",
-                      marginTop: 2,
-                      marginBottom: 2,
-                    }}
+                    className={`w-[2px] flex-1 min-h-[24px] my-[2px] transition-colors duration-300 ${
+                      index < currentIndex
+                        ? "bg-[var(--success)]"
+                        : "bg-[var(--border)]"
+                    }`}
                   />
                 )}
               </div>
 
               <div
-                style={{
-                  paddingLeft: 16,
-                  paddingTop: 8,
-                  paddingBottom: isLast ? 0 : 24,
-                  flex: 1,
-                  minWidth: 0,
-                }}
+                className={`pl-4 pt-2 flex-1 min-w-0 ${
+                  isLast ? "pb-0" : "pb-6"
+                }`}
               >
                 <p
-                  style={{
-                    margin: 0,
-                    fontWeight: 600,
-                    fontSize: 15,
-                    lineHeight: "1.4",
-                    color:
-                      status === "upcoming"
-                        ? "var(--muted)"
-                        : status === "current"
-                        ? "var(--warning)"
-                        : "var(--success)",
-                    transition: "color 0.3s",
-                  }}
+                  className={`m-0 font-semibold text-[15px] leading-[1.4] transition-colors duration-300 ${
+                    status === "upcoming"
+                      ? "text-[var(--muted)]"
+                      : status === "current"
+                      ? "text-[var(--warning)]"
+                      : "text-[var(--success)]"
+                  }`}
                 >
                   {stage.label}
                   {status === "current" && (
-                    <span
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 11,
-                        fontWeight: 500,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        color: "var(--warning)",
-                        background: "color-mix(in srgb, var(--warning) 12%, transparent)",
-                        border: "1px solid color-mix(in srgb, var(--warning) 30%, transparent)",
-                        borderRadius: 4,
-                        padding: "1px 6px",
-                        verticalAlign: "middle",
-                      }}
-                    >
+                    <span className="ml-2 text-[11px] font-medium tracking-[0.06em] uppercase text-[var(--warning)] bg-[color-mix(in_srgb,var(--warning)_12%,transparent)] border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] rounded px-[6px] py-[1px] align-middle">
                       Active
                     </span>
                   )}
                 </p>
-                <p
-                  style={{
-                    margin: "2px 0 0",
-                    fontSize: 13,
-                    lineHeight: "1.5",
-                    color: "var(--muted)",
-                  }}
-                >
+                <p className="m-0 mt-0.5 text-[13px] leading-[1.5] text-[var(--muted)]">
                   {stage.description}
                 </p>
                 {stage.timestamp && (
                   <time
                     dateTime={stage.timestamp}
-                    style={{
-                      display: "block",
-                      marginTop: 4,
-                      fontSize: 12,
-                      color: status === "upcoming" ? "var(--border)" : "var(--muted)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
+                    className={`block mt-1 text-xs tabular-nums ${
+                      status === "upcoming" ? "text-[var(--border)]" : "text-[var(--muted)]"
+                    }`}
                   >
-                    {new Date(stage.timestamp).toLocaleString(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatTimeAgo(stage.timestamp, i18n.language)}
                   </time>
                 )}
               </div>

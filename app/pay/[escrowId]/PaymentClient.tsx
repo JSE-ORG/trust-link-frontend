@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Escrow } from "@/types";
-import { useWallet } from "@/components/providers/WalletProvider";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import useWallet from "@/hooks/useWallet";
+import { track } from "@/lib/analytics";
+import { getStellarExpertTxUrl } from "@/lib/explorer";
+import { Escrow } from "@/types";
+import type { FundEscrowResponse } from "@/types/api";
+import { formatUSDC } from "@/utils/currency";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PaymentClient({ escrow }: { escrow: Escrow }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { publicKey, connect, isLoading, error: walletError } = useWallet();
   const isConnected = Boolean(publicKey);
 
@@ -20,6 +25,7 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
   const handleSubmitPayment = async () => {
     setIsSubmitting(true);
     setPaymentError(null);
+    track("payment_initiated", { escrowId: escrow.id });
     try {
       const res = await fetch(`${API_URL}/escrows/${escrow.id}/fund`, {
         method: "POST",
@@ -27,8 +33,9 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
         body: JSON.stringify({ buyerPublicKey: publicKey }),
       });
       if (!res.ok) throw new Error("Payment submission failed");
-      const data = await res.json();
+      const data = (await res.json()) as FundEscrowResponse;
       setTxHash(data.txHash ?? data.transactionHash ?? data.hash ?? "mock_tx_hash");
+      track("payment_completed", { escrowId: escrow.id });
     } catch (e: unknown) {
       setPaymentError(e instanceof Error ? e.message : "Payment failed");
     } finally {
@@ -36,10 +43,7 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
     }
   };
 
-  const formattedAmount = new Intl.NumberFormat(i18n.language, {
-    style: "currency",
-    currency: "USD",
-  }).format(escrow.amount);
+  const formattedAmount = formatUSDC(escrow.amount);
 
   if (txHash) {
     return (
@@ -60,10 +64,18 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
         <p className="mb-1 text-sm text-green-700 dark:text-green-300">{t("payment.txHash")}:</p>
         <p
           data-testid="tx-hash"
-          className="mb-6 break-all rounded-lg bg-white px-4 py-2 font-mono text-sm text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="mb-2 break-all rounded-lg bg-white px-4 py-2 font-mono text-sm text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           {txHash}
         </p>
+        <a
+          href={getStellarExpertTxUrl(txHash)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 inline-block text-sm font-medium text-green-700 underline hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+        >
+          View on Stellar Expert ↗
+        </a>
         <Link
           href={`/track/${escrow.id}`}
           data-testid="track-link"
@@ -126,7 +138,7 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
       )}
 
       {walletError && (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{walletError}</p>
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{walletError.message}</p>
       )}
       {paymentError && (
         <p data-testid="payment-error" className="mt-3 text-sm text-red-600 dark:text-red-400">

@@ -1,0 +1,55 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ErrorBoundary > matches snapshot when error boundary shows error state 1`] = `
+<div>
+  <div
+    class="flex min-h-[240px] flex-col items-center justify-center gap-4 rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-zinc-900 dark:border-red-500/40 dark:bg-red-950/30 dark:text-zinc-100"
+  >
+    <div
+      class="flex h-16 w-16 items-center justify-center rounded-full bg-red-200 text-red-700 dark:bg-red-500/20 dark:text-red-200"
+    >
+      <svg
+        aria-hidden="true"
+        class="h-8 w-8"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M11.001 10h2v5h-2zm0 7h2v2h-2z"
+        />
+        <path
+          d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"
+        />
+      </svg>
+    </div>
+    <div
+      class="max-w-md space-y-3"
+    >
+      <p
+        class="text-xl font-semibold"
+      >
+        Something went wrong
+      </p>
+      <p
+        class="text-sm text-zinc-600 dark:text-zinc-300"
+      >
+        We couldn’t load this section. Please try again and the page should recover.
+      </p>
+      <button
+        class="inline-flex items-center justify-center rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900"
+        type="button"
+      >
+        Try Again
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`ErrorBoundary > renders children successfully when no error occurs 1`] = `
+<div>
+  <div>
+    Content loaded successfully
+  </div>
+</div>
+`;

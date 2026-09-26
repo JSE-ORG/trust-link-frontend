@@ -1,51 +1,118 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { rpc } from "@stellar/stellar-sdk";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import {
+  buildContractDeployment,
   buildContractInvocation,
+  confirmDelivery,
+  ContractArg,
+  ContractCallOptions,
+  fundEscrow,
+  isContractSuccess,
   isValidContractId,
   parseContractError,
   parseContractResult,
+  raiseDispute,
   validateContractMethodCall,
-  buildContractDeployment,
-  isContractSuccess,
-  ContractCallOptions,
 } from "./contract";
+import * as freighter from "./freighter";
+
+vi.mock("./freighter", () => ({
+  signTransaction: vi.fn(),
+}));
 
 // Mock Stellar SDK
-vi.mock("@stellar/js-sdk", () => ({
-  Contract: vi.fn().mockImplementation((id) => ({
-    id,
-    call: vi.fn().mockReturnValue({ type: "invocation" }),
-  })),
-  Keypair: { random: vi.fn() },
-  TransactionBuilder: vi.fn().mockImplementation(() => ({
-    addOperation: vi.fn().mockReturnThis(),
-    setTimeout: vi.fn().mockReturnThis(),
-    build: vi.fn().mockReturnValue({
-      toXDR: vi.fn().mockReturnValue("mock-xdr-string"),
+vi.mock("@stellar/stellar-sdk", () => {
+  function buildTx() {
+    return {
+      addOperation: vi.fn().mockReturnThis(),
+      setTimeout: vi.fn().mockReturnThis(),
+      build: vi.fn().mockReturnValue({
+        toXDR: vi.fn().mockReturnValue("mock-xdr-string"),
+      }),
+    };
+  }
+  function MockTxBuilderFn() {
+    return buildTx();
+  }
+  const MockTxBuilder = vi.fn().mockImplementation(MockTxBuilderFn);
+  (MockTxBuilder as unknown as { fromXDR: () => unknown }).fromXDR = function () {
+    return buildTx();
+  };
+
+  function MockServer() {
+    return {
+      getAccount: vi.fn().mockResolvedValue({ accountId: "GTEST", sequenceNumber: "0" }),
+      sendTransaction: vi.fn(),
+      getTransaction: vi.fn(),
+    };
+  }
+
+  class MockScVal {}
+
+  return {
+    Account: vi.fn().mockImplementation(function (accountId: string, sequence: string) {
+      return {
+        accountId: () => accountId,
+        sequenceNumber: () => sequence,
+        incrementSequenceNumber: () => {},
+      };
     }),
-  })),
-  Networks: {
-    PUBLIC_NETWORK_PASSPHRASE: "Public Global Stellar Network ; September 2015",
-    TESTNET_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
-  },
-  Operation: {
-    invokeHostFunction: vi.fn().mockReturnValue({}),
-    extendFootprintTtl: vi.fn().mockReturnValue({}),
-  },
-  xdr: {},
-  BASE_FEE: "100",
-  StrKey: {
-    isValidEd25519PublicKey: vi.fn((key) => key.startsWith("G") && key.length === 56),
-  },
-}));
+    Contract: vi.fn().mockImplementation(function(id) {
+      return {
+        id,
+        call: vi.fn().mockReturnValue({ type: "invocation" }),
+      };
+    }),
+    Keypair: { random: vi.fn() },
+    TransactionBuilder: MockTxBuilder,
+    Networks: {
+      PUBLIC: "Public Global Stellar Network ; September 2015",
+      TESTNET: "Test SDF Network ; September 2015",
+    },
+    Operation: {
+      invokeHostFunction: vi.fn().mockReturnValue({}),
+      extendFootprintTtl: vi.fn().mockReturnValue({}),
+      invokeContractFunction: vi.fn().mockReturnValue({}),
+      uploadContractWasm: vi.fn().mockReturnValue({}),
+    },
+    nativeToScVal: vi.fn().mockImplementation((val: unknown) => ({ type: "mock-scval", value: val })),
+    xdr: {
+      TransactionEnvelope: {
+        fromXDR: vi.fn().mockReturnValue("tx-envelope"),
+      },
+      ScVal: MockScVal,
+    },
+    rpc: {
+      Server: vi.fn().mockImplementation(MockServer),
+      Api: {
+        GetTransactionStatus: {
+          SUCCESS: "SUCCESS",
+          NOT_FOUND: "NOT_FOUND",
+          FAILED: "FAILED",
+        },
+      },
+    },
+    SorobanRpc: {
+      Server: vi.fn().mockImplementation(MockServer),
+    },
+    BASE_FEE: "100",
+    StrKey: {
+      isValidEd25519PublicKey: vi.fn(function(key) {
+        return typeof key === "string" && key.startsWith("G") && key.length === 56;
+      }),
+    },
+  };
+});
 
 describe("lib/stellar/contract.ts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-xdr");
   });
 
   describe("buildContractInvocation", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
 
     it("builds contract invocation XDR for testnet", () => {
@@ -143,9 +210,9 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("returns false for non-string input", () => {
-      expect(isValidContractId(null as any)).toBe(false);
-      expect(isValidContractId(undefined as any)).toBe(false);
-      expect(isValidContractId(123 as any)).toBe(false);
+      expect(isValidContractId(null as unknown as string)).toBe(false);
+      expect(isValidContractId(undefined as unknown as string)).toBe(false);
+      expect(isValidContractId(123 as unknown as string)).toBe(false);
     });
 
     it("returns false when not starting with C", () => {
@@ -229,7 +296,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-string method", () => {
-      const result = validateContractMethodCall(null as any, []);
+      const result = validateContractMethodCall(null as unknown as string, []);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("non-empty string");
     });
@@ -241,7 +308,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("rejects non-array arguments", () => {
-      const result = validateContractMethodCall("transfer", "not-an-array" as any);
+      const result = validateContractMethodCall("transfer", "not-an-array" as unknown as ContractArg[]);
       expect(result.valid).toBe(false);
       expect(result.error).toContain("Arguments must be an array");
     });
@@ -271,7 +338,7 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("buildContractDeployment", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const mockWasm = Buffer.from("mock wasm content");
 
     it("builds deployment transaction for testnet", () => {
@@ -292,7 +359,7 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("throws error for null WASM buffer", () => {
-      expect(() => buildContractDeployment(null as any, validSourceAccount, "TESTNET")).toThrow(
+      expect(() => buildContractDeployment(null as unknown as Buffer, validSourceAccount, "TESTNET")).toThrow(
         "WASM buffer cannot be empty"
       );
     });
@@ -343,8 +410,88 @@ describe("lib/stellar/contract.ts", () => {
     });
   });
 
+  describe("Soroban contract call helpers", () => {
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
+    const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
+
+    it("fundEscrow returns hash and result XDR on success", async () => {
+      const server = rpc.Server;
+      const mockSendTransaction = vi.fn().mockResolvedValue({ status: "PENDING", hash: "hash-1" });
+      const mockGetTransaction = vi.fn().mockResolvedValue({
+        status: "SUCCESS",
+        resultXdr: { toXDR: () => "result-xdr" },
+      });
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: mockSendTransaction,
+          getTransaction: mockGetTransaction,
+        } as unknown as rpc.Server;
+      });
+
+      const result = await fundEscrow(validContractId, ["arg"], validSourceAccount, "TESTNET");
+
+      expect(result).toEqual({ hash: "hash-1", resultXdr: "result-xdr" });
+      expect(freighter.signTransaction).toHaveBeenCalled();
+      expect(mockGetTransaction).toHaveBeenCalledWith("hash-1");
+    });
+
+    it("propagates TxFailed errors", async () => {
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({
+            status: "ERROR",
+            hash: "hash-err",
+            errorResult: { result: () => ({ switch: () => ({ name: "TxFailed" }) }) },
+          }),
+          getTransaction: vi.fn(),
+        } as unknown as rpc.Server;
+      });
+
+      await expect(fundEscrow(validContractId, [], validSourceAccount, "TESTNET"))
+        .rejects.toThrow("TxFailed");
+    });
+
+    it("propagates TxExpired errors", async () => {
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({ status: "PENDING", hash: "hash-2" }),
+          getTransaction: vi.fn().mockResolvedValue({
+            status: "FAILED",
+            resultXdr: { result: () => ({ switch: () => ({ name: "TxExpired" }) }) },
+          }),
+        } as unknown as rpc.Server;
+      });
+
+      await expect(confirmDelivery(validContractId, [], validSourceAccount, "TESTNET"))
+        .rejects.toThrow("TxExpired");
+    });
+
+    it("raises dispute through its contract method", async () => {
+      const server = rpc.Server;
+      vi.mocked(server).mockImplementationOnce(function() {
+        return {
+          getAccount: vi.fn().mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi.fn().mockResolvedValue({ status: "PENDING", hash: "hash-2" }),
+          getTransaction: vi.fn().mockResolvedValue({
+            status: "SUCCESS",
+            resultXdr: { toXDR: () => "result-xdr-2" },
+          }),
+        } as unknown as rpc.Server;
+      });
+
+      const result = await raiseDispute(validContractId, ["reason"], validSourceAccount, "TESTNET");
+
+      expect(result).toEqual({ hash: "hash-2", resultXdr: "result-xdr-2" });
+    });
+  });
+
   describe("Contract call construction integration", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3";
+    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
     const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
 
     it("validates all components before building invocation", () => {

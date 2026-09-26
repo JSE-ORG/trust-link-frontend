@@ -1,8 +1,9 @@
 "use client";
 
+import { Bell, LayoutDashboard, MapPin, PlusCircle, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutDashboard, MapPin, PlusCircle, User } from "lucide-react";
+
 import { useNotifications } from "@/components/providers/NotificationProvider";
 
 const STATIC_NAV = [

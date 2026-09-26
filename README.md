@@ -11,7 +11,7 @@
 
 ---
 
-##  Overview
+## Overview
 
 The TrustLink frontend is a **Next.js 14 web application** that makes decentralized escrow feel as simple as sending a payment link. Vendors generate a Smart Escrow Link in seconds. Buyers click a link, pay with a Stellar wallet, and their funds are held by a Soroban contract until the order is delivered.
 
@@ -33,7 +33,7 @@ VENDOR FLOW                          BUYER FLOW
 
 ---
 
-##  Features
+## Features
 
 - **🔗 Smart Link Generator** — Vendors create escrow links with one form. Links are shareable anywhere — DMs, bios, stories.
 - **💳 Wallet-native Payments** — Integrates Freighter SDK for in-browser Stellar transaction signing. No private key exposure.
@@ -45,7 +45,7 @@ VENDOR FLOW                          BUYER FLOW
 
 ---
 
-##  Architecture
+## Architecture
 
 ```
 trustlink-frontend/
@@ -94,9 +94,28 @@ trustlink-frontend/
 └── types/                          # Shared TypeScript types
 ```
 
+### Escrow State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending : Created
+    Pending --> Funded : Buyer Pays
+    Pending --> Expired : Time Elapsed
+    Funded --> Shipped : Vendor Ships
+    Shipped --> Completed : Buyer Confirms
+    Funded --> Disputed : Buyer Disputes
+    Shipped --> Disputed : Buyer Disputes
+    Disputed --> Released : Admin (to Vendor)
+    Disputed --> Refunded : Admin (to Buyer)
+    Completed --> [*]
+    Released --> [*]
+    Refunded --> [*]
+    Expired --> [*]
+```
+
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -151,7 +170,164 @@ npm start
 
 ---
 
-##  Key Integrations
+## Troubleshooting
+
+### Node Version Mismatch
+
+**Problem**: Build fails with errors like `error:0308010C:digital envelope routines::unsupported` or `SyntaxError: Unexpected token`.
+
+**Solution**:
+
+1. Check the required Node.js version in `.nvmrc` (requires Node.js 18.17+)
+2. Install and use the correct version:
+
+   ```bash
+   # If using nvm
+   nvm install
+   nvm use
+
+   # Verify version
+   node --version  # Should be 18.17 or higher
+   ```
+
+3. Delete `node_modules` and reinstall:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+### Missing Environment Variables
+
+**Problem**: App crashes on startup with "Missing environment configuration" error.
+
+**Solution**:
+
+1. Create a `.env.local` file by copying the example:
+   ```bash
+   cp .env.example .env.local
+   ```
+ 2. Fill in the required variables (see `docs/ENV_VARS.md` for details):
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:3001
+   NEXT_PUBLIC_STELLAR_NETWORK=testnet
+   NEXT_PUBLIC_CONTRACT_ID=your-contract-id
+   ```
+3. Restart the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Backend API Unavailable (CORS Errors)
+
+**Problem**: Browser console shows CORS errors like `Access to fetch at 'http://localhost:3001' has been blocked`.
+
+**Solution**:
+
+**Option 1: Start the backend server**
+
+1. Clone and run the [TrustLink Backend](https://github.com/your-org/trustlink-backend)
+2. Ensure it's running on the port specified in `NEXT_PUBLIC_API_URL`
+
+**Option 2: Use a deployed backend**
+
+```env
+# In .env.local
+NEXT_PUBLIC_API_URL=https://api-staging.trustlink.app
+```
+
+**Option 3: Mock API responses for frontend-only development**
+
+1. Use Next.js API routes as a proxy (see `app/api/` directory)
+2. Or use MSW (Mock Service Worker) for development:
+   ```bash
+   npm install -D msw
+   npx msw init public/
+   ```
+
+### Freighter Wallet Connection Issues
+
+**Problem**: "Wallet not detected" or "Failed to connect wallet" errors.
+
+**Solution**:
+
+**For localhost connections:**
+
+1. Install [Freighter Wallet Extension](https://freighter.app/)
+2. Enable "Experimental Mode" in Freighter settings to allow localhost connections
+3. Ensure you're on the correct network (testnet/mainnet) matching `NEXT_PUBLIC_STELLAR_NETWORK`
+4. Try disconnecting and reconnecting the wallet
+5. Clear browser cache and reload if the issue persists
+
+**For network mismatch:**
+
+```bash
+# Check your .env.local
+NEXT_PUBLIC_STELLAR_NETWORK=testnet  # Must match Freighter's selected network
+```
+
+**Freighter not installed:**
+
+- The app should show a "Install Freighter" prompt
+- If not, check browser console for errors
+- Verify `useWallet` hook is properly initialized in `WalletProvider`
+
+### Port Already in Use
+
+**Problem**: Development server fails to start with `EADDRINUSE: address already in use :::3000`.
+
+**Solution**:
+
+```bash
+# Find and kill the process using port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Or use a different port
+PORT=3001 npm run dev
+```
+
+### Build Errors After Git Pull
+
+**Problem**: Build fails after pulling latest changes.
+
+**Solution**:
+
+1. Reinstall dependencies (lockfile may have changed):
+   ```bash
+   npm install
+   ```
+2. Clear Next.js cache:
+   ```bash
+   rm -rf .next
+   npm run dev
+   ```
+3. Check for new required environment variables in `.env.example`
+
+### Slow Performance in Development
+
+**Problem**: Hot reload takes too long, or pages load slowly.
+
+**Solution**:
+
+1. Ensure you're using Node.js 18.17+ (older versions are slower)
+2. Reduce polling intervals in development:
+   ```typescript
+   // Temporarily disable or increase polling intervals
+   pollingInterval: process.env.NODE_ENV === "development" ? 60_000 : 30_000;
+   ```
+3. Disable source maps in `next.config.ts` for faster builds (development only):
+   ```typescript
+   productionBrowserSourceMaps: false;
+   ```
+
+For more detailed configuration information, see:
+
+- `docs/ENV_VARS.md` - Complete environment variable documentation (also available as `ENV_VARS.md` at root)
+- `DEPLOYMENT.md` - Production deployment checklist
+- `CONTRIBUTING.md` - Development workflow and guidelines
+
+---
+
+## Key Integrations
 
 ### Freighter Wallet (Stellar)
 
@@ -191,7 +367,12 @@ Real-time shipment status is polled from the backend and rendered as a visual ti
 ```typescript
 import { useEscrow } from "@/hooks/useEscrow";
 
-const { data: escrow, isLoading, error, refetch } = useEscrow(escrowId, {
+const {
+  data: escrow,
+  isLoading,
+  error,
+  refetch,
+} = useEscrow(escrowId, {
   pollingInterval: 30_000,
 });
 
@@ -200,7 +381,7 @@ const { data: escrow, isLoading, error, refetch } = useEscrow(escrowId, {
 
 ---
 
-##  Testing
+## Testing
 
 ```bash
 # Unit tests (Jest + React Testing Library)
@@ -208,6 +389,9 @@ npm run test
 
 # End-to-end tests (Playwright)
 npm run test:e2e
+
+# End-to-end tests in Playwright UI mode (interactive debugging)
+npm run test:e2e:ui
 
 # Type checking
 npm run type-check
@@ -227,19 +411,19 @@ npm run lint
 
 ---
 
-##  Design System
+## Design System
 
 TrustLink uses **shadcn/ui** components built on Radix UI primitives, styled with TailwindCSS. The design language is intentionally clean and "trust-signalling" — we're asking people to commit real money through a social media link.
 
 ### Color Tokens
 
-| Token | Value | Usage |
-|---|---|---|
-| `--primary` | `#1B2A6B` (navy) | CTAs, headers |
-| `--accent` | `#7B68EE` (stellar purple) | Highlights, links |
-| `--success` | `#22C55E` | Delivery confirmed, funds released |
-| `--warning` | `#F59E0B` | In transit, awaiting confirmation |
-| `--destructive` | `#EF4444` | Dispute raised, errors |
+| Token           | Value                      | Usage                              |
+| --------------- | -------------------------- | ---------------------------------- |
+| `--primary`     | `#1B2A6B` (navy)           | CTAs, headers                      |
+| `--accent`      | `#7B68EE` (stellar purple) | Highlights, links                  |
+| `--success`     | `#22C55E`                  | Delivery confirmed, funds released |
+| `--warning`     | `#D97706`                  | In transit, awaiting confirmation  |
+| `--destructive` | `#EF4444`                  | Dispute raised, errors             |
 
 ### Component Rules
 
@@ -258,6 +442,7 @@ This repo is part of the **[Stellar Wave Program](https://www.drips.network/wave
 Look for [`good first issue`](../../issues?q=label%3A%22good+first+issue%22) and [`Stellar Wave`](../../issues?q=label%3A%22Stellar+Wave%22) labels.
 
 **Example beginner-friendly tasks:**
+
 - Add loading skeleton to the `TrackingTimeline` component
 - Improve mobile layout of the payment confirmation page
 - Add form field validation messages to `EscrowLinkGenerator`
@@ -265,6 +450,7 @@ Look for [`good first issue`](../../issues?q=label%3A%22good+first+issue%22) and
 - Improve accessibility (ARIA labels) on the dispute form
 
 **Example medium tasks:**
+
 - Implement dark mode support
 - Add a "Copy Link" with QR code generator on the link creation success page
 - Build the vendor analytics dashboard page
@@ -311,3 +497,7 @@ MIT © TrustLink Contributors
 ---
 
 > Powered by Next.js · Secured by Stellar Soroban · Part of the Stellar Wave ecosystem.
+
+## Recent Changes
+- Ongoing improvements and fixes as part of active development.
+- See commit history and open issues for detailed change tracking.

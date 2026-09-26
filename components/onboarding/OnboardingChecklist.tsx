@@ -47,6 +47,17 @@ interface OnboardingChecklistProps {
  * />
  * ```
  */
+interface OnboardingChecklistProps {
+  steps: OnboardingStepMeta[];
+  currentStep: number;
+  showBack: boolean;
+  showNext: boolean;
+  nextDisabled: boolean;
+  onBack: () => void;
+  onNext: () => void;
+  onFinish: () => void;
+}
+
 export default function OnboardingChecklist({
   steps,
   currentStep,

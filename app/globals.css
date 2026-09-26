@@ -1,27 +1,135 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@config "../tailwind.config.ts";
 
+/* Issue #287: explicit content paths — tighter than auto-detection */
+@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../components/**/*.{js,ts,jsx,tsx}";
+@source "../src/**/*.{js,ts,jsx,tsx}";
+@source "../hooks/**/*.{js,ts,jsx,tsx}";
+@source "../lib/**/*.{js,ts,jsx,tsx}";
+@source "../utils/**/*.{js,ts,jsx,tsx}";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   DESIGN TOKENS (issue #423)
+   --------------------------------------------------------------------------
+   Every custom property below is the single source of truth for a colour in
+   the app. They are exposed to Tailwind through the `@theme inline` block
+   further down — each `--<token>` here has a matching `--color-<token>` there,
+   so `var(--accent)` in raw CSS and `text-accent` in a class name always
+   resolve to the same value.
+
+   Adding a token? Add it to a group here, mirror it in `@theme inline`, and
+   override it in the DARK THEME block if it needs to change with the theme.
+   ========================================================================== */
 :root {
+  /* --- Surface -----------------------------------------------------------
+     Page background and default body text. Overridden per theme. */
   --background: #ffffff;
   --foreground: #171717;
 
-  --primary: #1B2A6B;
-  --accent: #7B68EE;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --destructive: #EF4444;
-  --muted: #9CA3AF;
-  --muted-bg: #F3F4F6;
-  --border: #E5E7EB;
+  /* --- Brand -------------------------------------------------------------
+     TrustLink identity. Used for CTAs, gradients, and focus rings. Held
+     constant across themes so the brand reads the same in light and dark. */
+  --primary: var(--color-brand-primary);
+  --accent: var(--color-brand-accent);
+
+  /* --- Feedback ----------------------------------------------------------
+     Status semantics: escrow states, toasts, and form validation.
+     success = funded/released, warning = pending action, destructive = dispute
+     or failure. Theme-independent so status colour never shifts meaning. */
+  --success: var(--color-status-success);
+  --warning: var(--color-status-warning);
+  --destructive: var(--color-status-destructive);
+
+  /* --- Neutral / chrome --------------------------------------------------
+     Secondary text, subtle fills, and dividers. Overridden per theme so
+     contrast against `--background` stays within AA. */
+  --muted: var(--color-neutral-muted);
+  --muted-bg: var(--color-neutral-surface);
+  --border: var(--color-neutral-border);
 }
 
+/* ==========================================================================
+   DARK THEME
+   --------------------------------------------------------------------------
+   Only Surface and Neutral tokens change — Brand and Feedback are intentionally
+   theme-independent. The two blocks below must stay in sync: the first is the
+   explicit user choice, the second the system fallback.
+   ========================================================================== */
+
+/* Class-based dark mode (issue #341): toggled by ThemeProvider via <html class="dark"> */
+.dark {
+  /* Surface */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Neutral / chrome */
+  --muted: #6B7280;
+  --muted-bg: #1F2937;
+  --border: #374151;
+}
+
+/* Respect system preference when no manual choice has been stored */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light):not(.dark) {
+    /* Surface */
+    --background: #0a0a0a;
+    --foreground: #ededed;
+
+    /* Neutral / chrome */
     --muted: #6B7280;
     --muted-bg: #1F2937;
     --border: #374151;
   }
 }
 
+/* ==========================================================================
+   TAILWIND BRIDGE
+   --------------------------------------------------------------------------
+   Maps the tokens above onto Tailwind's colour utilities. `inline` keeps the
+   `var()` reference live, so a `.dark` override flows through to every
+   generated utility without regenerating the theme. Grouped to mirror the
+   `:root` groups exactly — a token missing here has no utility class.
+   ========================================================================== */
+@theme inline {
+  /* Surface */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Brand */
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+
+  /* Feedback */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+
+  /* Neutral / chrome */
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --color-border: var(--border);
+}
+
+.analytics-page-background {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--muted-bg) 0%, var(--background) 100%);
+}
+
+.dark .analytics-page-background {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+/* Pulsing halo on the active step of the tracking timeline */
 @keyframes timeline-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
@@ -29,18 +137,6 @@
   50% {
     box-shadow: 0 0 0 8px color-mix(in srgb, var(--warning) 0%, transparent);
   }
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-accent: var(--accent);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-muted: var(--muted);
-  --color-muted-bg: var(--muted-bg);
-  --color-border: var(--border);
 }
 
 @keyframes float {
@@ -52,15 +148,48 @@
   animation: float 4s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ==========================================================================
+   BASE ELEMENTS
+   ========================================================================== */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100%;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   THIRD-PARTY OVERRIDES — sonner toasts
+   ========================================================================== */
+[data-sonner-toast] {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  border-radius: 0.75rem;
+}
+
+[data-sonner-toast][data-styled="true"] {
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-sonner-toast][data-styled="true"] {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
 }

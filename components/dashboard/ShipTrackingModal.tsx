@@ -1,15 +1,33 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import React, { FormEvent, useRef,useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { shipEscrow } from "@/lib/api";
+
+/**
+ * Props for the ShipTrackingModal component.
+ */
 interface ShipTrackingModalProps {
+  /** The unique identifier of the escrow to be shipped. */
   escrowId: string;
+  /** The name of the vendor shipping the item. */
   vendorName: string;
+  /** Whether the modal is currently open. */
   open: boolean;
+  /** Callback triggered when the modal should be closed. */
   onClose: () => void;
+  /** Callback triggered upon successful shipment submission. */
   onSuccess: (escrowId: string) => void;
 }
 
+/**
+ * A modal dialog that allows vendors to input shipping tracking information.
+ *
+ * @param {ShipTrackingModalProps} props - The component properties.
+ * @returns {React.ReactElement | null} The ship tracking modal or null if not open.
+ */
 export default function ShipTrackingModal({
   escrowId,
   vendorName,
@@ -17,10 +35,14 @@ export default function ShipTrackingModal({
   onClose,
   onSuccess,
 }: ShipTrackingModalProps) {
+  const { t } = useTranslation();
   const [trackingId, setTrackingId] = useState("");
   const [carrier, setCarrier] = useState("Terminal Africa");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, open, { onEscape: onClose, autoFocus: true });
 
   if (!open) {
     return null;
@@ -31,12 +53,12 @@ export default function ShipTrackingModal({
 
     const trimmedTrackingId = trackingId.trim();
     if (!trimmedTrackingId) {
-      setError("Tracking ID is required.");
+      setError(t("dashboard.shipment.trackingIdRequired"));
       return;
     }
 
     if (trimmedTrackingId.length > 64) {
-      setError("Tracking ID must be 64 characters or less.");
+      setError(t("dashboard.shipment.trackingIdTooLong"));
       return;
     }
 
@@ -44,18 +66,10 @@ export default function ShipTrackingModal({
     setError(null);
 
     try {
-      const response = await fetch(`/escrow/${escrowId}/ship`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ trackingId: trimmedTrackingId, carrier }),
+      await shipEscrow(escrowId, {
+        trackingId: trimmedTrackingId,
+        carrier: carrier,
       });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        throw new Error(payload?.message ?? "Unable to submit shipment details.");
-      }
 
       onSuccess(escrowId);
       onClose();
@@ -65,7 +79,7 @@ export default function ShipTrackingModal({
       setError(
         submissionError instanceof Error
           ? submissionError.message
-          : "Failed to submit tracking details."
+          : t("dashboard.shipment.submitError")
       );
     } finally {
       setIsSubmitting(false);
@@ -73,20 +87,38 @@ export default function ShipTrackingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Dismiss backdrop"
+      />
+      <div 
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-xl overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
+      >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-100">Mark shipment as shipped</h2>
+            <h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-100">{t("dashboard.shipment.title")}</h2>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Add tracking details for {vendorName} so the escrow can be updated.
+              {t("dashboard.shipment.description", { vendorName })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-white"
-            aria-label="Close modal"
+            className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:ring-zinc-300"
+            aria-label={t("dashboard.shipment.closeModal")}
           >
             ✕
           </button>
@@ -95,38 +127,40 @@ export default function ShipTrackingModal({
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="trackingId" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Tracking ID
+              {t("dashboard.shipment.trackingId")}
             </label>
             <input
               id="trackingId"
               value={trackingId}
-              onChange={(event) => setTrackingId(event.target.value)}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTrackingId(event.target.value)}
               maxLength={64}
               required
-              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-              placeholder="Enter tracking ID"
+              aria-invalid={!!error}
+              aria-describedby={error ? "tracking-error" : "tracking-hint"}
+              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-zinc-300"
+              placeholder={t("dashboard.shipment.trackingIdPlaceholder")}
             />
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Required, max 64 characters.</p>
+            <p id="tracking-hint" className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{t("dashboard.shipment.trackingIdHint")}</p>
           </div>
 
           <div>
             <label htmlFor="carrier" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Logistics carrier
+              {t("dashboard.shipment.carrier")}
             </label>
             <select
               id="carrier"
               value={carrier}
-              onChange={(event) => setCarrier(event.target.value)}
-              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setCarrier(event.target.value)}
+              className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-zinc-300"
             >
-              <option>Terminal Africa</option>
-              <option>GIGL</option>
-              <option>Other</option>
+              <option value="Terminal Africa">{t("dashboard.shipment.terminalAfrica")}</option>
+              <option value="GIGL">{t("dashboard.shipment.gigl")}</option>
+              <option value="Other">{t("dashboard.shipment.otherCarrier")}</option>
             </select>
           </div>
 
           {error ? (
-            <div className="rounded-3xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-200">
+            <div id="tracking-error" role="alert" className="rounded-3xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-200">
               {error}
             </div>
           ) : null}
@@ -135,16 +169,16 @@ export default function ShipTrackingModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-3xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              className="rounded-3xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-300"
             >
-              Cancel
+              {t("dashboard.cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-3xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-3xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? t("dashboard.shipment.submitting") : t("dashboard.shipment.submit")}
             </button>
           </div>
         </form>

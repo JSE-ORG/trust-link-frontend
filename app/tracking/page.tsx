@@ -1,9 +1,32 @@
-import ErrorBoundary from "@/components/layout/ErrorBoundary";
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Track Order | TrustLink",
+  description:
+    "Track your escrow order in real-time. Monitor shipment status, delivery confirmation, and payment release on the Stellar network.",
+  keywords: ["track", "order", "escrow", "shipping", "trustlink"],
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://trustlink.app"}/tracking`,
+  },
+  openGraph: {
+    title: "Track Order | TrustLink",
+    description:
+      "Track your escrow order in real-time. Monitor shipment status, delivery confirmation, and payment release on the Stellar network.",
+    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://trustlink.app"}/tracking`,
+    siteName: "TrustLink",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Track Order | TrustLink",
+    description:
+      "Track your escrow order in real-time. Monitor shipment status, delivery confirmation, and payment release on the Stellar network.",
+  },
+};
 
 export default function TrackingPage() {
-  // Redirect to a sample tracking page or show instructions
-  // This page is kept for backward compatibility
+  // Redirect to a sample tracking page or show instructions.
+  // This page is kept for backward compatibility.
   return (
     <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
