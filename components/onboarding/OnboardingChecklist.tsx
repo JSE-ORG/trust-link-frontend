@@ -89,7 +89,7 @@ export default function OnboardingChecklist({
           <button
             type="button"
             onClick={onBack}
-            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-300"
           >
             Back
           </button>
@@ -99,7 +99,7 @@ export default function OnboardingChecklist({
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-300"
           >
             {currentStep === 0 ? "Continue" : "Next"}
           </button>
@@ -107,7 +107,7 @@ export default function OnboardingChecklist({
           <button
             type="button"
             onClick={onFinish}
-            className="w-full rounded-full bg-success px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+            className="w-full rounded-full bg-success px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300"
           >
             Complete Onboarding
           </button>
