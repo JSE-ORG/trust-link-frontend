@@ -122,6 +122,11 @@ function NotificationsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
   const filteredNotifications = useMemo(() => {
     if (!searchQuery.trim()) return notifications;
     const query = searchQuery.toLowerCase();
@@ -139,11 +144,6 @@ function NotificationsContent() {
 
   // Live updates can shrink the list out from under the current page.
   const effectivePage = Math.min(currentPage, totalPages);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
-  }, [searchQuery]);
 
   const paginatedNotifications = useMemo(() => {
     const startIndex = (effectivePage - 1) * NOTIFICATIONS_PER_PAGE;
@@ -239,7 +239,7 @@ function NotificationsContent() {
                   type="text"
                   placeholder="Search notifications..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-white dark:focus:ring-white dark:focus-visible:ring-zinc-300"
                   data-testid="notifications-search"
                 />
@@ -253,7 +253,7 @@ function NotificationsContent() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => handleSearchChange("")}
                   className="mt-4 text-sm font-medium text-black hover:underline dark:text-white"
                 >
                   Clear search
