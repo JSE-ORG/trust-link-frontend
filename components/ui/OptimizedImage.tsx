@@ -1,10 +1,20 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
+import type { ComponentProps } from "react";
 
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface OptimizedImageProps extends Omit<ImageProps, "placeholder" | "blurDataURL"> {
+  /**
+   * Forwarded to the `<img>` rendered by `next/image`.
+   *
+   * `ImageProps` deliberately omits `ref`, so a wrapper that extends it loses
+   * the ref that `next/image` itself accepts. Redeclaring it here — taken from
+   * the real component rather than written out — lets callers keep a handle on
+   * the underlying element.
+   */
+  ref?: ComponentProps<typeof Image>["ref"];
   /**
    * Whether to use blur placeholder while loading.
    * @default true
@@ -30,6 +40,7 @@ export default function OptimizedImage({
   priority,
   alt,
   src,
+  ref,
   ...props
 }: OptimizedImageProps) {
   // Guard against `javascript:`/`vbscript:` URLs reaching the underlying <img>.
@@ -48,6 +59,7 @@ export default function OptimizedImage({
   return (
     <Image
       {...props}
+      ref={ref}
       src={safeSrc}
       alt={alt}
       loading={resolvedLoading}
