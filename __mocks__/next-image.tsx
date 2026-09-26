@@ -1,6 +1,10 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
-export default function Image(props: Record<string, unknown>) {
+const Image = forwardRef<HTMLImageElement, any>(({ unoptimized, priority, fill, placeholder, blurDataURL, ...props }, ref) => {
   // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-  return <img {...props} />;
-}
+  return <img ref={ref} {...props} />;
+});
+
+Image.displayName = "Image";
+
+export default Image;

@@ -1,16 +1,26 @@
 "use client";
 
 import { WifiOff } from "lucide-react";
-import { startTransition,useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
-export default function OfflineBanner() {
-  const [isOnline, setIsOnline] = useState(true);
+/**
+ * Banner that displays when the user loses network connectivity.
+ *
+ * Listens to the browser `online` / `offline` window events and renders a
+ * non-intrusive, full-width alert bar when the device is offline.
+ *
+ * The banner is visually hidden (returns `null`) when the user is online.
+ *
+ * @returns A red alert banner when offline, or `null` when online.
+ */
+export default function OfflineBanner(): React.ReactNode {
+  const [isOnline, setIsOnline] = useState<boolean>(true);
 
   useEffect(() => {
     startTransition(() => setIsOnline(navigator.onLine));
 
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = (): void => setIsOnline(true);
+    const handleOffline = (): void => setIsOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);

@@ -12,7 +12,25 @@ import EscrowLinkDetails from "./EscrowLinkDetails";
 import EscrowLinkHeader from "./EscrowLinkHeader";
 import EscrowLinkQRCode from "./EscrowLinkQRCode";
 import EscrowLinkShareButtons from "./EscrowLinkShareButtons";
+const QRCodeSVG = dynamic(
+  () => import("qrcode.react").then((m) => m.QRCodeSVG),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[200px] w-[200px] animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
+    ),
+  }
+);
 
+/** Copy text to the system clipboard. Throws if the Clipboard API is unavailable. */
+async function copyToClipboard(text: string): Promise<void> {
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    throw new Error("Clipboard not supported");
+  }
+  await navigator.clipboard.writeText(text);
+}
+
+/** Fetch escrow link details from the API. Currently returns mock data. */
 async function fetchEscrowLink() {
   await new Promise((resolve) => setTimeout(resolve, 150));
   return {
@@ -26,15 +44,26 @@ async function fetchEscrowLink() {
   };
 }
 
+/** Props for the EscrowLinkCard component. */
+interface EscrowLinkCardProps {
+  /** When true, renders a skeleton loading placeholder instead of the card. */
+  loading?: boolean;
+  /** Callback invoked after a successful clipboard copy. */
+  onCopySuccess?: () => void;
+  /** Callback invoked when a clipboard copy attempt fails. */
+  onCopyError?: (err: Error) => void;
+}
+
+/**
+ * Displays an escrow payment link card with QR code, share buttons,
+ * and copy functionality. Fetches link details on mount and provides
+ * sharing via WhatsApp, Instagram, Twitter/X, and native share API.
+ */
 export default function EscrowLinkCard({
   loading = false,
   onCopySuccess,
   onCopyError,
-}: {
-  loading?: boolean;
-  onCopySuccess?: () => void;
-  onCopyError?: (err: Error) => void;
-}) {
+}: EscrowLinkCardProps) {
   const [link, setLink] = useState<{
     title: string;
     status: string;
@@ -57,9 +86,18 @@ export default function EscrowLinkCard({
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadLink();
-  }, [loadLink]);
+    let cancelled = false;
+    fetchEscrowLink()
+      .then((data) => {
+        if (!cancelled) setLink(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return (

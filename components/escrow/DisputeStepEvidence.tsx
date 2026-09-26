@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
 import { FormField } from "@/components/ui/FormField";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import type { DisputeFormValues } from "@/lib/validations/dispute";
 
 /**
@@ -64,12 +65,13 @@ interface ImagePreviewProps {
 /**
  * Thumbnail for a single uploaded image.
  *
- * The blob URL is created in an effect and written straight to the `<img>`
- * element instead of being stored in React state. That avoids an extra render
- * pass (the `set-state-in-effect` anti-pattern) and ties the URL's lifetime to
- * this element: it is revoked when the file changes or the thumbnail unmounts,
- * so no blob URLs leak, including under Strict Mode's double-invoked effects.
- * The fixed `h-16 w-16` box means setting `src` never shifts layout.
+ * Uses `OptimizedImage` with explicit `width={64}` and `height={64}` to enforce
+ * layout stability and prevent cumulative layout shift (CLS).
+ *
+ * The blob URL is created in an effect and written straight to the image element
+ * via ref. That avoids an extra render pass and ties the URL's lifetime to this
+ * element: it is revoked when the file changes or the thumbnail unmounts,
+ * preventing blob URL memory leaks.
  */
 function ImagePreview({ file, index }: ImagePreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
@@ -88,10 +90,13 @@ function ImagePreview({ file, index }: ImagePreviewProps) {
   }, [file]);
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- blob: URLs can't go through next/image
-    <img
+    <OptimizedImage
       ref={imgRef}
+      src="/placeholder.png"
       alt={`Preview of ${file.name}`}
+      width={64}
+      height={64}
+      useBlur={false}
       className="h-16 w-16 rounded object-cover border border-zinc-200 dark:border-zinc-700"
       data-testid={`preview-${index}`}
     />
