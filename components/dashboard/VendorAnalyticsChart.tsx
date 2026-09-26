@@ -14,10 +14,22 @@ import {
 import { useCurrency } from "@/components/providers/CurrencyProvider";
 import type { VendorAnalyticsPoint } from "@/lib/api";
 
+/**
+ * Formats a numeric value as a percentage string.
+ * @param value - The numeric value to format (e.g., 95.5).
+ * @returns The formatted string (e.g., "95.5%").
+ */
 function formatRate(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
+/**
+ * Formats a date string for the axis label based on locale and available space.
+ * @param value - The date string to format.
+ * @param compact - Whether to use a more compact format (true for mobile).
+ * @param locale - The locale string (e.g., "en-US").
+ * @returns The formatted date string, or original value if invalid.
+ */
 function formatAxisLabel(value: string, compact: boolean, locale: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
@@ -28,6 +40,12 @@ function formatAxisLabel(value: string, compact: boolean, locale: string): strin
   );
 }
 
+/**
+ * Formats a numeric volume compactly based on locale.
+ * @param value - The numeric volume.
+ * @param locale - The locale string.
+ * @returns The compactly formatted string.
+ */
 function formatCompactVolume(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, {
     notation: "compact",
@@ -35,20 +53,42 @@ function formatCompactVolume(value: number, locale: string): string {
   }).format(value);
 }
 
+/**
+ * Normalizes a rate value, ensuring it falls within a percentage range.
+ * Converts fraction representation (e.g., 0.95) to percentage representation (95).
+ * @param value - The rate value to normalize.
+ * @returns The normalized percentage.
+ */
 function normalizeRate(value: number | undefined): number {
   if (typeof value !== "number" || Number.isNaN(value)) return 0;
   return value <= 1 ? value * 100 : value;
 }
 
+/**
+ * Props for the custom AnalyticsTooltip component.
+ */
+interface AnalyticsTooltipProps {
+  /** Indicates whether the tooltip is active/visible. */
+  active?: boolean;
+  /** The payload array provided by Recharts. */
+  payload?: Array<{ payload: VendorAnalyticsPoint }>;
+  /** The label for the current point, typically the date. */
+  label?: string;
+}
+
+/**
+ * Custom tooltip component for the vendor analytics chart.
+ * Displays formatted values for transaction volume, average order,
+ * completion rate, and dispute rate.
+ *
+ * @param props - The tooltip properties provided by Recharts.
+ * @returns The tooltip element, or null if inactive.
+ */
 function AnalyticsTooltip({
   active,
   payload,
   label,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: VendorAnalyticsPoint }>;
-  label?: string;
-}) {
+}: AnalyticsTooltipProps) {
   const { formatAmount } = useCurrency();
   const { i18n, t } = useTranslation();
   if (!active || !payload?.length) return null;
@@ -70,11 +110,23 @@ function AnalyticsTooltip({
   );
 }
 
-interface VendorAnalyticsChartProps {
+/**
+ * Props for the VendorAnalyticsChart component.
+ */
+export interface VendorAnalyticsChartProps {
+  /** An array of data points representing daily analytics. */
   dataPoints: VendorAnalyticsPoint[];
+  /** Indicates whether the layout should optimize for a mobile view. */
   isMobile: boolean;
 }
 
+/**
+ * Renders an area chart for vendor analytics, showing transaction volume
+ * over time. Includes custom formatting and a detailed tooltip on interaction.
+ *
+ * @param props - The component properties.
+ * @returns The rendered chart component within a responsive container.
+ */
 export default function VendorAnalyticsChart({
   dataPoints,
   isMobile,

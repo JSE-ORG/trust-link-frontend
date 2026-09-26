@@ -3,7 +3,7 @@
 import useSWR from "swr";
 
 import { getEscrow } from "@/lib/api";
-import { Escrow } from "@/types";
+import { Escrow, FetchHookResult } from "@/types";
 
 /**
  * Configuration options for the {@link useEscrow} hook.
@@ -30,9 +30,9 @@ interface UseEscrowOptions {
  * @param options - Optional configuration (see {@link UseEscrowOptions}).
  *
  * @returns An object containing:
- *   - `escrow`    – The fetched {@link Escrow} data, or `undefined` while loading.
+ *   - `data`      – The fetched {@link Escrow} record, or `null` while loading or if unavailable.
  *   - `isLoading` – `true` while the initial fetch is in progress.
- *   - `error`     – An `Error` instance if the request failed, otherwise `undefined`.
+ *   - `error`     – An `Error` instance if the request failed, otherwise `null`.
  *   - `refetch`   – SWR `mutate` function to manually revalidate the cache.
  *
  * @example
@@ -40,18 +40,21 @@ interface UseEscrowOptions {
  * import { useEscrow } from "@/hooks/useEscrow";
  *
  * function EscrowDetails({ id }: { id: string }) {
- *   const { escrow, isLoading, error } = useEscrow(id);
+ *   const { data, isLoading, error } = useEscrow(id);
  *
  *   if (isLoading) return <Spinner />;
  *   if (error)     return <p>Failed to load escrow.</p>;
- *   return <p>{escrow?.item} — {escrow?.amount} USDC</p>;
+ *   return <p>{data?.item} — {data?.amount} USDC</p>;
  * }
  * ```
  *
  * @see {@link Escrow} for the shape of the returned data.
  * @see {@link UseEscrowOptions} for available configuration.
  */
-export function useEscrow(escrowId: string | null | undefined, options: UseEscrowOptions = {}) {
+export function useEscrow(
+  escrowId: string | null | undefined,
+  options: UseEscrowOptions = {}
+): FetchHookResult<Escrow> & { refetch: () => Promise<Escrow | undefined> } {
   const { refreshInterval = 30000, initialData } = options;
 
   const { data, error, isLoading, mutate } = useSWR<Escrow>(
@@ -69,9 +72,9 @@ export function useEscrow(escrowId: string | null | undefined, options: UseEscro
   );
 
   return {
-    escrow: data,
+    data: data ?? null,
     isLoading,
-    error,
+    error: error instanceof Error ? error : error != null ? new Error(String(error)) : null,
     refetch: mutate,
   };
 }

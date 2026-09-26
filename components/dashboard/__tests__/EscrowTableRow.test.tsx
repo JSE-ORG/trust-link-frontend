@@ -2,32 +2,32 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { Escrow } from "@/types";
+
 import EscrowTableRow from "../EscrowTableRow";
 
-const mockEscrow = {
+const mockEscrow: Escrow = {
   id: "escrow-1",
-  item: "Test Product",
-  buyer: "GBUYER...",
+  vendorId: "v1",
+  buyerId: "GBUYER...",
   amount: 100,
+  item: "Test Product",
   status: "PENDING" as const,
   createdAt: "2026-05-01",
+  updatedAt: "2026-05-01",
+  history: [],
 };
 
 describe("EscrowTableRow", () => {
   it("renders cancel button for PENDING escrows and handles click", () => {
     const handleCancel = vi.fn();
-    const handleCopy = vi.fn();
 
     render(
-      <table>
-        <tbody>
-          <EscrowTableRow
-            escrow={mockEscrow}
-            onCancelEscrow={handleCancel}
-            onCopyLink={handleCopy}
-          />
-        </tbody>
-      </table>
+      <EscrowTableRow
+        escrow={mockEscrow}
+        onMarkShipped={vi.fn()}
+        onCancelEscrow={handleCancel}
+      />
     );
 
     const cancelButton = screen.getByRole("button", { name: /Cancel/i });
@@ -39,20 +39,15 @@ describe("EscrowTableRow", () => {
 
   it("does not render cancel button for non-PENDING escrows", () => {
     const handleCancel = vi.fn();
-    const handleCopy = vi.fn();
 
-    const activeEscrow = { ...mockEscrow, status: "FUNDED" };
+    const activeEscrow = { ...mockEscrow, status: "FUNDED" as const };
 
     render(
-      <table>
-        <tbody>
-          <EscrowTableRow
-            escrow={activeEscrow}
-            onCancelEscrow={handleCancel}
-            onCopyLink={handleCopy}
-          />
-        </tbody>
-      </table>
+      <EscrowTableRow
+        escrow={activeEscrow}
+        onMarkShipped={vi.fn()}
+        onCancelEscrow={handleCancel}
+      />
     );
 
     expect(screen.queryByRole("button", { name: /Cancel/i })).not.toBeInTheDocument();

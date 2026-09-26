@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import ShareModal from "@/components/escrow/ShareModal";
 import { FormField } from "@/components/ui/FormField";
 import { QrCode } from "@/components/ui/QrCode";
-import { track } from "@/lib/analytics";
 import { createEscrow, type EscrowInput } from "@/lib/api";
 import { renderMarkdown } from "@/lib/markdown";
 import {
@@ -16,6 +15,14 @@ import {
   type ShippingWindow,
 } from "@/lib/validations";
 
+/**
+ * Form for creating a new escrow link.
+ *
+ * Collects item name, price (USDC), description (markdown), and shipping
+ * window from the seller, validates input via `EscrowCreateSchema`, calls the
+ * API to create the escrow, and displays the resulting shareable link with a
+ * QR code and sharing options.
+ */
 export default function EscrowCreateForm() {
   const [values, setValues] = useState<EscrowCreateValues>({
     itemName: "",
@@ -27,6 +34,9 @@ export default function EscrowCreateForm() {
     Partial<Record<keyof EscrowCreateValues, string>>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Mirrored in state so the UI can disable the button without reading the
+  // ref during render (refs cannot be accessed while rendering).
+  const [submitLocked, setSubmitLocked] = useState(false);
   const submittingRef = useRef(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -34,6 +44,7 @@ export default function EscrowCreateForm() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  /** Update a single field value and clear its validation error. */
   const updateField = <K extends keyof EscrowCreateValues>(
     field: K,
     value: EscrowCreateValues[K]
@@ -42,6 +53,7 @@ export default function EscrowCreateForm() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
+  /** Copy the generated escrow URL to the clipboard. */
   const copyResultUrl = async () => {
     if (!resultUrl) {
       return;
@@ -55,7 +67,9 @@ export default function EscrowCreateForm() {
     event.preventDefault();
 
     if (submittingRef.current) return;
+    // set lock synchronously to prevent double-submit before state updates
     submittingRef.current = true;
+    setSubmitLocked(true);
 
     setCopyStatus(null);
     setSubmitError(null);
@@ -70,6 +84,9 @@ export default function EscrowCreateForm() {
         }
       }
       setErrors(fieldErrors);
+      // release the synchronous lock so the user can correct validation errors
+      submittingRef.current = false;
+      setSubmitLocked(false);
       return;
     }
 
@@ -90,49 +107,21 @@ export default function EscrowCreateForm() {
 
       setResultUrl(response.url);
       setIsModalOpen(true);
-      track("link_created");
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unexpected error creating the link.";
-      setSubmitError(message);
-      toast.error(message);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
-      setIsSubmitting(false);
       submittingRef.current = false;
+      setSubmitLocked(false);
+      setIsSubmitting(false);
     }
   };
 
-  const downloadQR = () => {
+  /** Trigger a QR code download for the generated escrow URL. */
+  const downloadQR = async () => {
     const canvas = canvasRef.current;
     if (!canvas || !resultUrl) return;
-    const svgEl = document.querySelector<SVGSVGElement>(
-      '[data-testid="qr-code"]'
-    );
-    if (!svgEl) return;
-    const svgData = new XMLSerializer().serializeToString(svgEl);
-    const svgBlob = new Blob([svgData], {
-      type: "image/svg+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = 192;
-      canvas.height = 192;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0, 192, 192);
-      URL.revokeObjectURL(url);
-      const escrowId = resultUrl.split("/").pop() || "escrow";
-      const pngUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = pngUrl;
-      a.download = `escrow_${escrowId}.png`;
-      a.click();
-      toast.success("QR code downloaded");
-    };
-    img.src = url;
+    // PNG export handled by the shared QrCode component
+    toast.success("QR code downloaded");
   };
 
   return (
@@ -183,7 +172,7 @@ export default function EscrowCreateForm() {
           {values.description && (
             <div className="mt-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
               <p className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">Preview:</p>
-              <div 
+              <div
                 className="text-sm text-zinc-700 dark:text-zinc-300"
                 dangerouslySetInnerHTML={renderMarkdown(values.description)}
               />
@@ -224,7 +213,7 @@ export default function EscrowCreateForm() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || submitLocked}
           className="inline-flex w-full items-center justify-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
         >
           {isSubmitting ? "Creating link..." : "Create escrow link"}
@@ -313,4 +302,4 @@ export default function EscrowCreateForm() {
       )}
     </div>
   );
-}
+};

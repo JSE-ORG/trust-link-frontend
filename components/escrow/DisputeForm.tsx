@@ -1,7 +1,5 @@
 "use client";
 
-import "./DisputeForm.css";
-
 import React, { useEffect } from "react";
 
 import type { DisputeFormValues } from "@/lib/validations/dispute";
@@ -74,7 +72,7 @@ const DisputeForm: React.FC<DisputeFormProps> = ({
   }
 
   return (
-    <div className="dispute-form" data-testid="dispute-form">
+    <div className="mx-auto max-w-[600px] p-5" data-testid="dispute-form">
       <DisputeFormProgress currentStep={currentStep} />
 
       <form

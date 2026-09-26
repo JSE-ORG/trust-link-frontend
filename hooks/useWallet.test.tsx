@@ -33,7 +33,7 @@ function TestHarness() {
       <span data-testid="isConnected">{isConnected ? "true" : "false"}</span>
       <span data-testid="publicKey">{publicKey ?? ""}</span>
       <span data-testid="token">{token ?? ""}</span>
-      <span data-testid="error">{error ?? ""}</span>
+      <span data-testid="error">{error?.message ?? ""}</span>
       <button onClick={connect}>Connect</button>
       <button onClick={disconnect}>Disconnect</button>
     </div>

@@ -32,7 +32,7 @@ function TestComponent() {
       <div data-testid="publicKey">{publicKey}</div>
       <div data-testid="token">{token}</div>
       <div data-testid="isLoading">{isLoading.toString()}</div>
-      <div data-testid="error">{error}</div>
+      <div data-testid="error">{error?.message ?? ""}</div>
       <button onClick={connect}>Connect</button>
     </div>
   );

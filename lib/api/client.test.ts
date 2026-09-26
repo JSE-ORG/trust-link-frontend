@@ -74,11 +74,11 @@ describe("api client", () => {
   it("injects the auth header automatically from the client token", async () => {
     fetchMock.mockResolvedValueOnce(mockResponse(escrow));
 
-    const client = createApiClient("jwt-123");
+    const client = createApiClient("jht-123");
     await client.getEscrow("e1");
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
-    expect((init.headers as Headers).get("Authorization")).toBe("Bearer jwt-123");
+    expect((init.headers as Headers).get("Authorization")).toBe("Bearer jht-123");
   });
 
   it("returns typed JSON and surfaces ApiError on failure", async () => {
@@ -106,5 +106,67 @@ describe("api client", () => {
     await expect(createApiClient().getEscrow("e1")).rejects.toThrow(
       "Invalid API response for /escrow/e1: unexpected response shape"
     );
+  });
+
+  // New tests for acceptance criteria
+
+  it("parses JSON error responses into ApiError with message", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        mockResponse({ message: "Not Found" }, { ok: false, status: 404, statusText: "Not Found" })
+      )
+      .mockResolvedValueOnce(
+        mockResponse({ message: "Not Found" }, { ok: false, status: 404, statusText: "Not Found" })
+      );
+
+    const client = createApiClient();
+    const error = await client.getEscrow("missing").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(404);
+    expect(error.message).toContain("Not Found");
+  });
+
+  it("parses non-JSON (plain text) error responses into ApiError", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      text: async () => "Server exploded",
+    } as unknown as Response);
+
+    const client = createApiClient();
+    const error = await client.getEscrow("boom").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(500);
+    expect(error.message).toContain("Server exploded");
+  });
+
+  it("falls back from /escrow/{id} to /escrows/{id} on 404", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        mockResponse({ message: "Not Found" }, { ok: false, status: 404, statusText: "Not Found" })
+      )
+      .mockResolvedValueOnce(mockResponse(escrow));
+
+    const client = createApiClient();
+    const result = await client.getEscrow("e1");
+
+    expect(result).toEqual(escrow);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toContain("/escrow/e1");
+    expect(fetchMock.mock.calls[1][0]).toContain("/escrows/e1");
+  });
+
+  it("does not set an Authorization header when no token is provided", async () => {
+    fetchMock.mockResolvedValueOnce(mockResponse(escrow));
+
+    const client = createApiClient();
+    await client.getEscrow("e1");
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Headers;
+    expect(headers.get("Authorization")).toBeNull();
   });
 });

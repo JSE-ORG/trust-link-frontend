@@ -5,6 +5,11 @@ import { useTranslation } from "react-i18next";
 import DashboardAnalyticsSummary from "@/components/dashboard/DashboardAnalyticsSummary";
 import VendorDashboardList from "@/components/dashboard/VendorDashboardList";
 
+/**
+ * Renders the main dashboard section displaying analytics and escrows.
+ *
+ * @returns {React.ReactElement} The dashboard section component.
+ */
 export default function DashboardSection() {
   const { t } = useTranslation();
 

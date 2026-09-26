@@ -16,14 +16,16 @@ interface Props {
 export function DisputeFormProgress({ currentStep }: Props) {
   return (
     <nav
-      className="progress-indicator"
+      className="mb-[30px] flex justify-between border-b-2 border-zinc-200 pb-2.5"
       data-testid="progress-indicator"
       aria-label="Form progress"
     >
       {STEPS.map(({ label, step }) => (
         <div
           key={step}
-          className={`step-indicator ${currentStep >= step ? "active" : ""}`}
+          className={`flex-1 p-2.5 text-center text-sm ${
+            currentStep >= step ? "font-bold text-success" : "text-zinc-400"
+          }`}
           aria-current={currentStep === step ? "step" : undefined}
         >
           {label}

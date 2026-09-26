@@ -4,7 +4,7 @@ import type { Escrow } from '@/types';
 // user actually triggers a PDF export, so they're dynamically imported inside
 // each function below rather than imported statically at module scope. This
 // keeps them out of the initial JS payload and lets bundlers split them into
-// their own on-demand chunk. See #573.
+// their own on-demand chunk. See #653.
 
 export interface PDFExportOptions {
   filename?: string;

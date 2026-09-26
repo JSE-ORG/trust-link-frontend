@@ -41,9 +41,9 @@ describe("TrackingTimeline", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useEscrow).mockImplementation((escrowId: string | null | undefined, opts?: { initialData?: Escrow }) => ({
-      escrow: opts?.initialData ?? mockEscrow,
+      data: opts?.initialData ?? mockEscrow,
       isLoading: false,
-      error: undefined,
+      error: null,
       refetch: vi.fn(),
     }));
   });
@@ -210,7 +210,7 @@ describe("TrackingTimeline", () => {
   it("shows a user-friendly error state when fetching fails", async () => {
     const refetch = vi.fn();
     vi.mocked(useEscrow).mockReturnValue({
-      escrow: undefined,
+      data: null,
       isLoading: false,
       error: new Error("Failed to fetch escrow"),
       refetch,

@@ -27,6 +27,7 @@ interface ShareModalProps {
  */
 export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModalProps) {
   /** Success/error announcement shown after a clipboard attempt. */
+export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   /** Controls the copy icon and success styling while feedback is visible. */
   const [copied, setCopied] = useState(false);
@@ -51,7 +52,7 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
         setCopied(false);
         setCopyStatus(null);
       }, 2000);
-    } catch (_err) {
+    } catch {
       setCopied(false);
       setCopyStatus("Failed to copy");
     }

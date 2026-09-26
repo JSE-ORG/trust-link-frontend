@@ -5,6 +5,15 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
+  css: {
+    // Disable PostCSS processing in the Vitest/jsdom environment.
+    // The @tailwindcss/postcss plugin requires a native binding that is not
+    // available in CI / the jsdom test runner. CSS is irrelevant to unit and
+    // accessibility tests, so we bypass the pipeline entirely.
+    postcss: {
+      plugins: [],
+    },
+  },
   resolve: {
     alias: {
       // ── Next.js module shims for the Vitest / jsdom environment ──────────
@@ -25,5 +34,6 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.{test,spec}.{ts,tsx}"],
     exclude: ["**/e2e/**", "**/tests/e2e/**", "**/node_modules/**"],
+    css: false,
   },
 });

@@ -14,8 +14,6 @@ export function downloadCsv<T extends Record<string, any>>(
   columns: { key: keyof T; header: string }[],
   filename: string
 ): void {
-  if (rows.length === 0) return;
-
   const escape = (value: unknown): string => {
     // Neutralise spreadsheet formula injection before quoting.
     const str = sanitizeCsvCell(value);

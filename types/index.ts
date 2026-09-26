@@ -2,6 +2,12 @@ import type { DisputeStatus,EscrowStatus } from "./status";
 export type { DisputeStatus,EscrowStatus };
 export { DisputeStatus as DisputeStatusConst,EscrowStatus as EscrowStatusConst } from "./status";
 
+export interface FetchHookResult<T> {
+  data: T | null;
+  error: Error | null;
+  isLoading: boolean;
+}
+
 export interface Escrow {
   id: string;
   vendorId: string;

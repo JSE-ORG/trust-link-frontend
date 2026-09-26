@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import type { RefObject } from "react";
+import { useEffect } from "react";
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';

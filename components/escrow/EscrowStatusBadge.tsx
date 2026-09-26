@@ -21,11 +21,16 @@ export function EscrowStatusBadge({ status, className }: EscrowStatusBadgeProps)
     variant: "secondary",
   };
 
+  const announcement = `Escrow status updated to: ${config.label}`;
+
   return (
     <Badge
       variant={config.variant}
       className={cn("whitespace-nowrap", className)}
+      role="status"
       aria-live="polite"
+      aria-atomic="true"
+      aria-label={announcement}
     >
       Status updated to: {config.label}
     </Badge>

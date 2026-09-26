@@ -8,6 +8,7 @@
  */
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+
 import { captureError } from "@/lib/logger";
 
 export interface RateLimitResult {
@@ -87,9 +88,10 @@ export async function checkRateLimit(
   limit: number = DEFAULT_LIMIT,
   windowMs: number = DEFAULT_WINDOW_MS
 ): Promise<RateLimitResult> {
-  const limiter = getUpstashLimiter();
-  if (limiter) {
-    try {
+  let limiter: Ratelimit | null = null;
+  try {
+    limiter = getUpstashLimiter();
+    if (limiter) {
       const res = await limiter.limit(identifier);
       return {
         success: res.success,
@@ -97,19 +99,19 @@ export async function checkRateLimit(
         remaining: res.remaining,
         reset: res.reset,
       };
-    } catch (error) {
-      // Log Redis connection failure to Sentry but don't block the request
-      captureError(error, {
-        scope: "api",
-        action: "rateLimitRedisFailure",
-        extra: { identifier, limit, windowMs },
-      });
-
-      // Fail open: allow the request through and fall back to in-memory limiter
-      // This prevents Redis outages from taking down the entire service
-      console.warn("Rate limiter Redis failure, falling back to in-memory");
-      upstashLimiter = null; // Clear the failed limiter to use memory fallback
     }
+  } catch (error) {
+    // Log Redis connection failure to Sentry but don't block the request
+    captureError(error, {
+      scope: "api",
+      action: "rateLimitRedisFailure",
+      extra: { identifier, limit, windowMs },
+    });
+
+    // Fail open: allow the request through and fall back to in-memory limiter
+    // This prevents Redis outages from taking down the entire service
+    console.warn("Rate limiter Redis failure, falling back to in-memory");
+    upstashLimiter = null; // Clear the failed limiter to use memory fallback
   }
   return memoryLimit(identifier, limit, windowMs);
 }
@@ -139,6 +141,7 @@ export async function enforceRateLimit(
   const result = await checkRateLimit(id, limit, windowMs);
 
   if (!result.success) {
+    console.warn("Rate limit exceeded for " + id, { limit, windowMs });
     const retryAfterSec = Math.max(
       1,
       Math.ceil((result.reset - Date.now()) / 1000)

@@ -45,8 +45,8 @@ describe("useEscrow", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.escrow).toEqual(mockEscrow);
-    expect(result.current.error).toBeUndefined();
+    expect(result.current.data).toEqual(mockEscrow);
+    expect(result.current.error).toBeNull();
   });
 
   it("should handle error state when API fails", async () => {
@@ -60,7 +60,7 @@ describe("useEscrow", () => {
     });
 
     expect(result.current.error).toEqual(error);
-    expect(result.current.escrow).toBeUndefined();
+    expect(result.current.data).toBeNull();
   });
 
   it("should update data on refetch", async () => {
@@ -79,7 +79,7 @@ describe("useEscrow", () => {
       await result.current.refetch();
     });
 
-    expect(result.current.escrow?.status).toBe(EscrowStatusConst.COMPLETED);
+    expect(result.current.data?.status).toBe(EscrowStatusConst.COMPLETED);
   });
 
   it("should poll for data at specified interval", async () => {

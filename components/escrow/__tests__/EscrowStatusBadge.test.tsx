@@ -22,27 +22,30 @@ describe("EscrowStatusBadge", () => {
     (state) => {
       const { label, variant } = ESCROW_STATUS_MAP[state];
       render(<EscrowStatusBadge status={state} />);
-      const badge = screen.getByText(`Status updated to: ${label}`);
-      expect(badge).toBeInTheDocument();
-      expect(badge.className).toContain(VARIANT_CLASSES[variant as string]);
+      const liveRegion = screen.getByRole("status");
+      expect(liveRegion).toHaveAccessibleName(`Escrow status updated to: ${label}`);
+      expect(liveRegion).toHaveAttribute("aria-live", "polite");
+      expect(liveRegion).toHaveAttribute("aria-atomic", "true");
+      expect(liveRegion.closest("div")?.className).toContain(VARIANT_CLASSES[variant as string]);
     }
   );
 
   it("normalizes case-insensitive status strings", () => {
     render(<EscrowStatusBadge status="pEnDiNg" />);
-    expect(screen.getByText("Status updated to: Pending")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveAccessibleName("Escrow status updated to: Pending");
   });
 
   it("handles unknown states safely", () => {
     render(<EscrowStatusBadge status="UNKNOWN_STATE" />);
-    const badge = screen.getByText("Status updated to: UNKNOWN_STATE");
-    expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("bg-zinc-100");
+    const liveRegion = screen.getByRole("status");
+    expect(liveRegion).toHaveAccessibleName("Escrow status updated to: UNKNOWN_STATE");
+    expect(liveRegion.closest("div")?.className).toContain("bg-zinc-100");
   });
 
   it("accepts and applies custom className", () => {
     render(<EscrowStatusBadge status="Funded" className="custom-class" />);
-    const badge = screen.getByText("Status updated to: Funded");
-    expect(badge.className).toContain("custom-class");
+    const badge = screen.getByRole("status");
+    expect(badge.closest("div")?.className).toContain("custom-class");
+    expect(badge).toHaveAccessibleName("Escrow status updated to: Funded");
   });
 });

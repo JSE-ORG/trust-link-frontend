@@ -3,7 +3,7 @@
 import useSWR from "swr";
 
 import { getTracking } from "@/lib/api";
-import { Tracking } from "@/types";
+import { FetchHookResult, Tracking } from "@/types";
 
 /**
  * Polls and caches shipment tracking data for a given escrow.
@@ -20,11 +20,11 @@ import { Tracking } from "@/types";
  *   should be tracked, or `null`/`undefined` to disable polling.
  *
  * @returns An object containing:
- *   - `tracking`          – The full {@link Tracking} payload, or `undefined` while loading.
+ *   - `data`              – The full {@link Tracking} payload, or `null` while loading or if unavailable.
  *   - `status`            – Current shipment status string, or `null` if unavailable.
  *   - `estimatedDelivery` – ISO-8601 estimated delivery date, or `null` if unavailable.
  *   - `isLoading`         – `true` while the initial fetch is in progress.
- *   - `error`             – An `Error` instance if the request failed, otherwise `undefined`.
+ *   - `error`             – An `Error` instance if the request failed, otherwise `null`.
  *   - `refetch`           – SWR `mutate` function to manually revalidate the cache.
  *
  * @example
@@ -46,7 +46,13 @@ import { Tracking } from "@/types";
  * @see {@link Tracking} for the shape of the returned data.
  * @see {@link useEscrow} for fetching the parent escrow record.
  */
-export function useTracking(escrowId: string | null | undefined) {
+export function useTracking(
+  escrowId: string | null | undefined
+): FetchHookResult<Tracking> & {
+  status: string | null;
+  estimatedDelivery: string | null;
+  refetch: () => Promise<Tracking | undefined>;
+} {
   const { data, error, isLoading, mutate } = useSWR<Tracking>(
     escrowId ? `/escrows/${escrowId}/tracking` : null,
     async () => {
@@ -54,30 +60,25 @@ export function useTracking(escrowId: string | null | undefined) {
       return getTracking(escrowId);
     },
     {
-      // Poll every 30 seconds
       refreshInterval: (tracking: Tracking | undefined) => {
         if (!tracking) return 30000;
-        
-        // Stop polling if status is terminal
         const status = tracking.status.toLowerCase();
         if (status === "delivered" || status === "disputed" || status === "completed") {
           return 0;
         }
-        
         return 30000;
       },
-      // SWR automatically pauses refresh when tab is inactive/invisible
       revalidateOnFocus: true,
       dedupingInterval: 2000,
     }
   );
 
   return {
-    tracking: data,
-    status: data?.status || null,
-    estimatedDelivery: data?.estimatedDelivery || null,
+    data: data ?? null,
+    status: data?.status ?? null,
+    estimatedDelivery: data?.estimatedDelivery ?? null,
     isLoading,
-    error,
+    error: error instanceof Error ? error : error != null ? new Error(String(error)) : null,
     refetch: mutate,
   };
 }

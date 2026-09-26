@@ -9,6 +9,13 @@
     "upgradeCtaButton": "Upgrade to Pro",
     "searchPlaceholder": "Search escrows...",
     "exportCsv": "Export CSV",
+    "selectRow": "Select {{item}}",
+    "selectAll": "Select all",
+    "selectedCount": "{{count}} selected",
+    "exportSelected": "Export Selected",
+    "exportSelectedSuccess": "Exported {{count}} escrow(s)",
+    "clearSelection": "Clear selection",
+    "bulkActions": "Bulk actions",
     "allFilter": "All",
     "noEscrowsFound": "No escrows found matching your criteria.",
     "clearFilters": "Clear filters",
@@ -174,16 +181,16 @@
     "shipped": "Shipped",
     "shippedDesc": "Package is on its way",
     "outForDelivery": "Out for Delivery",
-    "outForDeliveryDesc": "Package is out for final delivery",
+    "outForDeliveryDesc": "The package is on its final leg of delivery",
     "delivered": "Delivered",
-    "deliveredDesc": "Package has been delivered",
+    "deliveredDesc": "The package has been delivered",
     "confirmDelivery": "Confirm Delivery",
     "confirming": "Confirming...",
     "raiseDispute": "Raise a Dispute",
     "disputeInProgress": "Dispute in Progress",
     "disputeMessage": "A dispute has been raised for this order. Our team is reviewing the case and will resolve it shortly.",
     "orderNotFound": "Order Not Found",
-    "orderNotFoundDesc": "We couldn't find an order with ID:"
+    "orderNotFoundDesc": "We couldn't find an order with the ID:"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -195,5 +202,28 @@
     "language": "Language",
     "selectLanguage": "Select language",
     "copyright": "TrustLink"
+  },
+  "about": {
+    "title": "About TrustLink",
+    "description": "TrustLink is a secure escrow platform built on the Stellar network.",
+    "mission": "Our Mission",
+    "missionText": "To make online transactions safe and trustworthy.",
+    "team": "Our Team",
+    "teamText": "We're a small team of passionate builders.",
+    "contact": "Contact",
+    "contactText": "Reach us at hello@trustlink.example"
+  },
+  "home": {
+    "heroTitle": "Secure payments, built on trust",
+    "heroSubtitle": "Hold funds in escrow until both sides are satisfied.",
+    "ctaPrimary": "Create an Escrow Link",
+    "ctaSecondary": "Track an Order",
+    "featuresTitle": "Why TrustLink?",
+    "feature1Title": "Secure Escrow",
+    "feature1Text": "Funds are held safely until delivery is confirmed.",
+    "feature2Title": "Fast Settlement",
+    "feature2Text": "Settle transactions quickly on the Stellar network.",
+    "feature3Title": "Built for Vendors",
+    "feature3Text": "Tools designed to help you grow and manage escrows."
   }
 }

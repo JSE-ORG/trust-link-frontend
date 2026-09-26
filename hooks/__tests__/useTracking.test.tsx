@@ -55,8 +55,8 @@ describe("useTracking", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.tracking).toEqual(mockTracking);
-    expect(result.current.error).toBeUndefined();
+    expect(result.current.data).toEqual(mockTracking);
+    expect(result.current.error).toBeNull();
   });
 
   it("should return status and estimatedDelivery from data", async () => {
@@ -77,8 +77,7 @@ describe("useTracking", () => {
 
     const { result } = renderHook(() => useTracking(null), { wrapper });
 
-    // Should not fetch, loading should be false (no request made)
-    expect(result.current.tracking).toBeUndefined();
+    expect(result.current.data).toBeNull();
     expect(result.current.status).toBeNull();
     expect(result.current.estimatedDelivery).toBeNull();
   });
@@ -94,7 +93,7 @@ describe("useTracking", () => {
     });
 
     expect(result.current.error).toEqual(error);
-    expect(result.current.tracking).toBeUndefined();
+    expect(result.current.data).toBeNull();
   });
 
   it("should not fetch when escrowId is null", async () => {

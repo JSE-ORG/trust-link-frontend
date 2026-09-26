@@ -24,7 +24,7 @@ export async function mockFreighter(
 
       (window as unknown as Record<string, unknown>).freighterApi = {
         getPublicKey: async () => pubKey,
-        signTransaction: async (_xdr: string) => {
+        signTransaction: async () => {
           if (rejectSignature) {
             throw new Error("User declined access");
           }

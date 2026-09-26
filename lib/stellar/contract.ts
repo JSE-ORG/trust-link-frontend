@@ -167,16 +167,6 @@ function toTxError(error: unknown, fallback: string): Error {
   return wrapped;
 }
 
-function encodeTransactionResult(
-  result: xdr.TransactionResult | undefined
-): string {
-  if (!result) {
-    return "";
-  }
-
-  return result.toXDR("base64");
-}
-
 async function invokeSorobanContract(
   options: SorobanContractCallOptions
 ): Promise<ContractTransactionResult> {

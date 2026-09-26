@@ -13,12 +13,24 @@ interface EscrowTableRowProps {
   escrow: Escrow;
   onMarkShipped: (escrow: Escrow) => void;
   onCancelEscrow: (escrow: Escrow) => void;
+  /**
+   * Bulk selection support. When `onToggleSelect` is provided the row renders a
+   * checkbox that drives the parent's bulk-selection state.
+   */
+  isSelected?: boolean;
+  onToggleSelect?: (escrow: Escrow) => void;
 }
 
-function EscrowTableRowComponent({ escrow, onMarkShipped, onCancelEscrow }: EscrowTableRowProps) {
+function EscrowTableRowComponent({
+  escrow,
+  onMarkShipped,
+  onCancelEscrow,
+  isSelected = false,
+  onToggleSelect,
+}: EscrowTableRowProps) {
   const { i18n, t } = useTranslation();
   const { formatAmount } = useCurrency();
-  
+
   const isPending = escrow.status === "PENDING";
   const isFunded = escrow.status === "FUNDED";
 
@@ -26,6 +38,15 @@ function EscrowTableRowComponent({ escrow, onMarkShipped, onCancelEscrow }: Escr
     <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-4">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              aria-label={t("dashboard.selectRow", { item: escrow.item })}
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-zinc-300 accent-zinc-900 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:accent-white dark:focus-visible:ring-zinc-300"
+              checked={isSelected}
+              onChange={() => onToggleSelect(escrow)}
+            />
+          )}
           {escrow.imageUrl && (
             <div className="flex-shrink-0 overflow-hidden rounded-xl">
               <OptimizedImage

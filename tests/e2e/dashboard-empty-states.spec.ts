@@ -16,7 +16,7 @@ test("vendor dashboard displays empty state with CTA when no escrows exist", asy
   await expect(page.getByText("No escrows yet")).toBeVisible();
   await expect(page.getByText("Create your first escrow payment link to begin receiving secure payments.")).toBeVisible();
 
-  const ctaBtn = page.getByRole("link", { name: /create your first link/i });
+  const ctaBtn = page.getByRole("link", { name: /create your first escrow link/i });
   await expect(ctaBtn).toBeVisible();
   await expect(ctaBtn).toHaveAttribute("href", "/create");
 });

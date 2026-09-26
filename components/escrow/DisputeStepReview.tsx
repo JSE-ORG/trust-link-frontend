@@ -10,40 +10,42 @@ interface Props {
 
 export function DisputeStepReview({ formData, errors, updateField }: Props) {
   return (
-    <div className="step step-4" data-testid="step-4">
-      <h2>Step 4: Review & Submit</h2>
-      <div className="review-section" data-testid="review-section">
-        <h3>Personal Information</h3>
-        <p>
+    <div data-testid="step-4">
+      <h2 className="mb-4 text-xl font-semibold text-foreground">Step 4: Review & Submit</h2>
+      <div className="mb-5 rounded-lg bg-zinc-50 p-5 dark:bg-zinc-800" data-testid="review-section">
+        <h3 className="mt-0 text-base font-semibold text-foreground">Personal Information</h3>
+        <p className="text-sm text-foreground">
           <strong>Name:</strong> {formData.name}
         </p>
-        <p>
+        <p className="text-sm text-foreground">
           <strong>Email:</strong> {formData.email}
         </p>
-        <p>
+        <p className="text-sm text-foreground">
           <strong>Order Number:</strong> {formData.orderNumber}
         </p>
 
-        <h3>Dispute Details</h3>
-        <p>
+        <h3 className="mt-0 text-base font-semibold text-foreground">Dispute Details</h3>
+        <p className="text-sm text-foreground">
           <strong>Reason:</strong> {formData.reason}
         </p>
-        <p>
+        <p className="text-sm text-foreground">
           <strong>Description:</strong> {formData.description}
         </p>
 
-        <h3>Evidence</h3>
-        <p>
+        <h3 className="mt-0 text-base font-semibold text-foreground">Evidence</h3>
+        <p className="text-sm text-foreground">
           <strong>Files:</strong> {formData.files.length} file(s) uploaded
         </p>
-        <ul>
+        <ul className="space-y-1 p-0 text-sm text-foreground">
           {formData.files.map((file, index) => (
-            <li key={index}>{file.name}</li>
+            <li key={index} className="ml-4">
+              {file.name}
+            </li>
           ))}
         </ul>
 
-        <div className="form-group">
-          <label>
+        <div className="mb-5 mt-4">
+          <label className="block">
             <input
               type="checkbox"
               id="agreeToTerms"
@@ -54,11 +56,12 @@ export function DisputeStepReview({ formData, errors, updateField }: Props) {
               aria-describedby={
                 errors.agreeToTerms ? "agreeToTerms-error" : undefined
               }
+              className="mr-2"
             />
             I confirm that all information provided is accurate and complete *
           </label>
           {errors.agreeToTerms && (
-            <span id="agreeToTerms-error" className="error" role="alert">
+            <span id="agreeToTerms-error" className="mt-1 block text-sm text-destructive" role="alert">
               {errors.agreeToTerms as string}
             </span>
           )}

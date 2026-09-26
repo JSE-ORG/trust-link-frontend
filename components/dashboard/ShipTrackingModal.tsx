@@ -5,16 +5,29 @@ import { useTranslation } from "react-i18next";
 
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { shipEscrow } from "@/lib/api";
-import type { ApiErrorResponse } from "@/types/api";
 
+/**
+ * Props for the ShipTrackingModal component.
+ */
 interface ShipTrackingModalProps {
+  /** The unique identifier of the escrow to be shipped. */
   escrowId: string;
+  /** The name of the vendor shipping the item. */
   vendorName: string;
+  /** Whether the modal is currently open. */
   open: boolean;
+  /** Callback triggered when the modal should be closed. */
   onClose: () => void;
+  /** Callback triggered upon successful shipment submission. */
   onSuccess: (escrowId: string) => void;
 }
 
+/**
+ * A modal dialog that allows vendors to input shipping tracking information.
+ *
+ * @param {ShipTrackingModalProps} props - The component properties.
+ * @returns {React.ReactElement | null} The ship tracking modal or null if not open.
+ */
 export default function ShipTrackingModal({
   escrowId,
   vendorName,
@@ -74,12 +87,25 @@ export default function ShipTrackingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Dismiss backdrop"
+      />
       <div 
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-xl overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
+        className="relative w-full max-w-xl overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>

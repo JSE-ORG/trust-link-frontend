@@ -5,11 +5,28 @@ import Link from "next/link";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+/**
+ * Props for the EmptyVendorState component.
+ */
 export interface EmptyVendorStateProps {
+  /**
+   * Optional custom title to display when no vendors/escrows exist.
+   * Defaults to translation string if not provided.
+   */
   title?: string;
+  /**
+   * Optional custom description to display.
+   * Defaults to translation string if not provided.
+   */
   description?: string;
 }
 
+/**
+ * Displays an empty state UI when a vendor has no active escrows.
+ *
+ * @param {EmptyVendorStateProps} props - The component properties.
+ * @returns {React.ReactElement} The empty vendor state component.
+ */
 export default function EmptyVendorState({
   title,
   description,

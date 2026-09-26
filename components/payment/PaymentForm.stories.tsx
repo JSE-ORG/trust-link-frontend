@@ -24,7 +24,7 @@ const meta: Meta<typeof PaymentForm> = {
     (Story: () => React.ReactNode) => (
       <NetworkProvider>
         <WalletProvider>
-          <div className="min-h-screen bg-zinc-100 dark:bg-zinc-900 p-8">
+          <div className="min-h-screen bg-zcin-100 dark:bg-zinc-900 p-8">
             <div className="max-w-md mx-auto">
               <Story />
             </div>
@@ -58,8 +58,8 @@ const defaultArgs = {
   amount: 100,
   protocolFee: 2.5,
   total: 102.5,
-  sellerAddress: "GSELLER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  escrowContractId: "CONTRACT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  sellerAddress: "GSELLER1234567890ABCDEFGHIJKLMNOPQRSTUWXYZ",
+  escrowContractId: "CONTRACT1234567890ABCDEFGHIJKLMNOPQRSTUWWXYZZ",
   status: "PENDING",
   onPaymentSuccess: fn(),
 };
@@ -109,7 +109,7 @@ export const WalletNotConnected: Story = {
  * NOTE: This state requires Freighter to be installed and connected.
  * In Storybook the wallet is not available, so the button stays in its
  * disabled state. In production, clicking "Pay with Freighter" triggers
- * a spinner and "Processing payment…" label.
+ * a spinner and "Processing payment’label.
  */
 export const Submitting: Story = {
   name: "Submitting — CTA loading state",
@@ -140,7 +140,28 @@ export const Error: Story = {
       description: {
         story:
           "When Freighter rejects or the user cancels, an error banner appears: " +
-          "\"Transaction was rejected in wallet\". The CTA returns to its idle label.",
+         "\"Transaction was rejected in wallet\". The CTA returns to its idle label.",
+      },
+    },
+  },
+};
+
+/**
+ * Success — payment completed with transaction hash.
+ *
+ * NOTE: Requires a connected Freighter wallet and a successful signing.
+ * In production, after the transaction is submitted, the form displays the
+ * transaction hash and a success message.
+ */
+export const Success: Story = {
+  name: "Success — payment completed with hash",
+  args: { ...defaultArgs },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "When the transaction succeeds, the form shows a success banner " +
+          "with the transaction hash and a confirmation message.",
       },
     },
   },

@@ -114,8 +114,11 @@ export default function NotificationBell() {
                 No notifications yet
               </li>
             ) : (
-              preview.map((n: AppNotification) => (
-                <li key={n.id}>
+              preview.map((n: AppNotification, index: number) => (
+                // `n.id` (the escrow history event id) is expected to be unique,
+                // but append the index as a defensive fallback so duplicate ids
+                // can never produce duplicate React keys or console warnings.
+                <li key={`${n.id}-${index}`}>
                   <Link
                     href={`/escrow/${n.escrowId}`}
                     onClick={() => {

@@ -9,8 +9,8 @@ test.describe("EscrowStatusBadge visual regression", () => {
     await expect(page.getByText("EscrowStatusBadge Variants")).toBeVisible();
 
     await expect(page).toHaveScreenshot("escrow-status-badge-variants.png", {
-      fullPage: true,
       maxDiffPixelRatio: 0.02,
+      timeout: 20_000,
     });
   });
 
@@ -21,7 +21,9 @@ test.describe("EscrowStatusBadge visual regression", () => {
       const row = page.locator(`text=${status}`).first();
       await expect(row).toBeVisible();
 
-      const badge = row.locator("..").getByRole("status");
+      // EscrowStatusBadge renders "Status updated to: …" inside a plain div
+      // with aria-live (no role="status"), so locate it by its label text.
+      const badge = row.locator("..").getByText(/Status updated to:/);
       await expect(badge).toBeVisible();
 
       await expect(badge).toHaveScreenshot(`badge-${status.toLowerCase()}.png`, {

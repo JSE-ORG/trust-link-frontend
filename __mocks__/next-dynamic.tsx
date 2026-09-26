@@ -7,15 +7,9 @@
  */
 import React from "react";
 
-type DynamicOptions = {
-  loading?: React.ComponentType;
-  ssr?: boolean;
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function dynamic<T extends React.ComponentType<any>>(
-  loader: () => Promise<{ default: T } | T>,
-  _options?: DynamicOptions
+  loader: () => Promise<{ default: T } | T>
 ): T {
   // We can't await in a synchronous context, so return a component that
   // triggers the load via React's lazy/Suspense mechanism in tests.

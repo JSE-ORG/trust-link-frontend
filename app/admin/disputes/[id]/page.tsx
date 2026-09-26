@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { getDispute } from "@/lib/api";
 import type { GetDisputeResponse } from "@/types/api";
 
@@ -51,17 +51,14 @@ export default async function DisputeDetailsPage({ params }: PageProps) {
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <nav className="flex mb-4 text-sm text-zinc-500" aria-label="Breadcrumb">
-            <ol className="flex items-center space-x-2">
-              <li>
-                <Link href="/admin/disputes" className="hover:text-zinc-900 transition-colors">Disputes</Link>
-              </li>
-              <li className="flex items-center space-x-2">
-                <span>/</span>
-                <span className="text-zinc-900 font-medium">#{id.slice(0, 8)}...</span>
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumb
+            className="mb-4"
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Disputes", href: "/admin/disputes" },
+              { label: `Dispute #${id.slice(0, 8)}` },
+            ]}
+          />
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Dispute Details</h1>
         </div>
 
