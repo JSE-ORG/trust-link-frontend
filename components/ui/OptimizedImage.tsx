@@ -1,10 +1,13 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
+import type { Ref } from "react";
 
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface OptimizedImageProps extends Omit<ImageProps, "placeholder" | "blurDataURL"> {
+  /** Forwarded to the underlying `next/image` element. */
+  ref?: Ref<HTMLImageElement>;
   /**
    * Whether to use blur placeholder while loading.
    * @default true
@@ -30,6 +33,7 @@ export default function OptimizedImage({
   priority,
   alt,
   src,
+  ref,
   ...props
 }: OptimizedImageProps) {
   // Guard against `javascript:`/`vbscript:` URLs reaching the underlying <img>.
@@ -48,6 +52,7 @@ export default function OptimizedImage({
   return (
     <Image
       {...props}
+      ref={ref}
       src={safeSrc}
       alt={alt}
       loading={resolvedLoading}
