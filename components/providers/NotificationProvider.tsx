@@ -2,12 +2,14 @@
 
 import React, {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
+
 import { getVendorEscrows } from "@/lib/api";
 import {
   deriveNotifications,
@@ -55,9 +57,11 @@ export function NotificationProvider({
   }, []);
 
   useEffect(() => {
-    setReadIds(getReadIds());
-    setIsLoading(true);
-    fetchNotifications().finally(() => setIsLoading(false));
+    startTransition(() => {
+      setReadIds(getReadIds());
+      setIsLoading(true);
+      void fetchNotifications().finally(() => startTransition(() => setIsLoading(false)));
+    });
 
     intervalRef.current = setInterval(fetchNotifications, POLL_MS);
     return () => {
