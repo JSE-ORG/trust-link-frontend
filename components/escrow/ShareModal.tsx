@@ -141,7 +141,7 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
                 <button
                   type="button"
                   onClick={handleNativeShare}
-                  className="flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                  className="flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-300"
                 >
                   <Share2 className="h-4 w-4" />
                   Share
@@ -154,7 +154,7 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
                 className={`flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 font-medium transition ${
                   copied
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900"
+                    : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-300"
                 }`}
               >
                 <span className="relative flex h-4 w-4 items-center justify-center">
@@ -174,7 +174,7 @@ export default function ShareModal({ isOpen, onClose, url, escrowId }: ShareModa
               <button
                 type="button"
                 onClick={shareWhatsApp}
-                className="flex items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2.5 font-medium text-white transition hover:bg-green-600"
+                className="flex items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2.5 font-medium text-white transition hover:bg-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300"
               >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
