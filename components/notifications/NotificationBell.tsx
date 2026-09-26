@@ -10,6 +10,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { relativeTime, statusLabel } from "@/lib/notifications";
 import type { AppNotification, EscrowStatus } from "@/types";
 
+/** Renders an icon that visually represents the given escrow status. */
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-4 w-4 shrink-0";
   const icons: Record<EscrowStatus, JSX.Element> = {
@@ -25,6 +26,7 @@ function StatusIcon({ type }: { type: EscrowStatus }) {
   return <>{icons[type] ?? <Package className={cls} />}</>;
 }
 
+/** Tailwind text-color class mapped to each escrow status. */
 const STATUS_COLORS: Record<EscrowStatus, string> = {
   PENDING:   "text-zinc-500",
   FUNDED:    "text-blue-500",
@@ -36,6 +38,12 @@ const STATUS_COLORS: Record<EscrowStatus, string> = {
   EXPIRED:   "text-zinc-400",
 };
 
+/**
+ * Floating bell icon that toggles a notification dropdown.
+ *
+ * Shows unread count, latest five notifications, and quick actions
+ * (mark-as-read, mark-all-read, view all).
+ */
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -74,7 +82,7 @@ export default function NotificationBell() {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((v: boolean) => !v)}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -99,7 +107,7 @@ export default function NotificationBell() {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded dark:text-blue-400"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 Mark all read
