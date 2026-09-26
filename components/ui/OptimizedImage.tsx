@@ -1,6 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
+import { forwardRef } from "react";
 
 import { sanitizeUrl } from "@/lib/sanitize";
 
@@ -23,15 +24,10 @@ interface OptimizedImageProps extends Omit<ImageProps, "placeholder" | "blurData
  * Pass `priority` to mark an image as the LCP candidate — this disables lazy
  * loading automatically so the browser fetches the image as early as possible.
  */
-export default function OptimizedImage({
-  useBlur = true,
-  customBlurDataURL,
-  loading,
-  priority,
-  alt,
-  src,
-  ...props
-}: OptimizedImageProps) {
+const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(function OptimizedImage(
+  { useBlur = true, customBlurDataURL, loading, priority, alt, src, ...props },
+  ref
+) {
   // Guard against `javascript:`/`vbscript:` URLs reaching the underlying <img>.
   // String sources are sanitised; static imports (objects) are passed through.
   const safeSrc = typeof src === "string" ? sanitizeUrl(src) : src;
@@ -48,6 +44,7 @@ export default function OptimizedImage({
   return (
     <Image
       {...props}
+      ref={ref}
       src={safeSrc}
       alt={alt}
       loading={resolvedLoading}
@@ -56,4 +53,6 @@ export default function OptimizedImage({
       blurDataURL={useBlur ? blurDataURL : undefined}
     />
   );
-}
+});
+
+export default OptimizedImage;
