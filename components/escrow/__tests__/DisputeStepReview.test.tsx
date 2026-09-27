@@ -7,6 +7,11 @@ import type { DisputeFormValues } from "@/lib/validations/dispute";
 
 import { DisputeStepReview } from "../DisputeStepReview";
 
+type UpdateDisputeField = <K extends keyof DisputeFormValues>(
+  field: K,
+  value: DisputeFormValues[K]
+) => void;
+
 const defaultFormData: DisputeFormValues = {
   name: "Jane Doe",
   email: "jane@example.com",
@@ -20,9 +25,9 @@ const defaultFormData: DisputeFormValues = {
 function renderStep(overrides: {
   formData?: Partial<DisputeFormValues>;
   errors?: Partial<Record<keyof DisputeFormValues, string>>;
-  updateField?: <K extends keyof DisputeFormValues>(field: K, value: DisputeFormValues[K]) => void;
+  updateField?: UpdateDisputeField;
 } = {}) {
-  const updateField = overrides.updateField ?? vi.fn<(field: any, value: any) => void>();
+  const updateField = overrides.updateField ?? vi.fn<UpdateDisputeField>();
   const formData: DisputeFormValues = {
     ...defaultFormData,
     ...overrides.formData,
