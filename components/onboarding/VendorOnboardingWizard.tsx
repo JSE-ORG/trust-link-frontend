@@ -25,6 +25,14 @@ const steps: OnboardingStepMeta[] = [
   { title: "Review & Finish", icon: CheckCircle2 },
 ];
 
+const onboardingSteps: readonly OnboardingStep[] = [0, 1, 2];
+
+/**
+ * Coordinates wallet, profile, review, and completion screens for vendor setup.
+ * Progress and validation state are owned by `useOnboardingWizard`.
+ *
+ * @returns The onboarding stepper, active step content, and navigation checklist.
+ */
 export default function VendorOnboardingWizard() {
   const {
     wallet,
@@ -38,6 +46,7 @@ export default function VendorOnboardingWizard() {
     handleFinish,
   } = useOnboardingWizard();
 
+  /** Selects the screen corresponding to the wizard's current state. */
   const stepContent = () => {
     if (state.completed) {
       return <OnboardingStepComplete onGoToDashboard={handleFinish} />;
@@ -76,6 +85,12 @@ export default function VendorOnboardingWizard() {
     );
   };
 
+  /** Ignore indexes outside the wizard's declared step range. */
+  const handleGoToStep = (step: number) => {
+    const targetStep = onboardingSteps[step];
+    if (targetStep !== undefined) goToStep(targetStep);
+  };
+
   return (
     <div className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-10">
@@ -83,7 +98,7 @@ export default function VendorOnboardingWizard() {
           steps={steps}
           currentStep={state.step}
           completed={state.completed}
-          onGoToStep={(step) => goToStep(step as OnboardingStep)}
+          onGoToStep={handleGoToStep}
         />
 
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
