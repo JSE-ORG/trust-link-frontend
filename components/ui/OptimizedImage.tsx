@@ -6,6 +6,8 @@ import { forwardRef } from "react";
 import { sanitizeUrl } from "@/lib/sanitize";
 
 interface OptimizedImageProps extends Omit<ImageProps, "placeholder" | "blurDataURL"> {
+  /** Forwarded to the underlying `next/image` element. */
+  ref?: Ref<HTMLImageElement>;
   /**
    * Whether to use blur placeholder while loading.
    * @default true
