@@ -1,7 +1,15 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
-import { afterEach, beforeEach, describe, expect, it, type Mock,vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from "vitest";
 
 import useWallet from "@/hooks/useWallet";
 import { createApiClient } from "@/lib/api-client";
@@ -85,10 +93,14 @@ describe("ConfirmDeliveryButton", () => {
     mockClientPost(post);
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
 
-    render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />);
+    render(
+      <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />
+    );
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /yes, confirm/i })
+    );
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
@@ -114,7 +126,9 @@ describe("ConfirmDeliveryButton", () => {
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /yes, confirm/i })
+    );
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -137,7 +151,9 @@ describe("ConfirmDeliveryButton", () => {
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /yes, confirm/i })
+    );
 
     expect(screen.getByText(/confirming…/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /confirming…/i })).toBeDisabled();
@@ -156,10 +172,14 @@ describe("ConfirmDeliveryButton", () => {
       json: async () => ({ message: "Escrow already released" }),
     });
 
-    render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />);
+    render(
+      <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />
+    );
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /yes, confirm/i })
+    );
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Escrow already released");
@@ -177,10 +197,184 @@ describe("ConfirmDeliveryButton", () => {
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /yes, confirm/i })
+    );
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Failed to confirm delivery");
+    });
+  });
+
+  describe("keyboard accessibility", () => {
+    it("exposes the trigger as a dialog opener and reflects its state", async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      const trigger = screen.getByRole("button", { name: /confirm delivery/i });
+      expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+      await user.click(trigger);
+      await screen.findByRole("dialog");
+
+      expect(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      ).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("opens the dialog with Enter on the trigger", () => {
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      fireEvent.keyDown(
+        screen.getByRole("button", { name: /confirm delivery/i }),
+        { key: "Enter" }
+      );
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("opens the dialog with Space on the trigger", () => {
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      fireEvent.keyDown(
+        screen.getByRole("button", { name: /confirm delivery/i }),
+        { key: " " }
+      );
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("closes the dialog with Enter on Cancel", async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      );
+      const cancel = await screen.findByRole("button", { name: /cancel/i });
+
+      fireEvent.keyDown(cancel, { key: "Enter" });
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+      );
+    });
+
+    it("confirms the delivery with Space on the primary action", async () => {
+      const user = userEvent.setup();
+      const post = vi.fn().mockResolvedValue({});
+      mockClientPost(post);
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+      const onSuccess = vi.fn();
+
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      );
+      const confirm = await screen.findByRole("button", {
+        name: /yes, confirm/i,
+      });
+
+      fireEvent.keyDown(confirm, { key: " " });
+
+      await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+      expect(post).toHaveBeenCalledWith(CONFIRM_ENDPOINT);
+    });
+
+    it("runs the confirm action exactly once per keyboard activation", async () => {
+      const user = userEvent.setup();
+      const post = vi.fn().mockResolvedValue({});
+      mockClientPost(post);
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      );
+      const cancel = await screen.findByRole("button", { name: /cancel/i });
+
+      // The trap moves focus into the dialog on the next frame; wait for it
+      // before tabbing so the sequence below is deterministic.
+      await waitFor(() => expect(cancel).toHaveFocus());
+
+      await user.tab();
+      const confirm = screen.getByRole("button", { name: /yes, confirm/i });
+      expect(confirm).toHaveFocus();
+
+      await user.keyboard("{Enter}");
+
+      await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    });
+
+    it("cycles focus between the dialog controls with Tab", async () => {
+      const user = userEvent.setup();
+      mockClientPost(vi.fn().mockResolvedValue({}));
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      );
+      const cancel = await screen.findByRole("button", { name: /cancel/i });
+      const confirm = screen.getByRole("button", { name: /yes, confirm/i });
+
+      // The trap pulls focus to the first control on the next frame.
+      await waitFor(() => expect(cancel).toHaveFocus());
+
+      await user.tab();
+      expect(confirm).toHaveFocus();
+
+      // Tab on the last control wraps back inside the dialog, never out.
+      await user.tab();
+      expect(cancel).toHaveFocus();
+    });
+
+    it("gives every control a visible focus outline", () => {
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      expect(
+        screen
+          .getByRole("button", { name: /confirm delivery/i })
+          .className.includes("focus-visible:")
+      ).toBe(true);
+    });
+
+    it("still dismisses the dialog with Escape", async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /confirm delivery/i })
+      );
+      await screen.findByRole("dialog");
+
+      await user.keyboard("{Escape}");
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+      );
     });
   });
 });

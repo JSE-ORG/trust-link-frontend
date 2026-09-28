@@ -7,16 +7,27 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import QRCodeComponent from "@/components/ui/QRCodeComponent";
 import { track } from "@/lib/analytics";
 
+/** Props for the escrow link sharing dialog. */
 interface ShareModalProps {
+  /** Whether the dialog is currently visible. */
   isOpen: boolean;
+  /** Closes the dialog. */
   onClose: () => void;
+  /** The payment URL shown, copied, and shared by the dialog. */
   url: string;
-  escrowId: string;
 }
 
+/**
+ * Displays an escrow payment link with QR code, clipboard, and sharing actions.
+ *
+ * Copy feedback is kept briefly and reset by a cleaned-up timeout. Native sharing
+ */
 export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
+  /** Success/error announcement shown after a clipboard attempt. */
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  /** Controls the copy icon and success styling while feedback is visible. */
   const [copied, setCopied] = useState(false);
+  /** Pending timer for clearing transient clipboard feedback. */
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canShare = typeof navigator !== "undefined" && navigator.share;
 
@@ -53,9 +64,9 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
         url: url,
       });
       track("link_shared", { platform: "native", method: "share_modal" });
-    } catch (err) {
+    } catch (err: unknown) {
       // User cancelled or share failed
-      if ((err as Error).name !== "AbortError") {
+      if (!isAbortError(err)) {
         console.error("Share failed:", err);
       }
     }
@@ -74,9 +85,9 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
         });
         track("link_shared", { platform: "whatsapp", method: "native" });
         return;
-      } catch (err) {
+      } catch (err: unknown) {
         // User cancelled or share failed, fall through to WhatsApp URL
-        if ((err as Error).name !== "AbortError") {
+        if (!isAbortError(err)) {
           console.error("Share failed:", err);
         }
       }
@@ -127,7 +138,7 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
                 <button
                   type="button"
                   onClick={handleNativeShare}
-                  className="flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                  className="flex items-center justify-center gap-2 rounded-full bg-black px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-300"
                 >
                   <Share2 className="h-4 w-4" />
                   Share
@@ -140,7 +151,7 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
                 className={`flex items-center justify-center gap-2 rounded-full border px-4 py-2.5 font-medium transition ${
                   copied
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900"
+                    : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-300"
                 }`}
               >
                 <span className="relative flex h-4 w-4 items-center justify-center">
@@ -160,7 +171,7 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
               <button
                 type="button"
                 onClick={shareWhatsApp}
-                className="flex items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2.5 font-medium text-white transition hover:bg-green-600"
+                className="flex items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2.5 font-medium text-white transition hover:bg-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300"
               >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
@@ -171,4 +182,9 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Returns whether a browser-share rejection represents user cancellation. */
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }

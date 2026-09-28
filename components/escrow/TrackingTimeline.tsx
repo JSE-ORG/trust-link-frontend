@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { formatTimeAgo } from "@/lib/utils";
 
+/** Shipment milestones supported by the tracking timeline, in progression order. */
 export type ShipmentStage =
   | "ORDER_PLACED"
   | "PICKED_UP"
@@ -11,16 +12,25 @@ export type ShipmentStage =
   | "OUT_FOR_DELIVERY"
   | "DELIVERED";
 
+/** Display content and optional timestamp for one shipment milestone. */
 export interface TrackingStage {
+  /** Stable identifier used to determine this stage's progress status. */
   id: ShipmentStage;
+  /** Short, user-facing stage name. */
   label: string;
+  /** Additional context shown beneath the stage name. */
   description: string;
+  /** Optional parseable date-time string displayed as a relative time. */
   timestamp?: string;
 }
 
+/** Configuration for rendering a shipment's progress timeline. */
 export interface TrackingTimelineProps {
+  /** The furthest shipment milestone reached. */
   currentStage: ShipmentStage;
+  /** Ordered milestone content; defaults to the built-in shipment stages. */
   stages?: TrackingStage[];
+  /** Optional CSS classes appended to the timeline's root section. */
   className?: string;
 }
 
@@ -112,6 +122,7 @@ const STAGE_ICONS: Record<ShipmentStage, React.ReactNode> = {
 
 type StageStatus = "completed" | "current" | "upcoming";
 
+/** Compares a milestone's canonical position with the shipment's current stage. */
 function getStageStatus(stageId: ShipmentStage, currentStage: ShipmentStage): StageStatus {
   const stageIndex = STAGE_ORDER.indexOf(stageId);
   const currentIndex = STAGE_ORDER.indexOf(currentStage);
@@ -140,6 +151,10 @@ function StageIcon({ stageId, status }: { stageId: ShipmentStage; status: StageS
   );
 }
 
+/**
+ * Renders shipment milestones with visual progress, relative timestamps, and
+ * a polite live announcement for the current stage.
+ */
 export default function TrackingTimeline({
   currentStage,
   stages = DEFAULT_STAGES,

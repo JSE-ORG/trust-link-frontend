@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useMemo } from "react";
 
 import { FormField } from "@/components/ui/FormField";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -74,25 +74,11 @@ interface ImagePreviewProps {
  * preventing blob URL memory leaks.
  */
 function ImagePreview({ file, index }: ImagePreviewProps) {
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    const img = imgRef.current;
-    if (!img) return;
-
-    const url = URL.createObjectURL(file);
-    img.src = url;
-
-    return () => {
-      img.removeAttribute("src");
-      URL.revokeObjectURL(url);
-    };
-  }, [file]);
+  const src = useMemo(() => URL.createObjectURL(file), [file]);
 
   return (
     <OptimizedImage
-      ref={imgRef}
-      src="/placeholder.png"
+      src={src}
       alt={`Preview of ${file.name}`}
       width={64}
       height={64}

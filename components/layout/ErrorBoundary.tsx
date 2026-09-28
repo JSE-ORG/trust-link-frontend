@@ -1,24 +1,41 @@
 "use client";
 
-import { Component, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { captureError } from "@/lib/logger";
 
+/** Props accepted by {@link ErrorBoundary}. */
+interface ErrorBoundaryProps {
+  /** Subtree to render normally when no error has been caught. */
+  children: ReactNode;
+}
+
+/** Internal render state tracked by {@link ErrorBoundary}. */
 interface ErrorBoundaryState {
+  /** Whether a descendant has thrown and the fallback UI should render. */
   hasError: boolean;
 }
 
+/**
+ * Class-based React error boundary for the layout tree.
+ *
+ * Catches render/lifecycle errors thrown by its children, reports them via
+ * {@link captureError}, and renders a fallback panel with a "Try Again"
+ * control that resets the boundary so the subtree can attempt to re-render.
+ */
 export default class ErrorBoundary extends Component<
-  { children: ReactNode },
+  ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  state = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false };
 
-  static getDerivedStateFromError() {
+  /** React lifecycle hook: derive fallback state from a thrown error. */
+  static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: unknown) {
+  /** React lifecycle hook: reports the caught error for observability. */
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     captureError(error, {
       scope: "ui",
       action: "ErrorBoundary",
@@ -26,11 +43,12 @@ export default class ErrorBoundary extends Component<
     });
   }
 
-  resetError = () => {
+  /** Clears the error state so the wrapped subtree is given another render attempt. */
+  resetError = (): void => {
     this.setState({ hasError: false });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="flex min-h-[240px] flex-col items-center justify-center gap-4 rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-zinc-900 dark:border-red-500/40 dark:bg-red-950/30 dark:text-zinc-100">

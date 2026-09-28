@@ -171,7 +171,6 @@ export default function EscrowCreateForm() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           url={resultUrl}
-          escrowId={resultUrl.split("/").pop() || "escrow"}
         />
       )}
     </div>
