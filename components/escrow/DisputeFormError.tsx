@@ -1,11 +1,29 @@
 import React from "react";
 
-interface Props {
+/**
+ * Props for the DisputeFormError component.
+ */
+export interface DisputeFormErrorProps {
+  /** Human-readable failure reason, taken from the thrown error or the API response. */
   message: string;
+  /** Clears the error state and returns the wizard to step 1 so the user can resubmit. */
   onRetry: () => void;
 }
 
-export function DisputeFormError({ message, onRetry }: Props) {
+/**
+ * DisputeFormError
+ *
+ * Terminal error screen of the dispute wizard. Rendered by `DisputeForm` when
+ * submission fails, in place of the step form. Unlike the success screen it uses
+ * an assertive live region so a failed submission is announced immediately.
+ *
+ * @param props - Component properties.
+ * @returns The rendered error state.
+ */
+export function DisputeFormError({
+  message,
+  onRetry,
+}: DisputeFormErrorProps) {
   return (
     <div
       className="mx-auto max-w-[600px] p-10 text-center"
@@ -19,6 +37,9 @@ export function DisputeFormError({ message, onRetry }: Props) {
         <button
           type="button"
           onClick={onRetry}
+          // A native button already activates on Enter and Space; handling it
+          // explicitly keeps the retry action reachable when the control is
+          // rendered through a custom skin that swaps out the element.
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();

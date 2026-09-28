@@ -9,6 +9,15 @@ interface OptimizedImageProps extends Omit<ImageProps, "placeholder" | "blurData
   /** Forwarded to the underlying `next/image` element. */
   ref?: Ref<HTMLImageElement>;
   /**
+   * Forwarded to the `<img>` rendered by `next/image`.
+   *
+   * `ImageProps` deliberately omits `ref`, so a wrapper that extends it loses
+   * the ref that `next/image` itself accepts. Redeclaring it here — taken from
+   * the real component rather than written out — lets callers keep a handle on
+   * the underlying element.
+   */
+  ref?: ComponentProps<typeof Image>["ref"];
+  /**
    * Whether to use blur placeholder while loading.
    * @default true
    */
