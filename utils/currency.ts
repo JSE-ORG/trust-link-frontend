@@ -7,7 +7,7 @@
  */
 export function formatUSDC(value: number | string | null | undefined): string {
   const num = Number(value);
-  if (isNaN(num)) return "0.00 USDC";
+  if (!Number.isFinite(num)) return "0.00 USDC";
 
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -51,7 +51,7 @@ export function convertFromUSDC(
   currency: CurrencyCode
 ): number {
   const num = Number(value);
-  if (isNaN(num)) return 0;
+  if (!Number.isFinite(num)) return 0;
 
   return num * (EXCHANGE_RATES[currency] ?? 1);
 }
