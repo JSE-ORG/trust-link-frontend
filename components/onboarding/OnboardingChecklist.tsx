@@ -1,6 +1,6 @@
 "use client";
 
-import { Link as LinkIcon } from "lucide-react";
+import { Link as LinkIcon, Loader2 } from "lucide-react";
 
 import type { OnboardingStepMeta } from "@/components/onboarding/OnboardingStepper";
 
@@ -20,6 +20,8 @@ interface OnboardingChecklistProps {
   showNext: boolean;
   /** Disables the next button (e.g. when required fields are incomplete) */
   nextDisabled: boolean;
+  /** True while finish navigation is in flight */
+  isFinishing?: boolean;
   /** Callback fired when the user clicks "Back" */
   onBack: () => void;
   /** Callback fired when the user clicks "Next" or "Continue" */
@@ -32,38 +34,14 @@ interface OnboardingChecklistProps {
  * OnboardingChecklist renders a sidebar panel that guides new vendors
  * through the multi-step onboarding process. It displays step
  * descriptions, the current step title, and Back / Next / Finish buttons.
- *
- * @example
- * ```tsx
- * <OnboardingChecklist
- *   steps={steps}
- *   currentStep={1}
- *   showBack={true}
- *   showNext={true}
- *   nextDisabled={false}
- *   onBack={() => goToStep(0)}
- *   onNext={() => goToStep(2)}
- *   onFinish={completeOnboarding}
- * />
- * ```
  */
-interface OnboardingChecklistProps {
-  steps: OnboardingStepMeta[];
-  currentStep: number;
-  showBack: boolean;
-  showNext: boolean;
-  nextDisabled: boolean;
-  onBack: () => void;
-  onNext: () => void;
-  onFinish: () => void;
-}
-
 export default function OnboardingChecklist({
   steps,
   currentStep,
   showBack,
   showNext,
   nextDisabled,
+  isFinishing = false,
   onBack,
   onNext,
   onFinish,
@@ -89,7 +67,8 @@ export default function OnboardingChecklist({
           <button
             type="button"
             onClick={onBack}
-            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-300"
+            disabled={isFinishing}
+            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-300"
           >
             Back
           </button>
@@ -98,7 +77,7 @@ export default function OnboardingChecklist({
           <button
             type="button"
             onClick={onNext}
-            disabled={nextDisabled}
+            disabled={nextDisabled || isFinishing}
             className="w-full rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-300"
           >
             {currentStep === 0 ? "Continue" : "Next"}
@@ -107,9 +86,18 @@ export default function OnboardingChecklist({
           <button
             type="button"
             onClick={onFinish}
-            className="w-full rounded-full bg-success px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-300"
+            disabled={isFinishing}
+            aria-busy={isFinishing}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-success px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-zinc-300"
           >
-            Complete Onboarding
+            {isFinishing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <span aria-live="polite">Completing...</span>
+              </>
+            ) : (
+              "Complete Onboarding"
+            )}
           </button>
         )}
       </div>

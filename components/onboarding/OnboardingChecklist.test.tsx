@@ -96,4 +96,15 @@ describe("OnboardingChecklist", () => {
     expect(onFinish).toHaveBeenCalledOnce();
     expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
   });
+
+  it("disables the finish button and shows Completing... while finishing", () => {
+    renderChecklist({ currentStep: 2, showNext: false, isFinishing: true });
+
+    const finishButton = screen.getByRole("button", { name: /Completing/i });
+    expect(finishButton).toBeDisabled();
+    expect(finishButton).toHaveAttribute("aria-busy", "true");
+    expect(
+      screen.queryByRole("button", { name: "Complete Onboarding" })
+    ).not.toBeInTheDocument();
+  });
 });
