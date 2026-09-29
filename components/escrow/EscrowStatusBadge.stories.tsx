@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import { EscrowStatusBadge } from "./EscrowStatusBadge";
 
 const meta: Meta<typeof EscrowStatusBadge> = {
   title: "Escrow/EscrowStatusBadge",
   component: EscrowStatusBadge,
-  tags: ["autodocs"],
   argTypes: {
     status: {
       control: "text",

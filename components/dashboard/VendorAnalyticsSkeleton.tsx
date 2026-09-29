@@ -1,8 +1,16 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 
+/**
+ * VendorAnalyticsSkeleton
+ * 
+ * Displays a loading skeleton for the vendor analytics page. It mimics the structure
+ * of the VendorAnalytics component, including the header, metric cards, and the main chart area.
+ *
+ * @returns A loading skeleton view.
+ */
 export default function VendorAnalyticsSkeleton() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] p-4 pb-24 sm:p-6 dark:bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.14),_transparent_30%),linear-gradient(180deg,_#050505_0%,_#0a0a0a_100%)]">
+    <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full" />

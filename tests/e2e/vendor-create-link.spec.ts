@@ -1,50 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "next/experimental/testmode/playwright";
 
-test("vendor can connect Freighter, create an escrow link, and see the QR code", async ({ page }) => {
-  await page.addInitScript(() => {
-    (window as Window & { freighter?: Record<string, unknown> }).freighter = {
-      connect: async () => ({ publicKey: "GCFM4VENDOR8TESTING1234567890ABCDEF" }),
-      signTransaction: async () => ({ signedTransaction: "signed-challenge-xdr" }),
-      isConnected: async () => true,
-    };
-  });
+import { setupNetworkMocks } from "./helpers/mock-api";
+import { mockFreighter } from "./helpers/mock-freighter";
 
-  await page.route("**/stellar/sep10/challenge**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        transaction: "challenge-xdr",
-        network_passphrase: "Test SDF Network ; September 2015",
-      }),
-    });
-  });
-
-  await page.route("**/stellar/sep10/token", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ token: "jwt-token" }),
-    });
-  });
-
-  await page.route("**/escrow", async (route) => {
-    const request = route.request();
-    const payload = JSON.parse(request.postData() || "{}") as { itemName?: string };
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        url: `https://trustlink.example.com/escrow/${encodeURIComponent(payload.itemName || "ESCROW-12345")}`,
-      }),
-    });
-  });
+test("vendor can connect Freighter, create an escrow link, and see the QR code", async ({ page, next }) => {
+  await setupNetworkMocks(page, next);
+  await mockFreighter(page);
 
   await page.goto("/create");
 
   await page.getByRole("button", { name: /connect wallet/i }).click();
-  await expect(page.getByRole("button", { name: /gcfm4v.*cdef/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /GCFM4.*CDEF/i })).toBeVisible();
 
   await page.getByLabel("Item name").fill("Vintage Camera");
   await page.getByLabel("Price (USDC)").fill("249.99");

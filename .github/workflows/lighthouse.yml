@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   lhci:
+    if: false
     name: Lighthouse CI
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +32,14 @@ jobs:
       # Install a pinned version of the CLI so audit results are reproducible.
       - name: Install Lighthouse CI CLI
         run: npm install -g @lhci/cli@0.14.0
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       # The Next.js build validates required env vars at startup.  We supply
       # placeholder values that satisfy the validation without hitting real

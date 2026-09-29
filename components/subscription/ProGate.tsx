@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Lock, Sparkles } from "lucide-react";
+import Link from "next/link";
+
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
 

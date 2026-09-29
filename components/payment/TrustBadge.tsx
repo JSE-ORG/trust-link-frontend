@@ -1,11 +1,12 @@
 "use client";
 
+import { Check,Copy, ExternalLink, Shield } from "lucide-react";
 import React, { useState } from "react";
-import { Shield, Copy, ExternalLink, Check } from "lucide-react";
+
+import { useNetwork } from "@/components/providers/NetworkProvider";
+import { getStellarExpertUrl } from "@/lib/explorer";
 import { cn } from "@/lib/utils";
 import { truncateAddress } from "@/utils/truncateAddress";
-import { getStellarExpertUrl } from "@/lib/explorer";
-import { useNetwork } from "@/components/providers/NetworkProvider";
 
 interface TrustBadgeProps {
   contractAddress: string;

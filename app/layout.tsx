@@ -1,23 +1,25 @@
+import "./globals.css";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { NetworkProvider } from "@/components/providers/NetworkProvider";
-import { WalletProvider } from "@/components/providers/WalletProvider";
-import { SubscriptionProvider } from "@/components/providers/SubscriptionProvider";
-import { NotificationProvider } from "@/components/providers/NotificationProvider";
-import I18nProvider from "@/components/providers/I18nProvider";
+import { Suspense } from "react";
+import { Toaster } from "sonner";
+
 import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import TestnetBanner from "@/components/layout/TestnetBanner";
 import OfflineBanner from "@/components/layout/OfflineBanner";
+import TestnetBanner from "@/components/layout/TestnetBanner";
+import { CurrencyProvider } from "@/components/providers/CurrencyProvider";
+import I18nProvider from "@/components/providers/I18nProvider";
+import { NetworkProvider } from "@/components/providers/NetworkProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
-import { Toaster } from "sonner";
-import { Suspense } from "react";
-import Script from "next/script";
-import TopProgressBar from "@/components/ui/TopProgressBar";
-import CommandPalette from "@/components/ui/CommandPalette";
+import { SubscriptionProvider } from "@/components/providers/SubscriptionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { WalletProvider } from "@/components/providers/WalletProvider";
+import CommandPalette from "@/components/ui/CommandPalette";
+import TopProgressBar from "@/components/ui/TopProgressBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +36,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://trustlink.app"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://trustlink.app"
+  ),
   title: "TrustLink",
   description: "The Web2 experience. The Web3 guarantee.",
 };
@@ -66,43 +70,56 @@ export default function RootLayout({
         */}
         <link rel="dns-prefetch" href="https://soroban-testnet.stellar.org" />
         <link rel="dns-prefetch" href="https://horizon-testnet.stellar.org" />
+        {/* Inline script runs before paint to apply stored theme class without flash */}
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');else if(t==='light')document.documentElement.classList.add('light');}catch(e){}})();`,
+          }}
+        />
       </head>
-      {/* Inline script runs before paint to apply stored theme class without flash */}
-      <Script id="theme-init" strategy="beforeInteractive">
-        {`(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');else if(t==='light')document.documentElement.classList.add('light');}catch(e){}})();`}
-      </Script>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-        <Suspense fallback={null}>
-          <TopProgressBar />
-        </Suspense>
-        <NetworkProvider>
-          <ServiceWorkerProvider />
-          <OfflineBanner />
-          <TestnetBanner />
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-white focus:text-black focus:font-semibold"
-          >
-            Skip to content
-          </a>
-          <WalletProvider>
-            <SubscriptionProvider>
-              <I18nProvider>
-                <NotificationProvider>
-                  <Navbar />
-                  <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col pb-20 md:pb-0 outline-none">
-                    {children}
-                  </main>
-                  <Footer />
-                  <BottomNav />
-                  <Toaster richColors position="top-right" />
-                </NotificationProvider>
-              </I18nProvider>
-            </SubscriptionProvider>
-          </WalletProvider>
-        </NetworkProvider>
-        <CommandPalette />
+          <Suspense fallback={null}>
+            <TopProgressBar />
+          </Suspense>
+          <NetworkProvider>
+            <ServiceWorkerProvider />
+            <OfflineBanner />
+            <TestnetBanner />
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:p-4 focus:bg-white focus:text-black focus:font-semibold"
+            >
+              Skip to content
+            </a>
+            <WalletProvider>
+              <SubscriptionProvider>
+                <CurrencyProvider>
+                  <I18nProvider>
+                    <NotificationProvider>
+                      <Navbar />
+                      <main
+                        id="main-content"
+                        tabIndex={-1}
+                        className="flex-1 flex flex-col pb-20 md:pb-0 outline-none"
+                      >
+                        {children}
+                      </main>
+                      <Footer />
+                      <BottomNav />
+                      <Toaster
+                        richColors
+                        position="top-right"
+                        visibleToasts={3}
+                      />
+                    </NotificationProvider>
+                  </I18nProvider>
+                </CurrencyProvider>
+              </SubscriptionProvider>
+            </WalletProvider>
+          </NetworkProvider>
+          <CommandPalette />
         </ThemeProvider>
       </body>
     </html>

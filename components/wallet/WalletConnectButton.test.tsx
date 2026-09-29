@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import WalletConnectButton from "./WalletConnectButton";
-import { WalletProvider } from "@/components/providers/WalletProvider";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 import * as freighter from "@/lib/stellar/freighter";
+
+import WalletConnectButton from "./WalletConnectButton";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),

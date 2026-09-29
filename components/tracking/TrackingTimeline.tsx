@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, startTransition } from "react";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { Escrow, EscrowStatus } from "@/types";
-import { CheckCircle2, Circle, Clock, Package, Truck, Home } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Home,Package, Truck } from "lucide-react";
+import { startTransition,useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useEscrow } from "@/hooks/useEscrow";
+
 import { ConfirmDeliveryButton } from "@/components/escrow/ConfirmDeliveryButton";
-import { track } from "@/lib/analytics";
+import TrackingTimelineSkeleton from "@/components/tracking/TrackingTimelineSkeleton";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import { useEscrow } from "@/hooks/useEscrow";
+import { track } from "@/lib/analytics";
+import { Escrow, EscrowStatus, EscrowStatusConst } from "@/types";
 
 interface TrackingStage {
   id: string;
@@ -24,35 +25,35 @@ const TRACKING_STAGES: TrackingStage[] = [
     titleKey: "tracking.orderPlaced",
     descriptionKey: "tracking.orderPlacedDesc",
     icon: Clock,
-    statuses: ["PENDING", "FUNDED", "SHIPPED", "COMPLETED", "RELEASED"],
+    statuses: [EscrowStatusConst.PENDING, EscrowStatusConst.FUNDED, EscrowStatusConst.SHIPPED, EscrowStatusConst.COMPLETED, EscrowStatusConst.RELEASED],
   },
   {
     id: "confirmed",
     titleKey: "tracking.paymentConfirmed",
     descriptionKey: "tracking.paymentConfirmedDesc",
     icon: CheckCircle2,
-    statuses: ["FUNDED", "SHIPPED", "COMPLETED", "RELEASED"],
+    statuses: [EscrowStatusConst.FUNDED, EscrowStatusConst.SHIPPED, EscrowStatusConst.COMPLETED, EscrowStatusConst.RELEASED],
   },
   {
     id: "shipped",
     titleKey: "tracking.shipped",
     descriptionKey: "tracking.shippedDesc",
     icon: Package,
-    statuses: ["SHIPPED", "COMPLETED", "RELEASED"],
+    statuses: [EscrowStatusConst.SHIPPED, EscrowStatusConst.COMPLETED, EscrowStatusConst.RELEASED],
   },
   {
     id: "delivery",
     titleKey: "tracking.outForDelivery",
     descriptionKey: "tracking.outForDeliveryDesc",
     icon: Truck,
-    statuses: ["SHIPPED", "COMPLETED", "RELEASED"],
+    statuses: [EscrowStatusConst.SHIPPED, EscrowStatusConst.COMPLETED, EscrowStatusConst.RELEASED],
   },
   {
     id: "delivered",
     titleKey: "tracking.delivered",
     descriptionKey: "tracking.deliveredDesc",
     icon: Home,
-    statuses: ["COMPLETED", "RELEASED"],
+    statuses: [EscrowStatusConst.COMPLETED, EscrowStatusConst.RELEASED],
   },
 ];
 
@@ -68,7 +69,7 @@ export default function TrackingTimeline({
   loading = false,
 }: TrackingTimelineProps) {
   const { t, i18n } = useTranslation();
-  const { escrow, isLoading, error: fetchError, refetch } = useEscrow(escrowId, {
+  const { data: escrow, isLoading, error: fetchError, refetch } = useEscrow(escrowId, {
     initialData: initialEscrow,
     refreshInterval: 30000,
   });
@@ -84,15 +85,15 @@ export default function TrackingTimeline({
   const activeEscrow = escrow || initialEscrow;
 
   const getCurrentStageIndex = (status: EscrowStatus): number => {
-    if (status === "COMPLETED" || status === "RELEASED") return 4;
-    if (status === "SHIPPED") return 2;
-    if (status === "FUNDED") return 1;
-    if (status === "PENDING") return 0;
+    if (status === EscrowStatusConst.COMPLETED || status === EscrowStatusConst.RELEASED) return 4;
+    if (status === EscrowStatusConst.SHIPPED) return 2;
+    if (status === EscrowStatusConst.FUNDED) return 1;
+    if (status === EscrowStatusConst.PENDING) return 0;
     return 0;
   };
 
-  const currentStageIndex = getCurrentStageIndex(activeEscrow?.status ?? "PENDING");
-  const isShipped = activeEscrow?.status === "SHIPPED";
+  const currentStageIndex = getCurrentStageIndex(activeEscrow?.status ?? EscrowStatusConst.PENDING);
+  const isShipped = activeEscrow?.status === EscrowStatusConst.SHIPPED;
 
   // Sync swipe index with the actual stage index when it changes
   useEffect(() => {
@@ -119,16 +120,8 @@ export default function TrackingTimeline({
 
   if (loading || (!escrow && isLoading)) {
     return (
-      <div className="space-y-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        {[...Array(5)].map((_, index) => (
-          <div key={index} className="flex items-start gap-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-5 w-2/5" />
-              <Skeleton className="h-4 w-full" />
-            </div>
-          </div>
-        ))}
+      <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <TrackingTimelineSkeleton />
       </div>
     );
   }
@@ -171,8 +164,10 @@ export default function TrackingTimeline({
           onTouchEnd={onTouchEnd}
         >
           <div 
-            className="flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none"
-            style={{ transform: `translateX(-${swipeIndex * 100}%)` }}
+            className={`flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none ${
+              ["translate-x-0", "-translate-x-full", "-translate-x-[200%]", "-translate-x-[300%]", "-translate-x-[400%]"][swipeIndex] ??
+              "translate-x-0"
+            }`}
           >
             {TRACKING_STAGES.map((stage, index) => {
               const isCompleted = index < currentStageIndex;
@@ -182,7 +177,12 @@ export default function TrackingTimeline({
 
               return (
                 <div key={stage.id} className="w-full flex-shrink-0 md:w-auto md:flex-shrink">
-                  <div className="flex items-start gap-4">
+                  <div
+                    tabIndex={0}
+                    role="listitem"
+                    aria-current={isCurrent ? "step" : undefined}
+                    className="flex items-start gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  >
                     {/* Icon */}
                     <div
                       className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
@@ -283,7 +283,7 @@ export default function TrackingTimeline({
       )}
 
       {/* Dispute Status */}
-      {activeEscrow.status === "DISPUTED" && (
+      {activeEscrow.status === EscrowStatusConst.DISPUTED && (
         <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-950">
           <h3 className="mb-2 text-lg font-semibold text-yellow-900 dark:text-yellow-100">
             {t("tracking.disputeInProgress")}

@@ -1,10 +1,11 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useState } from "react";
 import { AlertCircle, CheckCircle2, FileText, Upload, X } from "lucide-react";
-import { createDispute } from "@/lib/api";
-import { track } from "@/lib/analytics";
+import { ChangeEvent, DragEvent, useState } from "react";
 import { toast } from "sonner";
+
+import { track } from "@/lib/analytics";
+import { createDispute } from "@/lib/api";
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -122,11 +123,10 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
         <textarea
           id="reason"
           rows={6}
-          minLength={20}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           placeholder="Explain what went wrong with your order, including any delivery or item issues."
-          className="w-full rounded-2xl border border-zinc-200 bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-zinc-800 dark:text-zinc-100"
+          className="w-full rounded-2xl border border-zinc-200 bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:border-zinc-800 dark:text-zinc-100"
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">Minimum 20 characters. This is the reason the support team will review.</p>
       </div>

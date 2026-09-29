@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import VendorAnalyticsSection from "@/components/dashboard/VendorAnalyticsSection";
 
 export const metadata = {

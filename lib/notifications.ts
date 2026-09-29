@@ -2,6 +2,12 @@ import type { AppNotification, Escrow } from "@/types";
 
 const STORAGE_KEY = "notifications.read";
 
+/**
+ * Extracts and sorts notification events from a list of escrows by timestamp descending.
+ *
+ * @param escrows - Array of escrow records containing event history.
+ * @returns Sorted array of unread/read-agnostic notification items.
+ */
 export function deriveNotifications(escrows: Escrow[]): Omit<AppNotification, "read">[] {
   const notifications: Omit<AppNotification, "read">[] = [];
 
@@ -23,6 +29,12 @@ export function deriveNotifications(escrows: Escrow[]): Omit<AppNotification, "r
   );
 }
 
+/**
+ * Retrieves the set of read notification IDs from browser local storage.
+ * Safe for SSR (returns empty Set on server).
+ *
+ * @returns Set of read notification ID strings.
+ */
 export function getReadIds(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
@@ -33,6 +45,12 @@ export function getReadIds(): Set<string> {
   }
 }
 
+/**
+ * Persists the set of read notification IDs to browser local storage.
+ * Safe for SSR (no-op on server).
+ *
+ * @param ids - Set of read notification ID strings.
+ */
 export function saveReadIds(ids: Set<string>): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
@@ -49,10 +67,22 @@ const STATUS_LABELS: Record<string, string> = {
   EXPIRED: "Escrow expired",
 };
 
+/**
+ * Returns a human-friendly label corresponding to an escrow status code.
+ *
+ * @param type - The status code (e.g. "PENDING", "FUNDED").
+ * @returns The user-facing label or the original status type if unrecognized.
+ */
 export function statusLabel(type: string): string {
   return STATUS_LABELS[type] ?? type;
 }
 
+/**
+ * Formats an ISO timestamp as a relative time string (e.g. "5m ago", "2h ago", "just now").
+ *
+ * @param timestamp - The ISO date-time string.
+ * @returns Formatted relative time string.
+ */
 export function relativeTime(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();
   const mins = Math.floor(diff / 60_000);

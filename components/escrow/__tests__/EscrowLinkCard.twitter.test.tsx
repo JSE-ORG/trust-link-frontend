@@ -1,12 +1,13 @@
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import React from "react";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import EscrowLinkCard from "../EscrowLinkCard";
 
 // Mock the QR canvas so jsdom doesn't try to draw to a real canvas.
 vi.mock("qrcode.react", () => ({
-  QRCodeCanvas: () => <canvas data-testid="qr-code" />,
+  QRCodeSVG: () => <canvas data-testid="qr-code" />,
 }));
 
 // Capture toast calls without rendering the sonner portal.

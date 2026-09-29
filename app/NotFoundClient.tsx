@@ -9,75 +9,27 @@ export default function NotFoundClient() {
   return (
     <div
       id="not-found-page"
-      className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center"
-      style={{
-        minHeight: "70vh",
-        background:
-          "radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 70%)",
-      }}
+      className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center min-h-[70vh] bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_srgb,var(--accent)_8%,transparent)_0%,transparent_70%)]"
     >
-      <div
-        className="animate-float"
-        style={{
-          fontSize: "clamp(6rem, 20vw, 10rem)",
-          fontWeight: 800,
-          lineHeight: 1,
-          letterSpacing: "-0.04em",
-          background:
-            "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          userSelect: "none",
-          marginBottom: "0.25em",
-        }}
-      >
+      <div className="animate-float text-[clamp(6rem,20vw,10rem)] font-extrabold leading-none tracking-[-0.04em] bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent select-none mb-[0.25em]">
         404
       </div>
 
-      <div
-        style={{
-          width: 48,
-          height: 4,
-          borderRadius: 2,
-          background:
-            "linear-gradient(90deg, var(--primary), var(--accent))",
-          marginBottom: 24,
-        }}
-      />
+      <div className="w-12 h-1 rounded bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] mb-6" />
 
-      <h1
-        className="text-3xl font-semibold tracking-tight"
-        style={{
-          color: "var(--foreground)",
-          marginBottom: 12,
-        }}
-      >
+      <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)] mb-3">
         Page not found
       </h1>
 
-      <p
-        className="max-w-sm text-base leading-relaxed"
-        style={{
-          color: "var(--muted-foreground)",
-          marginBottom: 32,
-        }}
-      >
+      <p className="max-w-sm text-base leading-relaxed text-[var(--muted-foreground)] mb-8">
         The page you&apos;re looking for doesn&apos;t exist or has been
         moved. Let&apos;s get you back on track.
       </p>
 
-      <div
-        className="flex flex-wrap items-center justify-center gap-3"
-        style={{ marginBottom: 48 }}
-      >
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--primary), var(--accent))",
-          }}
+          className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md bg-gradient-to-br from-[var(--primary)] to-[var(--accent)]"
         >
           <svg
             width="16"
@@ -99,12 +51,7 @@ export default function NotFoundClient() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold shadow-sm transition-all hover:shadow-md"
-          style={{
-            borderColor: "var(--border)",
-            color: "var(--foreground)",
-            background: "var(--card)",
-          }}
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] text-[var(--foreground)] bg-[var(--card)] px-6 py-3 text-sm font-semibold shadow-sm transition-all hover:shadow-md"
         >
           <svg
             width="16"

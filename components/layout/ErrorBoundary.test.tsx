@@ -1,7 +1,8 @@
+import * as Sentry from "@sentry/nextjs";
 import { render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import * as Sentry from "@sentry/nextjs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import ErrorBoundary from "./ErrorBoundary";
 
 vi.mock("@sentry/nextjs", () => ({
@@ -60,13 +61,17 @@ describe("ErrorBoundary", () => {
     const [capturedError, context] = captureException.mock.calls[0];
     expect(capturedError).toBeInstanceOf(Error);
     expect((capturedError as Error).message).toBe("Simulated API failure");
-    expect(context).toEqual({
-      extra: {
-        errorInfo: expect.objectContaining({
-          componentStack: expect.any(String),
-        }),
-      },
-    });
+    // Issue #424: every capture now carries the standardized scope/action tags.
+    expect(context).toEqual(
+      expect.objectContaining({
+        tags: expect.objectContaining({ scope: "ui", action: "ErrorBoundary" }),
+        extra: {
+          errorInfo: expect.objectContaining({
+            componentStack: expect.any(String),
+          }),
+        },
+      })
+    );
   });
 
   it("matches snapshot when error boundary shows error state", async () => {

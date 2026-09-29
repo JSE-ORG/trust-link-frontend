@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import {
-  isFreighterInstalled,
   connectFreighter,
-  signTransaction,
   isConnected,
+  isFreighterInstalled,
+  signTransaction,
 } from "./freighter";
 
 // Mock @stellar/freighter-api
@@ -102,8 +103,7 @@ describe("lib/stellar/freighter.ts", () => {
     it("signs transaction successfully on PUBLIC network", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: "signed-xdr-string",
-        error: null,
+        signedTxXdr: "signed-xdr-string",
       });
 
       const result = await signTransaction("unsigned-xdr", "PUBLIC");
@@ -117,8 +117,7 @@ describe("lib/stellar/freighter.ts", () => {
     it("signs transaction successfully on TESTNET network", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: "signed-xdr-string",
-        error: null,
+        signedTxXdr: "signed-xdr-string",
       });
 
       const result = await signTransaction("unsigned-xdr", "TESTNET");
@@ -138,20 +137,19 @@ describe("lib/stellar/freighter.ts", () => {
     it("throws error when Freighter returns an error", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: null,
-        error: "User rejected transaction",
+        signedTxXdr: null,
+        signerAddress: null,
       });
 
       await expect(signTransaction("xdr", "PUBLIC")).rejects.toThrow(
-        "User rejected transaction"
+        "Failed to sign transaction"
       );
     });
 
     it("throws error when signedTransaction is null", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: null,
-        error: null,
+        signedTxXdr: null,
       });
 
       await expect(signTransaction("xdr", "PUBLIC")).rejects.toThrow(
@@ -162,8 +160,7 @@ describe("lib/stellar/freighter.ts", () => {
     it("throws error when signedTransaction is undefined", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: undefined,
-        error: null,
+        signedTxXdr: undefined,
       });
 
       await expect(signTransaction("xdr", "PUBLIC")).rejects.toThrow(
@@ -174,8 +171,7 @@ describe("lib/stellar/freighter.ts", () => {
     it("handles custom network string", async () => {
       (window as Window & { freighter?: Record<string, unknown> }).freighter = {};
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: "signed-xdr-string",
-        error: null,
+        signedTxXdr: "signed-xdr-string",
       });
 
       const result = await signTransaction("unsigned-xdr", "CUSTOM_NETWORK");
@@ -199,8 +195,7 @@ describe("lib/stellar/freighter.ts", () => {
       mockIsAllowed.mockResolvedValue(true);
       mockGetAddress.mockResolvedValue({ address: "GD1234567890" });
       mockFreighterSignTransaction.mockResolvedValue({
-        signedTransaction: "signed-xdr",
-        error: null,
+        signedTxXdr: "signed-xdr",
       });
 
       // Connect

@@ -1,8 +1,10 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { TrustBadge } from "../TrustBadge";
+import { afterEach,beforeEach, describe, expect, it, vi } from "vitest";
+
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
+
+import { TrustBadge } from "../TrustBadge";
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(<NetworkProvider>{ui}</NetworkProvider>);

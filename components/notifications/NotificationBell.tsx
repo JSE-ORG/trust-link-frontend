@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import type { JSX } from "react";
+import { AlertCircle,Banknote, Bell, CheckCheck, CircleCheck, Clock, Package, RotateCcw, ShieldAlert, Truck } from "lucide-react";
 import Link from "next/link";
-import { Bell, CheckCheck, Package, Banknote, Truck, ShieldAlert, RotateCcw, CircleCheck, Clock, AlertCircle } from "lucide-react";
+import type { JSX } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import { useNotifications } from "@/components/providers/NotificationProvider";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { relativeTime, statusLabel } from "@/lib/notifications";
 import type { AppNotification, EscrowStatus } from "@/types";
 
+/** Renders an icon that visually represents the given escrow status. */
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-4 w-4 shrink-0";
   const icons: Record<EscrowStatus, JSX.Element> = {
@@ -23,6 +26,7 @@ function StatusIcon({ type }: { type: EscrowStatus }) {
   return <>{icons[type] ?? <Package className={cls} />}</>;
 }
 
+/** Tailwind text-color class mapped to each escrow status. */
 const STATUS_COLORS: Record<EscrowStatus, string> = {
   PENDING:   "text-zinc-500",
   FUNDED:    "text-blue-500",
@@ -34,6 +38,12 @@ const STATUS_COLORS: Record<EscrowStatus, string> = {
   EXPIRED:   "text-zinc-400",
 };
 
+/**
+ * Floating bell icon that toggles a notification dropdown.
+ *
+ * Shows unread count, latest five notifications, and quick actions
+ * (mark-as-read, mark-all-read, view all).
+ */
 export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -51,37 +61,8 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  // Close on Escape & Trap Focus
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-        return;
-      }
-
-      if (e.key === "Tab" && open && ref.current) {
-        const focusable = ref.current.querySelectorAll(
-          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const first = focusable[0] as HTMLElement;
-        const last = focusable[focusable.length - 1] as HTMLElement;
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            last.focus();
-            e.preventDefault();
-          }
-        } else {
-          if (document.activeElement === last) {
-            first.focus();
-            e.preventDefault();
-          }
-        }
-      }
-    }
-    if (open) document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  const closeNotifications = useCallback(() => setOpen(false), []);
+  useFocusTrap(ref, open, { onEscape: closeNotifications });
 
   // Restore focus to toggle button when closing
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -101,7 +82,7 @@ export default function NotificationBell() {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((v: boolean) => !v)}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -126,7 +107,7 @@ export default function NotificationBell() {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                className="flex items-center gap-1 text-xs text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded dark:text-blue-400"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 Mark all read
@@ -141,8 +122,11 @@ export default function NotificationBell() {
                 No notifications yet
               </li>
             ) : (
-              preview.map((n: AppNotification) => (
-                <li key={n.id}>
+              preview.map((n: AppNotification, index: number) => (
+                // `n.id` (the escrow history event id) is expected to be unique,
+                // but append the index as a defensive fallback so duplicate ids
+                // can never produce duplicate React keys or console warnings.
+                <li key={`${n.id}-${index}`}>
                   <Link
                     href={`/escrow/${n.escrowId}`}
                     onClick={() => {

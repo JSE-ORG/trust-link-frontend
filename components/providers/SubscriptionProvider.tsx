@@ -2,12 +2,13 @@
 
 import React, {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
   useState,
-  startTransition,
 } from "react";
+
 import { getSubscription } from "@/lib/api";
 import type { Plan, Subscription } from "@/types";
 

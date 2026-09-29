@@ -1,12 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { PATCH } from "./route";
 
 vi.mock("@/lib/escrowStore", () => ({
   shipEscrow: vi.fn(),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  enforceRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 import { shipEscrow } from "@/lib/escrowStore";
+
 
 describe("PATCH /api/escrow/:id/ship", () => {
   beforeEach(() => {

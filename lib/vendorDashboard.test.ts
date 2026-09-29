@@ -1,11 +1,12 @@
-import { describe, it, expect } from "vitest";
-import type { Escrow } from "@/types";
+import { describe, expect,it } from "vitest";
+
 import {
   filterEscrows,
-  sortEscrows,
-  paginate,
   getTotalPages,
+  paginate,
+  sortEscrows,
 } from "@/lib/vendorDashboard";
+import { type Escrow,EscrowStatusConst } from "@/types";
 
 function makeEscrow(overrides: Partial<Escrow> = {}): Escrow {
   return {
@@ -14,7 +15,7 @@ function makeEscrow(overrides: Partial<Escrow> = {}): Escrow {
     buyerId: "buyer-1",
     amount: 100,
     item: "Item",
-    status: "PENDING",
+    status: EscrowStatusConst.PENDING,
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
     history: [],
@@ -23,9 +24,9 @@ function makeEscrow(overrides: Partial<Escrow> = {}): Escrow {
 }
 
 const ESCROWS: Escrow[] = [
-  makeEscrow({ id: "a1", item: "Laptop", status: "FUNDED", amount: 300, createdAt: "2024-01-10T10:00:00Z" }),
-  makeEscrow({ id: "b2", item: "Camera", status: "COMPLETED", amount: 150, createdAt: "2024-02-20T10:00:00Z", buyerId: "GBUYERXYZ" }),
-  makeEscrow({ id: "c3", item: "Phone", status: "PENDING", amount: 999, createdAt: "2024-03-05T10:00:00Z" }),
+  makeEscrow({ id: "a1", item: "Laptop", status: EscrowStatusConst.FUNDED, amount: 300, createdAt: "2024-01-10T10:00:00Z" }),
+  makeEscrow({ id: "b2", item: "Camera", status: EscrowStatusConst.COMPLETED, amount: 150, createdAt: "2024-02-20T10:00:00Z", buyerId: "GBUYERXYZ" }),
+  makeEscrow({ id: "c3", item: "Phone", status: EscrowStatusConst.PENDING, amount: 999, createdAt: "2024-03-05T10:00:00Z" }),
 ];
 
 describe("filterEscrows", () => {
@@ -35,12 +36,12 @@ describe("filterEscrows", () => {
 
   it("does not mutate the input array", () => {
     const copy = [...ESCROWS];
-    filterEscrows(ESCROWS, { statusFilter: "FUNDED" });
+    filterEscrows(ESCROWS, { statusFilter: EscrowStatusConst.FUNDED });
     expect(ESCROWS).toEqual(copy);
   });
 
   it("filters by status and ignores 'ALL'", () => {
-    expect(filterEscrows(ESCROWS, { statusFilter: "FUNDED" }).map((e) => e.id)).toEqual(["a1"]);
+    expect(filterEscrows(ESCROWS, { statusFilter: EscrowStatusConst.FUNDED }).map((e) => e.id)).toEqual(["a1"]);
     expect(filterEscrows(ESCROWS, { statusFilter: "ALL" })).toHaveLength(3);
   });
 
@@ -63,7 +64,7 @@ describe("filterEscrows", () => {
   it("combines search, status and date filters with AND", () => {
     const result = filterEscrows(ESCROWS, {
       searchQuery: "p",
-      statusFilter: "PENDING",
+      statusFilter: EscrowStatusConst.PENDING,
       fromDate: "2024-03-01",
     });
     expect(result.map((e) => e.id)).toEqual(["c3"]);

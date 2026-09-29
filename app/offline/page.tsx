@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import OfflineClient from "./OfflineClient";
 
 export const metadata = {

@@ -1,13 +1,45 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import PaymentSection from "@/components/payment/PaymentSection";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Accordion } from "@/components/ui/Accordion";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-export const metadata = {
+const PAYMENT_DESCRIPTION =
+  "Make secure escrow payments on the Stellar network. Your funds are protected by smart contracts until delivery is confirmed.";
+
+export const metadata: Metadata = {
   title: "Payment | TrustLink",
-  description: "Make secure escrow payments on the Stellar network. Your funds are protected by smart contracts until delivery is confirmed.",
+  description: PAYMENT_DESCRIPTION,
+  keywords: [
+    "escrow payment",
+    "Stellar escrow",
+    "secure payments",
+    "smart contract escrow",
+    "TrustLink payment",
+  ],
+  alternates: {
+    canonical: "/payment",
+  },
+  openGraph: {
+    title: "Payment | TrustLink",
+    description: PAYMENT_DESCRIPTION,
+    url: "/payment",
+    siteName: "TrustLink",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Payment | TrustLink",
+    description: PAYMENT_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const faqItems = [

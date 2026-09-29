@@ -1,8 +1,19 @@
 "use client";
 
-import { InputHTMLAttributes, forwardRef } from "react";
+import { forwardRef,InputHTMLAttributes } from "react";
 
-const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+/**
+ * Props for the Input component.
+ * Extends all native `<input>` attributes so callers can pass any standard
+ * prop (type, placeholder, value, onChange, etc.) while keeping IntelliSense
+ * and ref-forwarding support.
+ */
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  /** Additional classes appended to the base input styles. */
+  className?: string;
+}
+
+const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className = "", ...props }, ref) => {
     return (
       <input

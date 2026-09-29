@@ -1,7 +1,9 @@
 // src/escrow/__test__/DisputeForm.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
+
 import DisputeForm from '../DisputeForm';
 
 // Mock fetch for API calls

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import ConfirmationDialog from "./ConfirmationDialog";
 
 const meta: Meta<typeof ConfirmationDialog> = {

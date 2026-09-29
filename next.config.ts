@@ -1,6 +1,6 @@
-import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
 import { loadEnvConfig } from "@next/env";
+import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
 
 loadEnvConfig(process.cwd());
 
@@ -26,6 +26,7 @@ Missing required environment variable: ${key}
 
 const nextConfig: NextConfig = {
   compress: true,
+  experimental: { testProxy: true },
   turbopack: {
     root: process.cwd(),
   },
@@ -105,8 +106,25 @@ const nextConfig: NextConfig = {
       "https://horizon-testnet.stellar.org",
       "https://*.sentry.io",
       "https://*.ingest.sentry.io",
+      // PostHog analytics (lib/analytics.ts) — posthog-js sends events to the
+      // default ingest endpoint https://us.i.posthog.com when no custom
+      // `api_host` is configured.
+      "https://us.i.posthog.com",
     ].filter(Boolean);
 
+    // Content Security Policy (CSP) — established 2026-08-27, issue #449.
+    //
+    // Every directive below maps to a resource or behaviour verified against
+    // the application's actual usage:
+    //   - 'unsafe-inline' script-src: Next.js RSC payload scripts + the inline
+    //     theme-init script in app/layout.tsx. TODO(#next): migrate to nonce
+    //     or hash-based CSP.
+    //   - 'unsafe-eval' (dev only): Next.js/React dev tooling.
+    //   - img-src hosts: next/image remotePatterns in this file.
+    //   - connect-src hosts: Stellar Horizon/Soroban RPC, backend API
+    //     (NEXT_PUBLIC_API_URL), Sentry, and PostHog (lib/analytics.ts).
+    //   - frame-ancestors 'self' is kept in lockstep with X-Frame-Options:
+    //     SAMEORIGIN below (legacy fallback for non-CSP browsers).
     const csp = [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
@@ -114,7 +132,10 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https://stellarexpert.io https://testnet.stellarexpert.io https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com https://images.unsplash.com https://*.cloudinary.com https://*.imgix.net",
       "font-src 'self' data:",
       `connect-src ${connectSrc.join(" ")}`,
-      "frame-ancestors 'none'",
+      // Modern clickjacking defence. Kept in lockstep with the X-Frame-Options
+      // header below so browsers converge on the same framing policy: only
+      // pages served from this origin may embed the app in a frame/iframe.
+      "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
@@ -155,7 +176,11 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
+          // Prevents UI redress / clickjacking attacks: third-party sites cannot
+          // load TrustLink in a frame and trick users into clicking through to
+          // escrow or dispute actions. Legacy fallback for browsers that do not
+          // support the CSP `frame-ancestors` directive above.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Content-Security-Policy", value: csp },

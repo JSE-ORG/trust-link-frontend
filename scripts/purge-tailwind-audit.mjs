@@ -11,6 +11,7 @@ import { execSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { PurgeCSS } from "purgecss";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

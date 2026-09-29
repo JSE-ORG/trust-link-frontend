@@ -1,6 +1,7 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import React from "react";
+import { describe, expect,it } from "vitest";
+
 import EmptyVendorState from "../EmptyVendorState";
 
 describe("EmptyVendorState", () => {
@@ -18,7 +19,7 @@ describe("EmptyVendorState", () => {
 
   it("renders the CTA button with correct text and accessible link", () => {
     render(<EmptyVendorState />);
-    const link = screen.getByRole("link", { name: "Create Your First Link" });
+    const link = screen.getByRole("link", { name: "Create your first Escrow Link" });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/create");
   });

@@ -1,10 +1,11 @@
 "use client";
 
+import { ChevronDown, ExternalLink,LogOut, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { Skeleton } from "@/components/ui/Skeleton";
 import useWallet from "@/hooks/useWallet";
 import { truncateAddress } from "@/utils/truncateAddress";
-import { ChevronDown, LogOut, Wallet, ExternalLink } from "lucide-react";
-import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function WalletConnectButton() {
   const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, walletReady, error } = useWallet();
@@ -87,7 +88,7 @@ export default function WalletConnectButton() {
           <div className="space-y-1 p-3">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">Account</p>
             <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{publicKey}</p>
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
+            {error ? <p className="text-xs text-destructive">{error.message}</p> : null}
           </div>
           <div className="border-t border-zinc-100 dark:border-zinc-800">
             <button

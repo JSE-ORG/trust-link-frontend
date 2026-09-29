@@ -17,3 +17,27 @@ export function useToast() {
     dismiss: (id?: string | number) => sonnerToast.dismiss(id),
   };
 }
+
+const SESSION_EXPIRED_TOAST_ID = "session-expired";
+
+/**
+ * Display a session expired message and clear the stored JWT token.
+ * Use this in API interceptors when receiving a 401 response.
+ */
+export function sessionExpired() {
+  // Remove the expired token from localStorage
+  window.localStorage.removeItem("wallet.jwt");
+
+  // Notify the user and prompt them to reconnect
+  sonnerToast.error("Session expired. Please reconnect your wallet.", {
+    id: SESSION_EXPIRED_TOAST_ID,
+    duration: Number.POSITIVE_INFINITY,
+    action: {
+      label: "Reconnect",
+      onClick: () => {
+        // Redirect the user to reconnect their wallet
+        window.location.href = "/";
+      },
+    },
+  });
+}

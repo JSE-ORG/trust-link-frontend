@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import { useWallet } from "@/components/providers/WalletProvider";
+import Link from "next/link";
+
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
+import useWallet from "@/hooks/useWallet";
 
 export default function ProfileClient() {
   const { publicKey, disconnect } = useWallet();

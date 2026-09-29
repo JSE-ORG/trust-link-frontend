@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "startServerCommand": "npm run start",
-      "startServerReadyPattern": "Ready on",
+      "startServerReadyPattern": "Ready in",
       "startServerReadyTimeout": 30000,
       "url": [
         "http://localhost:3000",
@@ -53,7 +53,16 @@
         "image-alt": ["error", {}],
         "label": ["error", {}],
         "meta-description": ["error", {}],
-        "document-title": ["error", {}]
+        "document-title": ["error", {}],
+
+        "color-contrast": ["warn", {}],
+        "errors-in-console": ["warn", {}],
+        "label-content-name-mismatch": ["warn", {}],
+        "lcp-lazy-loaded": ["warn", {}],
+        "non-composited-animations": ["warn", {}],
+        "prioritize-lcp-image": ["warn", {}],
+        "redirects": ["warn", {}],
+        "valid-source-maps": ["warn", {}]
       }
     },
     "upload": {

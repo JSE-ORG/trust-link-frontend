@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { getEscrow } from "@/lib/api";
 import { formatUSDC } from "@/utils/currency";
 

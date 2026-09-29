@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import NotificationsPageContent from "@/components/notifications/NotificationsPageContent";
 
 export const metadata = {

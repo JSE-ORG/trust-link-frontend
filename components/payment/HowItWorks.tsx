@@ -1,6 +1,4 @@
-"use client";
-
-import { ShieldCheck, Truck, CheckCircle2 } from "lucide-react";
+import { CheckCircle2,ShieldCheck, Truck } from "lucide-react";
 
 export function HowItWorks() {
   const steps = [

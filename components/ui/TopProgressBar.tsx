@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, startTransition } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { startTransition,useEffect, useRef, useState } from "react";
 
 export default function TopProgressBar() {
   const [isNavigating, setIsNavigating] = useState(false);
@@ -23,9 +23,7 @@ export default function TopProgressBar() {
   }, [pathname, searchParams, isNavigating]);
 
   useEffect(() => {
-    const handleAnchorClick = (e: MouseEvent) => {
-      const target = e.currentTarget as HTMLAnchorElement;
-      
+    const handleAnchorClick = (e: MouseEvent, target: HTMLAnchorElement) => {
       // Don't intercept if it's opening in a new tab or has a target
       if (
         e.defaultPrevented ||
@@ -62,13 +60,7 @@ export default function TopProgressBar() {
       // Find the closest anchor tag
       const anchor = (e.target as Element).closest("a");
       if (anchor) {
-        // Fake the currentTarget property for the handler
-        const eventCopy = Object.create(e);
-        Object.defineProperty(eventCopy, "currentTarget", {
-          value: anchor,
-          writable: false,
-        });
-        handleAnchorClick(eventCopy as unknown as MouseEvent);
+        handleAnchorClick(e, anchor);
       }
     };
 

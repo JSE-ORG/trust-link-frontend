@@ -1,34 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { 
-  signTransaction as freighterSignTransaction, 
-  isConnected as freighterIsConnected, 
-  isFreighterInstalled, 
-  connectFreighter 
-} from "@/lib/stellar/freighter";
-import { getChallenge, verifyChallenge } from "@/lib/stellar";
-import { toast } from "sonner";
 import { jwtDecode } from "jwt-decode";
-import * as Sentry from "@sentry/nextjs";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { toast } from "sonner";
+
 import { useNetwork } from "@/components/providers/NetworkProvider";
-
-type WalletStatus = "loading" | "connected" | "disconnected" | "not-installed" | "error";
-
-interface WalletContextType {
-  publicKey: string | null;
-  token: string | null;
-  jwt: string | null;
-  isConnected: boolean;
-  isInstalled: boolean;
-  status: WalletStatus;
-  connect: () => Promise<boolean>;
-  disconnect: () => void;
-  signTransaction: (xdr: string, network?: string) => Promise<string>;
-  isLoading: boolean;
-  walletReady: boolean;
-  error: string | null;
-}
+import { captureError, setLoggerUser } from "@/lib/logger";
+import { getChallenge, verifyChallenge } from "@/lib/stellar";
+import {
+  connectFreighter,
+  isConnected as freighterIsConnected,
+  isFreighterInstalled,
+  signTransaction as freighterSignTransaction,
+} from "@/lib/stellar/freighter";
 
 interface JwtPayload {
   exp: number;
@@ -36,41 +26,71 @@ interface JwtPayload {
   iat?: number;
 }
 
-const WalletContext = createContext<WalletContextType | undefined>(undefined);
-
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
 const TOKEN_STORAGE_KEY = "wallet.token";
+const UNAUTHORIZED_EVENT = "auth:unauthorized";
+
+interface WalletContextType {
+  publicKey: string | null;
+  token: string | null;
+  jwt: string | null;
+  isConnected: boolean;
+  isInstalled: boolean;
+  status: "loading" | "connected" | "disconnected" | "not-installed" | "error";
+  connect: () => Promise<boolean>;
+  disconnect: () => void;
+  signTransaction: (xdr: string, network?: string) => Promise<string>;
+  isLoading: boolean;
+  walletReady: boolean;
+  error: Error | null;
+}
+
+/**
+ * Internal wallet context. Not meant to be consumed directly outside this module — components should use {useWallet} from `"@/hooks/useWallet`,
+ * which is the single supported entry point for wallet state and actions.
+ */
+export const WalletContext = createContext<WalletContextType | undefined>(
+  undefined
+);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const jwt = token;
   const [isInstalled, setIsInstalled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [walletReady, setWalletReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const { network } = useNetwork();
+
+  const tokenRef = useRef<string | null>(null);
+  const publicKeyRef = useRef<string | null>(null);
+
+  useEffect(() => { tokenRef.current = token; }, [token]);
+  useEffect(() => { publicKeyRef.current = publicKey; }, [publicKey]);
 
   const stellarNetworkLabel = network === "mainnet" ? "PUBLIC" : "TESTNET";
 
-  const authenticate = useCallback(async (pubKey: string) => {
-    try {
-      const challengeXdr = await getChallenge(pubKey);
-      const net = network === "mainnet" ? "PUBLIC" : "TESTNET";
-      const signedXdr = await freighterSignTransaction(challengeXdr, net);
-      const jwt = await verifyChallenge(signedXdr);
-      setToken(jwt);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+  const authenticate = useCallback(
+    async (pubKey: string) => {
+      try {
+        const challengeXdr = await getChallenge(pubKey);
+        const net = network === "mainnet" ? "PUBLIC" : "TESTNET";
+        const signedXdr = await freighterSignTransaction(challengeXdr, net);
+        const jwt = await verifyChallenge(signedXdr);
+        setToken(jwt);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+        }
+        return jwt;
+      } catch (err: unknown) {
+        console.error("Authentication failed:", err);
+        captureError(err, { scope: "auth", action: "authenticate" });
+        toast.error("Authentication failed");
+        throw err;
       }
-      return jwt;
-    } catch (err: unknown) {
-      console.error("Authentication failed:", err);
-      Sentry.captureException(err);
-      toast.error("Authentication failed");
-      throw err;
-    }
-  }, [network]);
+    },
+    [network]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -79,15 +99,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const installed = await isFreighterInstalled();
       if (!isMounted) return;
       setIsInstalled(installed);
-      
-      const storedPublicKey = typeof window !== "undefined" ? localStorage.getItem(PUBLIC_KEY_STORAGE_KEY) : null;
+
+      const storedPublicKey =
+        typeof window !== "undefined"
+          ? localStorage.getItem(PUBLIC_KEY_STORAGE_KEY)
+          : null;
       if (storedPublicKey && installed) {
         try {
           const connected = await freighterIsConnected();
           if (!isMounted) return;
           if (connected) {
             setPublicKey(storedPublicKey);
-            Sentry.setUser({ id: storedPublicKey });
+            setLoggerUser(storedPublicKey);
             await authenticate(storedPublicKey);
           } else {
             if (typeof window !== "undefined") {
@@ -96,7 +119,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (e) {
-          Sentry.captureException(e);
+          captureError(e, { scope: "wallet", action: "restoreSession" });
         }
       }
       if (!isMounted) return;
@@ -104,7 +127,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setWalletReady(true);
     }
     init();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [authenticate]);
 
   const connect = useCallback(async (): Promise<boolean> => {
@@ -114,24 +139,25 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const installed = await isFreighterInstalled();
       if (!installed) {
         toast.error("Freighter is not installed");
-        setError("Freighter is not installed");
+        setError(new Error("Freighter is not installed"));
         return false;
       }
 
       const pubKey = await connectFreighter();
       setPublicKey(pubKey);
-      Sentry.setUser({ id: pubKey });
+      setLoggerUser(pubKey);
       if (typeof window !== "undefined") {
         localStorage.setItem(PUBLIC_KEY_STORAGE_KEY, pubKey);
       }
-      
+
       await authenticate(pubKey);
-      
+
       toast.success("Wallet connected");
       return true;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to connect wallet";
-      setError(message);
+      const message =
+        err instanceof Error ? err.message : "Failed to connect wallet";
+      setError(new Error(message));
       toast.error(message);
       return false;
     } finally {
@@ -142,7 +168,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const disconnect = useCallback(() => {
     setPublicKey(null);
     setToken(null);
-    Sentry.setUser(null);
+    setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -150,17 +176,44 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     toast.success("Wallet disconnected");
   }, []);
 
-  const signTransaction = useCallback(async (xdr: string, networkOverride?: string) => {
-    try {
-      const net = networkOverride || stellarNetworkLabel;
-      const signedXdr = await freighterSignTransaction(xdr, net);
-      return signedXdr;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to sign transaction";
-      toast.error(message);
-      throw err;
+  const signWalletTransaction = useCallback(
+    async (xdr: string, networkOverride?: string) => {
+      try {
+        const net = networkOverride || stellarNetworkLabel;
+        const signedXdr = await freighterSignTransaction(xdr, net);
+        return signedXdr;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Failed to sign transaction";
+        toast.error(message);
+        throw err;
+      }
+    },
+    [stellarNetworkLabel]
+  );
+
+  const handleUnauthorized = useCallback(() => {
+    if (!tokenRef.current) return;
+
+    tokenRef.current = null;
+    publicKeyRef.current = null;
+    setToken(null);
+    setPublicKey(null);
+    setLoggerUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
-  }, [stellarNetworkLabel]);
+    toast.error("Session expired. Please reconnect your wallet.");
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorizedEvent = () => {
+      handleUnauthorized();
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorizedEvent);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorizedEvent);
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     if (!token || !publicKey) return;
@@ -172,8 +225,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const timeLeft = expirationTime - now;
 
       if (timeLeft <= 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        authenticate(publicKey);
+        handleUnauthorized();
         return;
       }
 
@@ -183,31 +235,33 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeout);
     } catch (err) {
-      Sentry.captureException(err);
-      setToken(null);
+      captureError(err, { scope: "auth", action: "decodeSessionToken" });
+      handleUnauthorized();
     }
-  }, [token, publicKey, authenticate]);
+  }, [token, publicKey, authenticate, handleUnauthorized]);
+
+  const status: WalletContextType["status"] = isLoading
+    ? "loading"
+    : publicKey
+      ? "connected"
+      : !isInstalled
+        ? "not-installed"
+        : error
+          ? "error"
+          : "disconnected";
 
   return (
     <WalletContext.Provider
       value={{
         publicKey,
         token,
-        jwt,
+        jwt: token,
         isConnected: !!publicKey,
         isInstalled,
-        status: isLoading
-          ? "loading"
-          : !!publicKey
-            ? "connected"
-            : !isInstalled
-              ? "not-installed"
-              : error
-                ? "error"
-                : "disconnected",
+        status,
         connect,
         disconnect,
-        signTransaction,
+        signTransaction: signWalletTransaction,
         isLoading,
         walletReady,
         error,
@@ -216,12 +270,4 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       {children}
     </WalletContext.Provider>
   );
-}
-
-export function useWallet() {
-  const context = useContext(WalletContext);
-  if (context === undefined) {
-    throw new Error("useWallet must be used within a WalletProvider");
-  }
-  return context;
 }

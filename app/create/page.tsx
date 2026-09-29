@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import EscrowCreateForm from "@/components/escrow/EscrowCreateForm";
 import WalletConnectButton from "@/components/wallet/WalletConnectButton";
 

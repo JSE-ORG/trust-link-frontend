@@ -1,7 +1,9 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import TrackingTimeline from "./TrackingTimeline";
+import React from "react";
+
 import { Escrow } from "@/types";
+
+import TrackingTimeline from "./TrackingTimeline";
 
 const meta: Meta<typeof TrackingTimeline> = {
   title: "Tracking/TrackingTimeline",

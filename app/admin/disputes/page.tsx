@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import { DisputesListClient } from "./DisputesListClient";
 
 export const dynamic = "force-dynamic";

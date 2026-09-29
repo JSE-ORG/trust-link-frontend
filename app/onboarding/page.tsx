@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import VendorOnboardingWizard from "@/components/onboarding/VendorOnboardingWizard";
 
 export const metadata: Metadata = {

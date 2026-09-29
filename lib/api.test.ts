@@ -1,20 +1,23 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach,beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-  getEscrow,
-  getVendorEscrows,
-  createEscrow,
-  getDispute,
-  getAdminDisputes,
-  resolveDispute,
-  createDispute,
-  getTracking,
-  getSubscription,
-  upgradeSubscription,
-  patchVendorNotifications,
-  patchBuyerContact,
   ApiError,
+  createDispute,
+  createEscrow,
+  getAdminDisputes,
+  getDispute,
+  getEscrow,
+  getSubscription,
+  getTracking,
+  getVendorEscrows,
+  patchBuyerContact,
+  patchVendorNotifications,
+  resolveDispute,
+  upgradeSubscription,
   type VendorNotificationPreferences,
 } from "@/lib/api";
+import type { Dispute, Escrow } from "@/types";
+import { type DisputeStatus, DisputeStatusConst } from "@/types";
 
 function mockResponse(
   body: unknown,
@@ -29,6 +32,39 @@ function mockResponse(
 }
 
 const fetchMock = vi.fn();
+
+const escrow = {
+  id: "e1",
+  vendorId: "v1",
+  amount: 10,
+  item: "Item",
+  status: "PENDING",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  history: [],
+};
+
+function dispute(id: string, status: Dispute["status"] = DisputeStatusConst.OPEN) {
+  return {
+    id,
+    escrowId: escrow.id,
+    escrow,
+    buyerId: "b1",
+    reason: "Missing item",
+    evidence: [],
+    status,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+}
+
+const tracking = {
+  escrowId: "e1",
+  status: "IN_TRANSIT",
+  carrier: "GIGL",
+  trackingNumber: "track-1",
+  events: [],
+};
 
 beforeEach(() => {
   fetchMock.mockReset();
@@ -55,7 +91,6 @@ function getAuthHeader(init: RequestInit): string | null {
 
 describe("getEscrow", () => {
   it("returns the escrow from the primary endpoint", async () => {
-    const escrow = { id: "e1" };
     fetchMock.mockResolvedValueOnce(mockResponse(escrow));
 
     await expect(getEscrow("e1")).resolves.toEqual(escrow);
@@ -63,12 +98,12 @@ describe("getEscrow", () => {
   });
 
   it("falls back to the plural endpoint when the primary 404s", async () => {
-    const escrow = { id: "e2" };
+    const fallbackEscrow = { ...escrow, id: "e2" };
     fetchMock
       .mockResolvedValueOnce(mockResponse(null, { ok: false, status: 404 }))
-      .mockResolvedValueOnce(mockResponse(escrow));
+      .mockResolvedValueOnce(mockResponse(fallbackEscrow));
 
-    await expect(getEscrow("e2")).resolves.toEqual(escrow);
+    await expect(getEscrow("e2")).resolves.toEqual(fallbackEscrow);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(lastCall().url).toContain("/escrows/e2");
   });
@@ -84,7 +119,7 @@ describe("getEscrow", () => {
 
 describe("getVendorEscrows", () => {
   it("requests vendor escrows without an auth header when no token is given", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse([{ id: "e1" }]));
+    fetchMock.mockResolvedValueOnce(mockResponse([escrow]));
 
     await getVendorEscrows();
     const { url, init } = lastCall();
@@ -131,7 +166,7 @@ describe("createEscrow", () => {
 
 describe("getDispute", () => {
   it("fetches a dispute and forwards the token", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse({ id: "d1" }));
+    fetchMock.mockResolvedValueOnce(mockResponse(dispute("d1")));
     await getDispute("d1", "tok");
     expect(getAuthHeader(lastCall().init)).toBe("Bearer tok");
   });
@@ -146,9 +181,9 @@ describe("getAdminDisputes", () => {
   it("filters out resolved disputes client-side", async () => {
     fetchMock.mockResolvedValueOnce(
       mockResponse([
-        { id: "1", status: "OPEN" },
-        { id: "2", status: "RESOLVED" },
-        { id: "3", status: "UNDER_REVIEW" },
+        dispute("1", DisputeStatusConst.OPEN),
+        dispute("2", DisputeStatusConst.RESOLVED),
+        dispute("3", DisputeStatusConst.UNDER_REVIEW),
       ])
     );
 
@@ -159,7 +194,7 @@ describe("getAdminDisputes", () => {
 
 describe("resolveDispute", () => {
   it("PATCHes the resolution with a JSON body", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse({ id: "d1", status: "RESOLVED" }));
+    fetchMock.mockResolvedValueOnce(mockResponse(dispute("d1", DisputeStatusConst.RESOLVED)));
 
     await resolveDispute("d1", "REFUND_BUYER", "tok");
     const { url, init } = lastCall();
@@ -176,7 +211,7 @@ describe("resolveDispute", () => {
 
 describe("createDispute", () => {
   it("POSTs reason/description/evidence to the escrow dispute endpoint", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse({ id: "d9" }));
+    fetchMock.mockResolvedValueOnce(mockResponse(dispute("d9")));
     const payload = { reason: "not delivered", description: "never arrived", evidence: ["url"] };
 
     await createDispute("e1", payload);
@@ -195,7 +230,7 @@ describe("createDispute", () => {
 
 describe("getTracking", () => {
   it("returns tracking details", async () => {
-    fetchMock.mockResolvedValueOnce(mockResponse({ escrowId: "e1", status: "IN_TRANSIT" }));
+    fetchMock.mockResolvedValueOnce(mockResponse(tracking));
     await expect(getTracking("e1")).resolves.toMatchObject({ status: "IN_TRANSIT" });
     expect(lastCall().url).toContain("/escrows/e1/tracking");
   });

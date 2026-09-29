@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import EscrowLinkCard from "./EscrowLinkCard";
 
 const meta: Meta<typeof EscrowLinkCard> = {

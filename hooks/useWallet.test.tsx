@@ -1,11 +1,13 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import useWallet from "./useWallet";
-import { WalletProvider } from "@/components/providers/WalletProvider";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
-import * as freighter from "@/lib/stellar/freighter";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 import * as stellarAuth from "@/lib/stellar";
+import * as freighter from "@/lib/stellar/freighter";
+
+import useWallet from "./useWallet";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),
@@ -31,7 +33,7 @@ function TestHarness() {
       <span data-testid="isConnected">{isConnected ? "true" : "false"}</span>
       <span data-testid="publicKey">{publicKey ?? ""}</span>
       <span data-testid="token">{token ?? ""}</span>
-      <span data-testid="error">{error ?? ""}</span>
+      <span data-testid="error">{error?.message ?? ""}</span>
       <button onClick={connect}>Connect</button>
       <button onClick={disconnect}>Disconnect</button>
     </div>

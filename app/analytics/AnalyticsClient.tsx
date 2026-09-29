@@ -1,8 +1,5 @@
 "use client";
 
-import { Suspense, useEffect, useState, startTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowLeft,
   BarChart3,
@@ -13,12 +10,17 @@ import {
   ShieldAlert,
   Truck,
 } from "lucide-react";
-import { getVendorEscrows } from "@/lib/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { startTransition,Suspense, useEffect, useState } from "react";
+
 import { useSubscription } from "@/components/providers/SubscriptionProvider";
 import ProGate from "@/components/subscription/ProGate";
-import { Skeleton } from "@/components/ui/Skeleton";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { getVendorEscrows } from "@/lib/api";
 import type { Escrow, EscrowStatus } from "@/types";
+import { EscrowStatusConst } from "@/types";
 
 interface StatCard {
   label: string;
@@ -36,8 +38,8 @@ function computeStats(escrows: Escrow[]) {
   }, {});
 
   const totalValue = escrows.reduce((sum, e) => sum + (e.amount ?? 0), 0);
-  const completed = byStatus["COMPLETED"] ?? 0;
-  const disputed = byStatus["DISPUTED"] ?? 0;
+  const completed = byStatus[EscrowStatusConst.COMPLETED] ?? 0;
+  const disputed = byStatus[EscrowStatusConst.DISPUTED] ?? 0;
   const successRate =
     total > 0 ? Math.round((completed / total) * 100) : 0;
   const disputeRate =
@@ -62,14 +64,14 @@ function computeStats(escrows: Escrow[]) {
 }
 
 const STATUS_META: Record<EscrowStatus, { label: string; color: string }> = {
-  PENDING:   { label: "Pending",   color: "bg-zinc-400" },
-  FUNDED:    { label: "Funded",    color: "bg-blue-500" },
-  SHIPPED:   { label: "Shipped",   color: "bg-indigo-500" },
-  COMPLETED: { label: "Completed", color: "bg-emerald-500" },
-  DISPUTED:  { label: "Disputed",  color: "bg-red-500" },
-  RELEASED:  { label: "Released",  color: "bg-green-500" },
-  REFUNDED:  { label: "Refunded",  color: "bg-orange-400" },
-  EXPIRED:   { label: "Expired",   color: "bg-zinc-300" },
+  [EscrowStatusConst.PENDING]:   { label: "Pending",   color: "bg-zinc-400" },
+  [EscrowStatusConst.FUNDED]:    { label: "Funded",    color: "bg-blue-500" },
+  [EscrowStatusConst.SHIPPED]:   { label: "Shipped",   color: "bg-indigo-500" },
+  [EscrowStatusConst.COMPLETED]: { label: "Completed", color: "bg-emerald-500" },
+  [EscrowStatusConst.DISPUTED]:  { label: "Disputed",  color: "bg-red-500" },
+  [EscrowStatusConst.RELEASED]:  { label: "Released",  color: "bg-green-500" },
+  [EscrowStatusConst.REFUNDED]:  { label: "Refunded",  color: "bg-orange-400" },
+  [EscrowStatusConst.EXPIRED]:   { label: "Expired",   color: "bg-zinc-300" },
 };
 
 function AnalyticsContent({ escrows }: { escrows: Escrow[] }) {
@@ -105,13 +107,13 @@ function AnalyticsContent({ escrows }: { escrows: Escrow[] }) {
     },
     {
       label: "Active (Funded + Shipped)",
-      value: (stats.byStatus["FUNDED"] ?? 0) + (stats.byStatus["SHIPPED"] ?? 0),
+      value: (stats.byStatus[EscrowStatusConst.FUNDED] ?? 0) + (stats.byStatus[EscrowStatusConst.SHIPPED] ?? 0),
       icon: <Truck className="h-5 w-5" />,
       color: "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40",
     },
     {
       label: "Pending",
-      value: stats.byStatus["PENDING"] ?? 0,
+      value: stats.byStatus[EscrowStatusConst.PENDING] ?? 0,
       icon: <Clock className="h-5 w-5" />,
       color: "text-zinc-500 bg-zinc-100 dark:bg-zinc-800",
     },

@@ -1,6 +1,14 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { cleanup,render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
 import TrackingTimeline, { type ShipmentStage } from "../TrackingTimeline";
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "en", changeLanguage: vi.fn() },
+  }),
+}));
 
 describe("TrackingTimeline Accessibility and Functional Logic", () => {
   afterEach(() => {

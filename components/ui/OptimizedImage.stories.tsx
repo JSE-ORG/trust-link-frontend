@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+
 import OptimizedImage from "./OptimizedImage";
 
 const meta: Meta<typeof OptimizedImage> = {
@@ -7,7 +8,6 @@ const meta: Meta<typeof OptimizedImage> = {
   parameters: {
     layout: "centered",
   },
-  tags: ["autodocs"],
 };
 
 export default meta;

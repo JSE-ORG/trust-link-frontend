@@ -1,8 +1,15 @@
-import React from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { fireEvent,render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import React from "react";
+import { beforeEach,describe, expect, it, vi } from "vitest";
+
+import { shipEscrow } from "@/lib/api";
+
 import ShipTrackingModal from "../ShipTrackingModal";
+
+vi.mock("@/lib/api", () => ({
+  shipEscrow: vi.fn(),
+}));
 
 const defaultProps = {
   escrowId: "escrow-123",
@@ -93,10 +100,7 @@ describe("ShipTrackingModal", () => {
     const onSuccess = vi.fn();
     const onClose = vi.fn();
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ status: "Shipped" }),
-    } as Response);
+    vi.mocked(shipEscrow).mockResolvedValueOnce({} as never);
 
     render(
       <ShipTrackingModal
@@ -107,20 +111,24 @@ describe("ShipTrackingModal", () => {
     );
 
     await user.type(screen.getByLabelText(/tracking id/i), "TRACK-001");
+    await user.selectOptions(
+      screen.getByLabelText(/logistics carrier/i),
+      "GIGL"
+    );
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith("escrow-123");
       expect(onClose).toHaveBeenCalled();
     });
+
+    expect(screen.getByLabelText(/tracking id/i)).toHaveValue("");
+    expect(screen.getByLabelText(/logistics carrier/i)).toHaveValue("Terminal Africa");
   });
 
   it("sends correct payload to the ship endpoint", async () => {
     const user = userEvent.setup();
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    } as Response);
+    vi.mocked(shipEscrow).mockResolvedValueOnce({} as never);
 
     render(<ShipTrackingModal {...defaultProps} />);
 
@@ -132,24 +140,17 @@ describe("ShipTrackingModal", () => {
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        "/escrow/escrow-123/ship",
-        expect.objectContaining({
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ trackingId: "TRACK-999", carrier: "GIGL" }),
-        })
-      );
+      expect(shipEscrow).toHaveBeenCalledWith("escrow-123", {
+        trackingId: "TRACK-999",
+        carrier: "GIGL",
+      });
     });
   });
 
   it("displays error message when the API call fails", async () => {
     const user = userEvent.setup();
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Escrow not found" }),
-    } as Response);
+    vi.mocked(shipEscrow).mockRejectedValueOnce(new Error("Escrow not found"));
 
     render(<ShipTrackingModal {...defaultProps} />);
 
@@ -164,12 +165,7 @@ describe("ShipTrackingModal", () => {
   it("displays generic error when API returns non-JSON response", async () => {
     const user = userEvent.setup();
 
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: false,
-      json: async () => {
-        throw new Error("invalid json");
-      },
-    } as unknown as Response);
+    vi.mocked(shipEscrow).mockRejectedValueOnce(new Error("invalid json"));
 
     render(<ShipTrackingModal {...defaultProps} />);
 
@@ -178,26 +174,34 @@ describe("ShipTrackingModal", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/unable to submit shipment details/i)
+        screen.getByText(/invalid json/i)
       ).toBeInTheDocument();
     });
+  });
+
+  it("displays a generic error when submission rejects with a non-Error value", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(shipEscrow).mockRejectedValueOnce("unexpected rejection");
+
+    render(<ShipTrackingModal {...defaultProps} />);
+
+    await user.type(screen.getByLabelText(/tracking id/i), "TRACK-001");
+    await user.click(screen.getByRole("button", { name: /submit/i }));
+
+    const errorMessage = await screen.findByRole("alert");
+    expect(errorMessage).not.toHaveTextContent("unexpected rejection");
+    expect(errorMessage).not.toBeEmptyDOMElement();
   });
 
   it("disables submit button while submitting", async () => {
     const user = userEvent.setup();
 
     // Slow response to keep submitting state visible
-    vi.spyOn(global, "fetch").mockImplementationOnce(
+    vi.mocked(shipEscrow).mockImplementationOnce(
       () =>
         new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                ok: true,
-                json: async () => ({}),
-              } as Response),
-            500
-          )
+          setTimeout(() => resolve({} as never), 500)
         )
     );
 
@@ -214,10 +218,7 @@ describe("ShipTrackingModal", () => {
     const user = userEvent.setup();
 
     // First call fails
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: "Server error" }),
-    } as Response);
+    vi.mocked(shipEscrow).mockRejectedValueOnce(new Error("Server error"));
 
     render(<ShipTrackingModal {...defaultProps} />);
 
@@ -229,10 +230,7 @@ describe("ShipTrackingModal", () => {
     });
 
     // Second call succeeds
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    } as Response);
+    vi.mocked(shipEscrow).mockResolvedValueOnce({} as never);
 
     await user.click(screen.getByRole("button", { name: /submit/i }));
 
