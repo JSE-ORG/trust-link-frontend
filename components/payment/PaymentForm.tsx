@@ -151,7 +151,7 @@ export default function PaymentForm({
 }: PaymentFormProps) {
   const { t } = useTranslation();
   const { status: walletStatus, publicKey } = useWallet();
-  const { network } = useNetwork();
+  const { network, isOnline } = useNetwork();
   const [internalFormState, setInternalFormState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [internalErrorMessage, setInternalErrorMessage] = useState<string | null>(null);
   const [internalTxHash, setInternalTxHash] = useState<string | null>(null);
@@ -174,6 +174,13 @@ export default function PaymentForm({
   };
 
   const handlePayment = async () => {
+    if (!isOnline) {
+      setInternalErrorMessage("You are offline");
+      setInternalFormState("error");
+      toast.error("You are offline");
+      return;
+    }
+
     if (isDisconnected) {
       toast.error("Wallet not connected");
       return;
@@ -400,6 +407,15 @@ export default function PaymentForm({
             </p>
           )}
 
+          {!isOnline && (
+            <p
+              role="alert"
+              className="text-sm text-amber-600 dark:text-amber-400"
+            >
+              You are offline
+            </p>
+          )}
+
           {formState === "error" && errorMessage && (
             <div className="rounded-xl bg-red-50 p-3 border border-red-100 dark:bg-red-950/30 dark:border-red-900">
               <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
@@ -415,8 +431,8 @@ export default function PaymentForm({
                 handlePayment();
               }
             }}
-            disabled={isDisconnected || isSubmitting}
-            aria-disabled={isDisconnected || isSubmitting}
+            disabled={isDisconnected || isSubmitting || !isOnline}
+            aria-disabled={isDisconnected || isSubmitting || !isOnline}
             className="flex w-full items-center justify-center rounded-full bg-black px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
           >
             {isSubmitting ? (
