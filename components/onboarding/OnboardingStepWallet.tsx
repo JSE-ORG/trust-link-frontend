@@ -4,12 +4,24 @@ import { ShieldCheck } from "lucide-react";
 
 import WalletConnectButton from "@/components/wallet/WalletConnectButton";
 
+/**
+ * Values used to show the vendor's wallet connection state during onboarding.
+ */
 interface OnboardingStepWalletProps {
+  /** Whether a Stellar wallet is currently connected. */
   isConnected: boolean;
+  /** The connected wallet's public key, or `null` when no key is available. */
   publicKey: string | null;
+  /** Whether the Freighter browser extension is available. */
   isInstalled: boolean;
 }
 
+/**
+ * Prompts a vendor to connect a Stellar wallet and summarizes its current state.
+ *
+ * @param props - Wallet connection state supplied by the onboarding wizard.
+ * @returns The wallet connection panel and extension availability message.
+ */
 export default function OnboardingStepWallet({
   isConnected,
   publicKey,
