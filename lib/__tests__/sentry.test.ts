@@ -4,6 +4,7 @@ import { beforeEach,describe, expect, it, vi } from "vitest";
 import {
   captureError,
   captureWalletError,
+  redactTransactionContext,
   setEscrowContext,
   setLoggerUser,
 } from "../logger";
@@ -88,7 +89,6 @@ describe("Sentry Error Monitoring", () => {
     it("captureWalletError attaches context correctly", () => {
       const mockError = new Error("Failed to sign");
       const mockContext = {
-        xdr: "AAAA...",
         contractId: "C123",
         network: "TESTNET"
       };
@@ -109,6 +109,80 @@ describe("Sentry Error Monitoring", () => {
 
       const [, options] = lastCapture();
       expect(options?.tags).toMatchObject({ scope: "wallet", action: "signTransaction" });
+    });
+
+    it("captureWalletError never sends the transaction XDR", () => {
+      const xdr = "AAAAAGQAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=";
+
+      captureWalletError(new Error("Failed to sign"), { xdr, action: "signTransaction" });
+
+      const [, options] = lastCapture();
+      const sent = JSON.stringify(options?.contexts);
+      expect(sent).not.toContain(xdr);
+      expect(options?.contexts?.transaction?.xdr).toBe(`[redacted:${xdr.length}]`);
+    });
+
+    it("redacts every XDR-shaped key, signed or unsigned", () => {
+      const xdr = "AAAA";
+      const signedXdr = "BBBB";
+
+      captureWalletError(new Error("boom"), { xdr, signedXdr });
+
+      const [, options] = lastCapture();
+      expect(options?.contexts?.transaction).toEqual({
+        xdr: `[redacted:${xdr.length}]`,
+        signedXdr: `[redacted:${signedXdr.length}]`,
+      });
+    });
+
+    it("keeps the redaction marker out of tags", () => {
+      captureWalletError(new Error("boom"), { xdr: "AAAA", action: "signTransaction" });
+
+      const [, options] = lastCapture();
+      expect(options?.tags).toMatchObject({ action: "signTransaction" });
+      expect(JSON.stringify(options?.tags)).not.toContain("AAAA");
+    });
+  });
+
+  describe("redactTransactionContext", () => {
+    it("leaves ordinary context untouched", () => {
+      const context = {
+        action: "signTransaction",
+        network: "Test SDF Network ; September 2015",
+        attempt: 2,
+        enabled: false,
+      };
+
+      expect(redactTransactionContext(context)).toEqual(context);
+    });
+
+    it("replaces XDR values with a length marker", () => {
+      const redacted = redactTransactionContext({ xdr: "ABCDE" });
+
+      expect(redacted).toEqual({ xdr: "[redacted:5]" });
+    });
+
+    it("truncates oversized non-XDR strings", () => {
+      const long = "a".repeat(500);
+
+      const redacted = redactTransactionContext({ memo: long });
+
+      expect(String(redacted.memo)).toHaveLength(200 + "…[truncated]".length);
+      expect(redacted.memo).toContain("…[truncated]");
+    });
+
+    it("returns a new object and does not mutate the input", () => {
+      const input = { xdr: "AAAA", action: "signTransaction" };
+      const redacted = redactTransactionContext(input);
+
+      expect(redacted).not.toBe(input);
+      expect(input.xdr).toBe("AAAA");
+    });
+
+    it("ignores non-string XDR values instead of leaking them", () => {
+      const redacted = redactTransactionContext({ xdr: { secret: true } });
+
+      expect(redacted.xdr).toEqual({ secret: true });
     });
   });
 

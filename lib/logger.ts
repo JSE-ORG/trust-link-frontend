@@ -123,17 +123,63 @@ export function captureMessage(
 }
 
 /**
+ * Context keys that carry signed or unsigned transaction XDR. XDR encodes the
+ * full transaction — source account, sequence number, memo, and every
+ * operation — so it is never sent to Sentry. Only its size is kept, which is
+ * enough to correlate a failure with a submission without leaking the payload.
+ */
+const XDR_CONTEXT_KEYS = new Set([
+  "xdr",
+  "txXdr",
+  "transaction",
+  "transactionXdr",
+  "unsignedXdr",
+  "signedXdr",
+  "signedTxXdr",
+]);
+
+/** Longest raw string kept verbatim in a redacted context. */
+const MAX_CONTEXT_VALUE_LENGTH = 200;
+
+/**
+ * Strips transaction XDR (and other oversized strings) from a context payload
+ * before it leaves the browser. Values under an XDR key are replaced with a
+ * `[redacted:<length>]` marker, which keeps the size of the payload — enough to
+ * correlate a failure with a submission — without carrying the transaction.
+ */
+export function redactTransactionContext(
+  transaction: Record<string, unknown>
+): Record<string, unknown> {
+  const redacted: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(transaction)) {
+    if (XDR_CONTEXT_KEYS.has(key) && typeof value === "string") {
+      redacted[key] = `[redacted:${value.length}]`;
+    } else if (typeof value === "string" && value.length > MAX_CONTEXT_VALUE_LENGTH) {
+      redacted[key] = `${value.slice(0, MAX_CONTEXT_VALUE_LENGTH)}…[truncated]`;
+    } else {
+      redacted[key] = value;
+    }
+  }
+
+  return redacted;
+}
+
+/**
  * Wallet/transaction failures. The signing payload is attached under its own
- * `transaction` context section so it stays readable in the Sentry UI.
+ * `transaction` context section so it stays readable in the Sentry UI — with
+ * any XDR redacted by `redactTransactionContext` first.
  */
 export function captureWalletError(
   error: unknown,
   transaction: Record<string, unknown>
 ): string {
+  const redacted = redactTransactionContext(transaction);
+
   return captureError(error, {
     scope: "wallet",
-    action: typeof transaction.action === "string" ? transaction.action : undefined,
-    contexts: { transaction },
+    action: typeof redacted.action === "string" ? redacted.action : undefined,
+    contexts: { transaction: redacted },
   });
 }
 
@@ -152,6 +198,7 @@ export const logger = {
   error: captureError,
   message: captureMessage,
   walletError: captureWalletError,
+  redact: redactTransactionContext,
   breadcrumb: addBreadcrumb,
 };
 

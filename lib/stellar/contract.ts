@@ -2,9 +2,9 @@
 "use client";
 
 import {
+  Asset,
   BASE_FEE,
   Contract,
-  Networks,
   Operation,
   rpc,
   StrKey,
@@ -13,34 +13,154 @@ import {
 } from "@stellar/stellar-sdk";
 
 import { signTransaction } from "./freighter";
+import { getNetworkPassphrase } from "./networks";
+import { pollWithBackoff } from "./poll";
+
+/** Soroban contract calls can take a while to land — poll generously. */
+const SOROBAN_POLL_TIMEOUT_MS = 60_000;
 
 /**
- * Submits a payment transaction to the Stellar network
- * @param {string} amount - The amount to send (in XLM)
- * @param {string} destination - The destination Stellar address
+ * Env flag that swaps {@link submitPayment} onto a fake-hash path. Off unless
+ * explicitly enabled, so no deployment can return a mock hash by accident.
+ */
+const MOCK_PAYMENTS_FLAG = "NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS";
+
+/** True only when the deployment explicitly opts into mock payments. */
+export function isMockPaymentsEnabled(): boolean {
+  return process.env[MOCK_PAYMENTS_FLAG] === "true";
+}
+
+export interface SubmitPaymentOptions {
+  /** Account the payment is sent from. Required on the real path. */
+  sourceAccount?: string;
+  network?: "TESTNET" | "PUBLIC";
+  rpcUrl?: string;
+  fee?: string;
+  /** Overrides {@link isMockPaymentsEnabled} for this call. */
+  mock?: boolean;
+}
+
+/** XLM amounts are 7 decimal places (stroops). */
+const AMOUNT_PATTERN = /^\d+(?:\.\d{1,7})?$/;
+
+/**
+ * Thrown when a submitted transaction never leaves the pending state. The hash
+ * is preserved so the caller can still look the transaction up on an explorer
+ * or retry `getTransaction` with it.
+ */
+export class TransactionConfirmationTimeoutError extends Error {
+  readonly hash: string;
+  readonly attempts: number;
+
+  constructor(hash: string, attempts: number) {
+    super(
+      `Transaction ${hash} was not confirmed after ${attempts} attempt(s)`
+    );
+    this.name = "TransactionConfirmationTimeoutError";
+    this.hash = hash;
+    this.attempts = attempts;
+  }
+}
+
+/**
+ * Sends a payment to a Stellar address.
+ *
+ * The real path builds, signs and submits a classic payment operation and
+ * returns the network-assigned hash. A deterministic fake hash is only ever
+ * returned when mock payments are explicitly enabled through
+ * `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS=true` — see {@link isMockPaymentsEnabled}.
+ *
+ * @param {string} amount - Amount in XLM, at most 7 decimal places
+ * @param {string} destination - Destination Stellar account (G...)
+ * @param {SubmitPaymentOptions} [options] - Source account, network and RPC URL
  * @returns {Promise<string>} The transaction hash
- * @throws {Error} If destination address is empty or transaction fails
- * @deprecated This is a simulated function for testing purposes
+ * @throws {Error} If the amount or destination is malformed, or submission fails
  * @example
- * const txHash = await submitPayment("100", "GXXXXXX...");
- * // Use txHash for transaction tracking or UI display
+ * const txHash = await submitPayment("100", "GDESTINATION...", {
+ *   sourceAccount: "GSOURCE...",
+ * });
  */
 export async function submitPayment(
   amount: string,
-  destination: string
+  destination: string,
+  options: SubmitPaymentOptions = {}
 ): Promise<string> {
-  // In a real implementation, this would involve building a transaction
-  // and using signTransaction(xdr, network)
-  
-  // Simulated delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Let's assume some validation error for empty destination
+  const {
+    sourceAccount,
+    network = "TESTNET",
+    rpcUrl = process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
+    fee = BASE_FEE,
+  } = options;
+  const useMock = options.mock ?? isMockPaymentsEnabled();
+
   if (!destination) {
     throw new Error("Destination address is required");
   }
 
-  return "b2d8e9f...a1c3b5d7";
+  if (!StrKey.isValidEd25519PublicKey(destination)) {
+    throw new Error("Invalid destination address");
+  }
+
+  const normalizedAmount = typeof amount === "string" ? amount.trim() : "";
+  if (!AMOUNT_PATTERN.test(normalizedAmount) || Number(normalizedAmount) <= 0) {
+    throw new Error("Amount must be a positive number with up to 7 decimals");
+  }
+
+  if (useMock) {
+    // Deterministic, clearly-synthetic hash. Never enabled unless the
+    // deployment asked for it.
+    return `mock-${normalizedAmount}-${destination.slice(0, 8)}-${network.toLowerCase()}`;
+  }
+
+  if (!sourceAccount) {
+    throw new Error("sourceAccount is required to submit a payment");
+  }
+
+  if (!StrKey.isValidEd25519PublicKey(sourceAccount)) {
+    throw new Error("Invalid source account public key");
+  }
+
+  const server = new rpc.Server(rpcUrl);
+  const networkPassphrase = getNetworkPassphrase(network);
+
+  try {
+    const account = await server.getAccount(sourceAccount);
+    const tx = new TransactionBuilder(account as any, {
+      fee,
+      networkPassphrase,
+    })
+      .addOperation(
+        Operation.payment({
+          destination,
+          asset: Asset.native(),
+          amount: normalizedAmount,
+        }) as any
+      )
+      .setTimeout(30)
+      .build();
+
+    const signedXdr = await signTransaction(tx.toXDR(), networkPassphrase);
+    const response = await server.sendTransaction(
+      TransactionBuilder.fromXDR(signedXdr, networkPassphrase)
+    );
+
+    const status = (response as any)?.status;
+    if (status === "ERROR" || status === "FAILED") {
+      throw toTxError(
+        (response as any)?.errorResultXdr || (response as any)?.error,
+        "Transaction failed"
+      );
+    }
+
+    const hash = (response as any)?.hash;
+    if (!hash) {
+      throw new Error("Transaction submission returned no hash");
+    }
+
+    return hash;
+  } catch (error) {
+    throw toTxError(error, "Transaction submission failed");
+  }
 }
 
 export type ContractArg =
@@ -105,14 +225,6 @@ function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function getNetworkPassphrase(
-  network: "TESTNET" | "PUBLIC"
-): typeof Networks.PUBLIC | typeof Networks.TESTNET {
-  return network === "PUBLIC"
-    ? Networks.PUBLIC
-    : Networks.TESTNET;
-}
-
 function toTxError(error: unknown, fallback: string): Error {
   const message = error instanceof Error ? error.message : String(error ?? fallback);
   const normalized = message.includes("TxFailed") || message.includes("tx_failed")
@@ -144,7 +256,7 @@ async function invokeSorobanContract(
     fee = BASE_FEE,
   } = options;
 
-  if (!contractId || !contractId.startsWith("C")) {
+  if (!isValidContractId(contractId)) {
     throw new Error("Invalid contract ID");
   }
 
@@ -179,19 +291,35 @@ async function invokeSorobanContract(
     const response = await server.sendTransaction(
       TransactionBuilder.fromXDR(signedXdr, networkPassphrase)
     );
+    const status = (response as any)?.status;
 
-    if ((response as any)?.status === "ERROR" || (response as any)?.status === "FAILED") {
+    if (status === "ERROR" || status === "FAILED") {
       throw toTxError((response as any)?.errorResultXdr || (response as any)?.error, "Transaction failed");
     }
 
-    if ((response as any)?.status === "PENDING") {
-      const txResponse = await server.getTransaction((response as any).hash);
-      if ((txResponse as any).status === "FAILED") {
-        throw toTxError((txResponse as any).errorResultXdr || (txResponse as any).resultXdr, "Transaction failed");
+    if (status === "PENDING") {
+      const hash = (response as any).hash;
+      if (!hash) {
+        throw new Error("Pending transaction was submitted without a hash");
       }
+
+      // Poll with backoff + jitter. A timeout still surfaces the hash so the
+      // transaction can be looked up instead of being lost.
+      const txResponse = await pollWithBackoff({
+        check: async () => {
+          const polled = (await server.getTransaction(hash)) as any;
+          if (polled?.status === "FAILED" || polled?.status === "ERROR") {
+            throw toTxError(polled.errorResultXdr || polled.resultXdr, "Transaction failed");
+          }
+          return polled?.status === "SUCCESS" ? polled : null;
+        },
+        timeoutMs: SOROBAN_POLL_TIMEOUT_MS,
+        onTimeout: (attempts) => new TransactionConfirmationTimeoutError(hash, attempts),
+      });
+
       return {
-        hash: (response as any).hash,
-        resultXdr: (txResponse as any).resultXdr || "",
+        hash,
+        resultXdr: txResponse?.resultXdr || "",
       };
     }
 
@@ -200,6 +328,9 @@ async function invokeSorobanContract(
       resultXdr: (response as any).resultXdr || "",
     };
   } catch (error) {
+    if (error instanceof TransactionConfirmationTimeoutError) {
+      throw error;
+    }
     throw toTxError(error, "Transaction submission failed");
   }
 }
@@ -274,7 +405,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
   } = options;
 
   // Validate inputs
-  if (!contractId || !contractId.startsWith("C")) {
+  if (!isValidContractId(contractId)) {
     throw new Error("Invalid contract ID");
   }
 
@@ -287,8 +418,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
   }
 
   // Get network passphrase
-  const networkPassphrase =
-    network === "PUBLIC" ? Networks.PUBLIC : Networks.TESTNET;
+  const networkPassphrase = getNetworkPassphrase(network);
 
   // Build the contract instance
   const contract = new Contract(contractId);
@@ -318,16 +448,29 @@ export function buildContractInvocation(options: ContractCallOptions): string {
 }
 
 /**
- * Validate a contract ID format
+ * Validate a contract ID
+ *
+ * A contract ID is a StrKey with the `C` version byte: 56 characters of
+ * base32 with a CRC-16 checksum. Checking only the `C` prefix accepts typos and
+ * truncated IDs such as `"C"`, which then fail deep inside the SDK.
+ *
  * @param {string} contractId - The contract ID to validate
  * @returns {boolean} True if valid, false otherwise
  * @example
- * if (isValidContractId("CXXXXXX...")) {
- *   buildContractInvocation({ contractId: "CXXXXXX...", ... });
+ * if (isValidContractId("CAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC526")) {
+ *   buildContractInvocation({ contractId, ... });
  * }
  */
 export function isValidContractId(contractId: string): boolean {
-  return typeof contractId === "string" && contractId.startsWith("C");
+  if (typeof contractId !== "string" || contractId === "") {
+    return false;
+  }
+
+  try {
+    return StrKey.isValidContract(contractId);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -457,8 +600,7 @@ export function buildContractDeployment(
     throw new Error("Invalid source account public key");
   }
 
-  const networkPassphrase =
-    network === "PUBLIC" ? Networks.PUBLIC : Networks.TESTNET;
+  const networkPassphrase = getNetworkPassphrase(network);
 
   const account = {
     accountId: sourceAccount,

@@ -1,3 +1,16 @@
+/**
+ * Freighter wallet adapter.
+ *
+ * Every wallet interaction in the app goes through this module so the
+ * `@stellar/freighter-api` response shapes stay in one place. Two shapes matter
+ * and are easy to get wrong:
+ *
+ *   - `isConnected()` resolves to `{ isConnected }`, not to a boolean. Awaiting
+ *     it and testing the result is always truthy.
+ *   - `signTransaction()` takes a *network passphrase*
+ *     ("Test SDF Network ; September 2015"), not a network name ("TESTNET").
+ *     `resolveNetworkPassphrase` maps the names the app uses onto passphrases.
+ */
 import {
   getAddress,
   isAllowed,
@@ -6,9 +19,20 @@ import {
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
 
+import { captureWalletError } from "@/lib/logger";
+
+import { isValidNetworkPassphrase, resolveNetworkPassphrase } from "./networks";
+
+export { isValidNetworkPassphrase, resolveNetworkPassphrase };
+
 /**
- * Checks if the Freighter wallet extension is installed in the browser
- * @returns {Promise<boolean>} True if Freighter is installed, false otherwise
+ * Reports whether the Freighter API is reachable, i.e. the extension is
+ * installed and the page can talk to it. Freighter's own `isConnected()` is the
+ * source of truth — sniffing `window.freighter` only proves some object exists
+ * on the page, which is also true for mocks and for the external API shim when
+ * no extension is running.
+ *
+ * @returns {Promise<boolean>} True when the wallet can be reached, false otherwise
  * @example
  * const installed = await isFreighterInstalled();
  * if (!installed) {
@@ -16,10 +40,17 @@ import {
  * }
  */
 export async function isFreighterInstalled(): Promise<boolean> {
-  return (
-    typeof window !== "undefined" &&
-    Boolean((window as unknown as { freighter: unknown }).freighter)
-  );
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const { isConnected: connected } = await isConnected();
+    return connected === true;
+  } catch {
+    // No extension, or the external API is unavailable.
+    return false;
+  }
 }
 
 /**
@@ -39,7 +70,8 @@ export async function connectFreighter(): Promise<string> {
     throw new Error("Freighter not installed");
   }
 
-  if (!(await isAllowed())) {
+  const { isAllowed: allowed } = await isAllowed();
+  if (!allowed) {
     await setAllowed();
   }
 
@@ -51,12 +83,12 @@ export async function connectFreighter(): Promise<string> {
   return publicKey;
 }
 
-import { captureWalletError } from "@/lib/logger";
-
 /**
  * Signs a Stellar transaction using the Freighter wallet
  * @param {string} xdr - The transaction XDR string to sign
- * @param {string} network - The network to use ("PUBLIC", "TESTNET", or custom passphrase)
+ * @param {string} network - Network name ("PUBLIC"/"mainnet", "TESTNET"/"testnet")
+ *   or a full network passphrase. Names are mapped to the matching
+ *   `Networks.*` passphrase before the call.
  * @returns {Promise<string>} The signed transaction XDR
  * @throws {Error} If Freighter is not installed, signing fails, or user rejects
  * @example
@@ -71,13 +103,17 @@ export async function signTransaction(
   xdr: string,
   network: "PUBLIC" | "TESTNET" | string
 ): Promise<string> {
+  // Resolve before the try block so a bad network argument surfaces as its own
+  // error rather than being reported as a Freighter failure.
+  const networkPassphrase = resolveNetworkPassphrase(network);
+
   try {
     if (!(await isFreighterInstalled())) {
       throw new Error("Freighter not installed");
     }
 
     const response = (await freighterSignTransaction(xdr, {
-      networkPassphrase: network,
+      networkPassphrase,
     })) as {
       signedTxXdr?: string;
       signerAddress?: string;
@@ -91,7 +127,13 @@ export async function signTransaction(
 
     return signedTxXdr;
   } catch (error: unknown) {
-    captureWalletError(error, { xdr, network, action: "signTransaction" });
+    // The XDR itself is never reported: it carries the account, sequence number
+    // and every operation in the transaction. Its length is enough to correlate.
+    captureWalletError(error, {
+      action: "signTransaction",
+      network: networkPassphrase,
+      xdr,
+    });
     throw error;
   }
 }

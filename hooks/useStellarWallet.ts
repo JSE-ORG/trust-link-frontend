@@ -78,7 +78,10 @@ export function useStellarWallet() {
       const storedPublicKey = typeof window !== "undefined" ? localStorage.getItem(PUBLIC_KEY_STORAGE_KEY) : null;
       if (storedPublicKey && installed) {
         try {
-          const connected = await freighterIsConnected();
+          // `isConnected()` resolves to `{ isConnected }` — awaiting it and
+          // testing the result is always truthy, which would restore a stale
+          // session for an uninstalled wallet.
+          const { isConnected: connected } = (await freighterIsConnected()) ?? { isConnected: false };
           if (!isMounted) return;
           if (connected) {
             setPublicKey(storedPublicKey);
