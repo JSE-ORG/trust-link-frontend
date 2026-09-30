@@ -30,112 +30,35 @@ export default function Error({
   return (
     <div
       id="error-page"
-      className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center"
-      style={{
-        minHeight: "70vh",
-        background:
-          "radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 70%)",
-      }}
+      className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center min-h-[70vh] bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_srgb,var(--accent)_8%,transparent)_0%,transparent_70%)]"
     >
       {/* Animated 500 number */}
-      <div
-        className="animate-float"
-        style={{
-          fontSize: "clamp(6rem, 20vw, 10rem)",
-          fontWeight: 800,
-          lineHeight: 1,
-          letterSpacing: "-0.04em",
-          background:
-            "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          userSelect: "none",
-          marginBottom: "0.25em",
-        }}
-      >
+      <div className="animate-float text-[clamp(6rem,20vw,10rem)] font-extrabold leading-none tracking-[-0.04em] bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent select-none mb-[0.25em]">
         500
       </div>
 
       {/* Decorative divider */}
-      <div
-        style={{
-          width: 48,
-          height: 4,
-          borderRadius: 2,
-          background: "linear-gradient(90deg, var(--primary), var(--accent))",
-          marginBottom: 24,
-        }}
-      />
+      <div className="w-12 h-1 rounded bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] mb-6" />
 
       {/* Heading */}
-      <h1
-        style={{
-          margin: "0 0 8px",
-          fontSize: "clamp(1.25rem, 4vw, 1.75rem)",
-          fontWeight: 700,
-          color: "var(--foreground)",
-          lineHeight: 1.3,
-        }}
-      >
+      <h1 className="m-0 mb-2 text-[clamp(1.25rem,4vw,1.75rem)] font-bold text-[var(--foreground)] leading-[1.3]">
         Something went wrong
       </h1>
 
       {/* Description */}
-      <p
-        style={{
-          margin: "0 0 32px",
-          maxWidth: 420,
-          fontSize: "clamp(0.875rem, 2.5vw, 1rem)",
-          color: "var(--muted)",
-          lineHeight: 1.6,
-        }}
-      >
+      <p className="m-0 mb-8 max-w-[420px] text-[clamp(0.875rem,2.5vw,1rem)] text-[var(--muted)] leading-relaxed">
         An unexpected error occurred on our end. You can try again, or head back
         home while we sort it out.
       </p>
 
       {/* Action buttons */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 12,
-          justifyContent: "center",
-        }}
-      >
+      <div className="flex flex-wrap gap-3 justify-center">
         {/* Retry button */}
         <button
           id="error-retry-button"
           type="button"
           onClick={() => reset()}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "12px 28px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "#ffffff",
-            background:
-              "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-            border: "none",
-            cursor: "pointer",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            boxShadow:
-              "0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent)";
-          }}
+          className="inline-flex items-center gap-2 px-[28px] py-[12px] rounded-xl text-sm font-semibold text-white bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] border-none cursor-pointer transition-all duration-200 shadow-[0_4px_14px_color-mix(in_srgb,var(--accent)_30%,transparent)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_color-mix(in_srgb,var(--accent)_40%,transparent)]"
         >
           {/* Refresh icon */}
           <svg
@@ -158,31 +81,8 @@ export default function Error({
 
         {/* Home button */}
         <Link
-          id="error-home-link"
           href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "12px 28px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--foreground)",
-            background: "var(--muted-bg)",
-            border: "1.5px solid var(--border)",
-            cursor: "pointer",
-            textDecoration: "none",
-            transition: "transform 0.2s, border-color 0.2s, background 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.borderColor = "var(--accent)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
+          className="inline-flex items-center gap-2 px-[28px] py-[12px] rounded-xl text-sm font-semibold text-[var(--foreground)] bg-[var(--muted-bg)] border-[1.5px] border-[var(--border)] cursor-pointer no-underline transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]"
         >
           {/* Home icon */}
           <svg
@@ -205,14 +105,7 @@ export default function Error({
 
       {/* Error digest — helps correlate with server logs / Sentry */}
       {error.digest && (
-        <p
-          style={{
-            marginTop: 24,
-            fontSize: 12,
-            color: "var(--muted)",
-            fontFamily: "monospace",
-          }}
-        >
+        <p className="mt-6 text-xs text-[var(--muted)] font-mono">
           Error reference: {error.digest}
         </p>
       )}

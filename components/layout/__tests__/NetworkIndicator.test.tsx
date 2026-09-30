@@ -63,8 +63,8 @@ describe("Network Components", () => {
 
     it("does not render banner on Mainnet", () => {
       vi.stubEnv("NEXT_PUBLIC_STELLAR_NETWORK", "mainnet");
-      const { container } = renderWithProvider(<TestnetBanner />);
-      expect(container.firstChild).toBeNull();
+      renderWithProvider(<TestnetBanner />);
+      expect(screen.queryByRole("alert")).toBeNull();
     });
   });
 });

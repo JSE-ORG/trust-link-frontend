@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { beforeEach,describe, expect, it, vi } from "vitest";
@@ -186,5 +186,55 @@ describe("ConfirmationDialog (issue #69)", () => {
       "aria-labelledby",
       "confirmation-dialog-title"
     );
+  });
+
+  it("traps Tab focus within the modal (issue #566)", async () => {
+    render(
+      <ConfirmationDialog
+        open
+        title="Confirm"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    );
+    const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    const confirmButton = screen.getByRole("button", { name: "Confirm" });
+
+    // Wait for FocusTrap's initial-focus animation frame to land on Confirm.
+    await waitFor(() => expect(confirmButton).toHaveFocus());
+
+    // Tab from the last focusable element wraps back to the first.
+    await userEvent.tab();
+    expect(cancelButton).toHaveFocus();
+
+    // Shift+Tab from the first focusable element wraps back to the last.
+    await userEvent.tab({ shift: true });
+    expect(confirmButton).toHaveFocus();
+  });
+
+  it("returns focus to the triggering element when closed (issue #566)", async () => {
+    function Harness() {
+      const [open, setOpen] = React.useState(false);
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>Trigger</button>
+          <ConfirmationDialog
+            open={open}
+            title="Confirm"
+            onConfirm={onConfirm}
+            onCancel={() => setOpen(false)}
+          />
+        </>
+      );
+    }
+    render(<Harness />);
+    const trigger = screen.getByRole("button", { name: "Trigger" });
+    await userEvent.click(trigger);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Confirm" })).toHaveFocus()
+    );
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });

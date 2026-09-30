@@ -126,8 +126,7 @@ describe("NotificationBell", () => {
       mockState.unreadCount = 7;
       render(<NotificationBell />);
       await user.click(getToggleButton());
-      const dialog = screen.getByRole("dialog", { name: "Notifications" });
-      const links = within(dialog).getAllByRole("link");
+      const links = within(screen.getByRole("dialog", { name: "Notifications" })).getAllByRole("link");
       // 5 preview items + "View all notifications" = 6 links; filter escrow links
       const escrowLinks = links.filter((l) => l.getAttribute("href")?.startsWith("/escrow/"));
       expect(escrowLinks).toHaveLength(5);

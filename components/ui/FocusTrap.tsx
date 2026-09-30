@@ -3,6 +3,7 @@
 import {
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
   useEffect,
   useRef,
 } from "react";
@@ -28,6 +29,12 @@ export interface FocusTrapProps {
   active: boolean;
   /** Called when the user presses Escape. Typically closes the modal. */
   onEscape?: () => void;
+  /** Optional ref to an element that should receive focus when the trap
+   *  activates, instead of the first focusable element in the container.
+   *  Useful when a specific action (e.g. the primary/confirm button) should
+   *  be focused rather than whichever element happens to be first in the
+   *  DOM. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
   children: ReactNode;
   /** Optional className forwarded to the wrapping div. */
   className?: string;
@@ -54,6 +61,7 @@ export interface FocusTrapProps {
 export default function FocusTrap({
   active,
   onEscape,
+  initialFocusRef,
   children,
   className,
 }: FocusTrapProps) {
@@ -70,12 +78,30 @@ export default function FocusTrap({
 
     // Move focus into the trap on the next tick so the DOM is fully painted.
     const frame = requestAnimationFrame(() => {
+      const preferred = initialFocusRef?.current;
+      if (preferred && !preferred.hasAttribute("disabled")) {
+        preferred.focus();
+        return;
+      }
       const first = getFocusableElements(containerRef.current)[0];
       first?.focus();
     });
 
+    // Listen for Escape at the document level rather than relying on focus
+    // being inside the trap. Initial focus-in happens on the next animation
+    // frame (above), so a keydown handler scoped to the container alone
+    // would miss an Escape pressed before that frame fires.
+    const onDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onEscape?.();
+      }
+    };
+    document.addEventListener("keydown", onDocumentKeyDown);
+
     return () => {
       cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onDocumentKeyDown);
       // Restore focus to the previously focused element when trap deactivates.
       if (
         previousFocusRef.current instanceof HTMLElement ||
@@ -84,16 +110,10 @@ export default function FocusTrap({
         previousFocusRef.current.focus();
       }
     };
-  }, [active]);
+  }, [active, initialFocusRef, onEscape]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!active) return;
-
-    if (e.key === "Escape") {
-      e.preventDefault();
-      onEscape?.();
-      return;
-    }
 
     if (e.key !== "Tab") return;
 
@@ -128,10 +148,9 @@ export default function FocusTrap({
     <div
       ref={containerRef}
       onKeyDown={handleKeyDown}
-      className={className}
+      className={className ? `${className} outline-none` : "outline-none"}
       // Ensure the container itself is not in the natural tab order.
       tabIndex={-1}
-      style={{ outline: "none" }}
     >
       {children}
     </div>

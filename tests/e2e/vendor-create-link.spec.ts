@@ -10,7 +10,7 @@ test("vendor can connect Freighter, create an escrow link, and see the QR code",
   await page.goto("/create");
 
   await page.getByRole("button", { name: /connect wallet/i }).click();
-  await expect(page.getByRole("button", { name: /gcfm4v.*cdef/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /GCFM4.*CDEF/i })).toBeVisible();
 
   await page.getByLabel("Item name").fill("Vintage Camera");
   await page.getByLabel("Price (USDC)").fill("249.99");

@@ -1,44 +1,36 @@
 "use client";
 
-import {
-  ArrowLeft,
-  BarChart3,
-  Clock3,
-  ShieldAlert,
-  ShoppingBag,
-  TrendingUp,
-} from "lucide-react";
-import dynamic from "next/dynamic";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { getVendorAnalytics, type VendorAnalyticsPoint, type VendorAnalyticsResponse } from "@/lib/api";
-import { cn } from "@/lib/utils";
-import { formatUSDC } from "@/utils/currency";
 
+import { VendorAnalyticsHeader } from "./VendorAnalyticsHeader";
+import { VendorAnalyticsMetricsGrid } from "./VendorAnalyticsMetricsGrid";
 import VendorAnalyticsSkeleton from "./VendorAnalyticsSkeleton";
+import { VendorAnalyticsTrendSection } from "./VendorAnalyticsTrendSection";
 
-const VendorAnalyticsChart = dynamic(
-  () => import("./VendorAnalyticsChart"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full animate-pulse rounded-[1.75rem] bg-zinc-100 dark:bg-zinc-900/50" />
-    ),
-  }
-);
-
-function formatRate(value: number): string {
-  return `${value.toFixed(1)}%`;
-}
-
+/**
+ * Normalizes a given rate to a percentage value between 0 and 100.
+ * Useful when the backend might return either a decimal fraction (0.9) or a percentage (90).
+ * @param value - The rate value to normalize.
+ * @returns The normalized percentage value.
+ */
 function normalizeRate(value: number | undefined): number {
   if (typeof value !== "number" || Number.isNaN(value)) return 0;
   return value <= 1 ? value * 100 : value;
 }
 
+/**
+ * Extracts and calculates summary metrics from a VendorAnalyticsResponse and its data points.
+ * Falls back to computing averages or sums from the provided data points if the top-level metrics are missing.
+ * @param source - The full analytics response object, or null if unavailable.
+ * @param points - The array of data points to use for fallback calculations.
+ * @returns An object containing the calculated top-level metrics.
+ */
 function pickMetrics(source: VendorAnalyticsResponse | null, points: VendorAnalyticsPoint[]) {
   const latestPoint = points.at(-1);
   const pointAverage = points.length > 0
@@ -54,36 +46,12 @@ function pickMetrics(source: VendorAnalyticsResponse | null, points: VendorAnaly
   };
 }
 
-function MetricCard({
-  label,
-  value,
-  hint,
-  icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: ReactNode;
-  tone: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">{value}</p>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{hint}</p>
-        </div>
-        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", tone)}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Renders the vendor analytics dashboard section.
+ * Displays top-level metrics and a trend chart, managing its own data fetching and error states.
+ */
 export default function VendorAnalyticsSection() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [analytics, setAnalytics] = useState<VendorAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +87,7 @@ export default function VendorAnalyticsSection() {
         }
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err.message : "Failed to load vendor analytics.");
+          setError(err instanceof Error ? err.message : t("dashboard.analyticsPage.loadError"));
         }
       } finally {
         if (mounted) {
@@ -133,14 +101,14 @@ export default function VendorAnalyticsSection() {
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, [router, t]);
 
   const chartData = useMemo(() => {
-    return analytics?.dailyMetrics ?? analytics?.series ?? analytics?.data ?? [];
+    return analytics?.dataPoints ?? [];
   }, [analytics]);
 
   const metrics = pickMetrics(analytics, chartData);
-  const periodLabel = analytics?.periodLabel ?? "Last 30 days";
+  const periodLabel = analytics?.periodLabel ?? t("dashboard.analyticsPage.defaultPeriod");
   const generatedAt = analytics?.generatedAt
     ? new Date(analytics.generatedAt).toLocaleString()
     : null;
@@ -151,7 +119,7 @@ export default function VendorAnalyticsSection() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] p-4 pb-24 sm:p-6 dark:bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.18),_transparent_30%),linear-gradient(180deg,_#050505_0%,_#0a0a0a_100%)]">
+      <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-4">
           <Link
             href="/dashboard"
@@ -160,14 +128,20 @@ export default function VendorAnalyticsSection() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-100">
-            <p className="text-lg font-semibold">We couldn’t load your analytics.</p>
+            <p className="text-lg font-semibold">{t("dashboard.analyticsPage.loadErrorTitle")}</p>
             <p className="mt-2 text-sm text-rose-700 dark:text-rose-200">{error}</p>
             <button
               type="button"
               onClick={() => window.location.reload()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  window.location.reload();
+                }
+              }}
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
             >
-              Retry
+              {t("dashboard.analyticsPage.retry")}
             </button>
           </div>
         </div>
@@ -176,94 +150,11 @@ export default function VendorAnalyticsSection() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] p-4 pb-24 sm:p-6 dark:bg-[radial-gradient(circle_at_top_left,_rgba(123,104,238,0.18),_transparent_30%),linear-gradient(180deg,_#050505_0%,_#0a0a0a_100%)]">
+    <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-4">
-            <Link
-              href="/dashboard"
-              className="mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-                <BarChart3 className="h-3.5 w-3.5" />
-                Vendor analytics
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
-                Performance dashboard
-              </h1>
-              <p className="max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 sm:text-base">
-                Monitor transaction volume, average order size, completion rate, and dispute rate across the last {periodLabel.toLowerCase()}.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-            <div className="flex items-center gap-2 font-medium text-zinc-950 dark:text-white">
-              <Clock3 className="h-4 w-4 text-[var(--accent)]" />
-              {periodLabel}
-            </div>
-            {generatedAt ? <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Updated {generatedAt}</p> : null}
-          </div>
-        </div>
-
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Total transaction volume"
-            value={formatUSDC(metrics.totalTransactionVolume)}
-            hint="Aggregate volume for the selected period"
-            icon={<TrendingUp className="h-5 w-5 text-[#1B2A6B] dark:text-[#8DA0FF]" />}
-            tone="bg-blue-50 dark:bg-blue-500/10"
-          />
-          <MetricCard
-            label="Average order value"
-            value={formatUSDC(metrics.averageOrderValue)}
-            hint="Mean ticket size across completed orders"
-            icon={<ShoppingBag className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-            tone="bg-emerald-50 dark:bg-emerald-500/10"
-          />
-          <MetricCard
-            label="Completion rate"
-            value={formatRate(metrics.completionRate)}
-            hint="Share of orders that reached completion"
-            icon={<BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-            tone="bg-amber-50 dark:bg-amber-500/10"
-          />
-          <MetricCard
-            label="Dispute rate"
-            value={formatRate(metrics.disputeRate)}
-            hint="Share of orders escalated into disputes"
-            icon={<ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
-            tone="bg-rose-50 dark:bg-rose-500/10"
-          />
-        </section>
-
-        <section className="rounded-[2rem] border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-zinc-950 dark:text-white">Transaction volume trend</h2>
-              <p className="mt-2 max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-                The line chart shows daily transaction volume over the last 30 days. Hover or tap a point to review the full daily snapshot.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-              <span className="h-2 w-2 rounded-full bg-[#1B2A6B]" />
-              Transaction volume
-            </div>
-          </div>
-
-          <div className="mt-6 h-[320px] w-full sm:h-[360px]">
-            {chartData.length === 0 ? (
-              <div className="flex h-full items-center justify-center rounded-[1.75rem] border border-dashed border-zinc-200 bg-zinc-50 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
-                No analytics points were returned for this period.
-              </div>
-            ) : (
-              <VendorAnalyticsChart data={chartData} isMobile={isMobile} />
-            )}
-          </div>
-        </section>
+        <VendorAnalyticsHeader periodLabel={periodLabel} generatedAt={generatedAt} />
+        <VendorAnalyticsMetricsGrid metrics={metrics} />
+        <VendorAnalyticsTrendSection chartData={chartData} isMobile={isMobile} />
       </div>
     </main>
   );

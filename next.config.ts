@@ -106,8 +106,25 @@ const nextConfig: NextConfig = {
       "https://horizon-testnet.stellar.org",
       "https://*.sentry.io",
       "https://*.ingest.sentry.io",
+      // PostHog analytics (lib/analytics.ts) — posthog-js sends events to the
+      // default ingest endpoint https://us.i.posthog.com when no custom
+      // `api_host` is configured.
+      "https://us.i.posthog.com",
     ].filter(Boolean);
 
+    // Content Security Policy (CSP) — established 2026-08-27, issue #449.
+    //
+    // Every directive below maps to a resource or behaviour verified against
+    // the application's actual usage:
+    //   - 'unsafe-inline' script-src: Next.js RSC payload scripts + the inline
+    //     theme-init script in app/layout.tsx. TODO(#next): migrate to nonce
+    //     or hash-based CSP.
+    //   - 'unsafe-eval' (dev only): Next.js/React dev tooling.
+    //   - img-src hosts: next/image remotePatterns in this file.
+    //   - connect-src hosts: Stellar Horizon/Soroban RPC, backend API
+    //     (NEXT_PUBLIC_API_URL), Sentry, and PostHog (lib/analytics.ts).
+    //   - frame-ancestors 'self' is kept in lockstep with X-Frame-Options:
+    //     SAMEORIGIN below (legacy fallback for non-CSP browsers).
     const csp = [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,

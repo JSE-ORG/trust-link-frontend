@@ -123,7 +123,6 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
         <textarea
           id="reason"
           rows={6}
-          minLength={20}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           placeholder="Explain what went wrong with your order, including any delivery or item issues."

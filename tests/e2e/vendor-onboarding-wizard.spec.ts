@@ -26,6 +26,7 @@ test("vendor onboarding wizard persists state between reloads", async ({ page, n
   await expect(page.getByLabel("Description")).toHaveValue(
     "Beautiful handcrafted space-themed prints for collectors."
   );
-  await expect(page.getByLabel("Website")).toHaveValue("https://stellar.example.com");
+  // The wizard normalises URLs on load (URL.toString adds a trailing slash).
+  await expect(page.getByLabel("Website")).toHaveValue("https://stellar.example.com/");
   await expect(page.getByLabel("Shipping destinations")).toHaveValue("Worldwide");
 });

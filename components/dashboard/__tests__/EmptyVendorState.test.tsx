@@ -19,7 +19,7 @@ describe("EmptyVendorState", () => {
 
   it("renders the CTA button with correct text and accessible link", () => {
     render(<EmptyVendorState />);
-    const link = screen.getByRole("link", { name: "Create Your First Link" });
+    const link = screen.getByRole("link", { name: "Create your first Escrow Link" });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/create");
   });

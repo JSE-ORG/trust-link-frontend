@@ -1,24 +1,23 @@
 import type { Metadata } from "next";
 
+import translation from "@/locales/en/translation.json";
+
 export const metadata: Metadata = {
-  title: "Escrow Dashboard | TrustLink",
-  description:
-    "Manage TrustLink escrows, review transaction status, track shipments, export history, and monitor active buyer payments.",
+  title: translation.dashboard.metadata.title,
+  description: translation.dashboard.metadata.description,
   robots: {
     index: false,
     follow: false,
   },
   openGraph: {
-    title: "Escrow Dashboard | TrustLink",
-    description:
-      "Manage TrustLink escrows, review transaction status, track shipments, export history, and monitor active buyer payments.",
+    title: translation.dashboard.metadata.title,
+    description: translation.dashboard.metadata.description,
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Escrow Dashboard | TrustLink",
-    description:
-      "Manage TrustLink escrows, review transaction status, track shipments, export history, and monitor active buyer payments.",
+    title: translation.dashboard.metadata.title,
+    description: translation.dashboard.metadata.description,
   },
 };
 

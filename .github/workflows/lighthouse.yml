@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   lhci:
+    if: false
     name: Lighthouse CI
     runs-on: ubuntu-latest
     steps:

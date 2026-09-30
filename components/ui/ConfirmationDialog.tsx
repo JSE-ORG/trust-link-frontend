@@ -1,6 +1,8 @@
 "use client";
 
-import { type ReactNode,useEffect, useRef } from "react";
+import { type ReactNode, useRef } from "react";
+
+import FocusTrap from "./FocusTrap";
 
 export interface ConfirmationDialogProps {
   /** Controls visibility. When false, nothing is rendered. */
@@ -35,7 +37,9 @@ const confirmVariantClasses: Record<string, string> = {
  *
  * Accepts a custom title, body, and confirm/cancel handlers. Closes on
  * backdrop click and the Escape key, and is accessible via role="dialog"
- * with aria-modal and a labelled heading.
+ * with aria-modal and a labelled heading. Focus is trapped inside the
+ * dialog while open (via `FocusTrap`, issue #566) and restored to the
+ * triggering element on close.
  */
 export default function ConfirmationDialog({
   open,
@@ -50,21 +54,6 @@ export default function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
-  // Close on Escape while open.
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onCancel]);
-
-  // Move focus to the confirm button when the dialog opens.
-  useEffect(() => {
-    if (open) confirmRef.current?.focus();
-  }, [open]);
-
   if (!open) return null;
 
   return (
@@ -72,50 +61,52 @@ export default function ConfirmationDialog({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
       onClick={onCancel}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmation-dialog-title"
-        aria-describedby={description ? "confirmation-dialog-body" : undefined}
-        className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2
-          id="confirmation-dialog-title"
-          className="text-xl font-semibold text-zinc-950 dark:text-zinc-100"
+      <FocusTrap active={open} onEscape={onCancel} initialFocusRef={confirmRef}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmation-dialog-title"
+          aria-describedby={description ? "confirmation-dialog-body" : undefined}
+          className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
+          onClick={(event) => event.stopPropagation()}
         >
-          {title}
-        </h2>
-
-        {description ? (
-          <div
-            id="confirmation-dialog-body"
-            className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+          <h2
+            id="confirmation-dialog-title"
+            className="text-xl font-semibold text-zinc-950 dark:text-zinc-100"
           >
-            {description}
+            {title}
+          </h2>
+
+          {description ? (
+            <div
+              id="confirmation-dialog-body"
+              className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+            >
+              {description}
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="rounded-3xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              ref={confirmRef}
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className={`rounded-3xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmVariantClasses[variant]}`}
+            >
+              {loading ? "Please wait..." : confirmLabel}
+            </button>
           </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="rounded-3xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`rounded-3xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmVariantClasses[variant]}`}
-          >
-            {loading ? "Please wait..." : confirmLabel}
-          </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

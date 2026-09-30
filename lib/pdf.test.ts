@@ -92,27 +92,27 @@ describe('PDF Export Utility', () => {
       // For now, we'll just verify the function runs without errors
     });
 
-    it('should create PDF successfully', () => {
+    it('should create PDF successfully', async () => {
       // This is a basic smoke test
-      expect(() => {
+      await expect(() => {
         generateSummaryPDF(mockEscrows, 'vendor-123', 'test.pdf');
       }).not.toThrow();
     });
 
-    it('should handle empty escrows gracefully', () => {
-      expect(() => {
+    it('should handle empty escrows gracefully', async () => {
+      await expect(() => {
         generateSummaryPDF([], 'vendor-123', 'test.pdf');
       }).not.toThrow();
     });
 
-    it('should use custom filename if provided', () => {
-      expect(() => {
+    it('should use custom filename if provided', async () => {
+      await expect(() => {
         generateSummaryPDF(mockEscrows, 'vendor-123', 'custom-name.pdf');
       }).not.toThrow();
     });
 
-    it('should use default filename if not provided', () => {
-      expect(() => {
+    it('should use default filename if not provided', async () => {
+      await expect(() => {
         generateSummaryPDF(mockEscrows, 'vendor-123');
       }).not.toThrow();
     });

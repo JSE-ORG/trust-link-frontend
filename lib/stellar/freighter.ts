@@ -18,6 +18,7 @@ import {
   setAllowed,
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
+import { Networks } from "@stellar/stellar-sdk";
 
 import { captureWalletError } from "@/lib/logger";
 
@@ -40,15 +41,11 @@ export { isValidNetworkPassphrase, resolveNetworkPassphrase };
  * }
  */
 export async function isFreighterInstalled(): Promise<boolean> {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
+  if (typeof window === "undefined") return false;
+  
   try {
-    const { isConnected: connected } = await isConnected();
-    return connected === true;
+    return await isConnected();
   } catch {
-    // No extension, or the external API is unavailable.
     return false;
   }
 }
@@ -112,6 +109,12 @@ export async function signTransaction(
       throw new Error("Freighter not installed");
     }
 
+    const networkPassphrase = network === "PUBLIC" 
+      ? Networks.PUBLIC 
+      : network === "TESTNET" 
+        ? Networks.TESTNET 
+        : network;
+
     const response = (await freighterSignTransaction(xdr, {
       networkPassphrase,
     })) as {
@@ -127,13 +130,7 @@ export async function signTransaction(
 
     return signedTxXdr;
   } catch (error: unknown) {
-    // The XDR itself is never reported: it carries the account, sequence number
-    // and every operation in the transaction. Its length is enough to correlate.
-    captureWalletError(error, {
-      action: "signTransaction",
-      network: networkPassphrase,
-      xdr,
-    });
+    captureWalletError(error, { network, action: "signTransaction" });
     throw error;
   }
 }

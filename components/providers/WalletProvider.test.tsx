@@ -1,11 +1,12 @@
 import { act,render, screen } from "@testing-library/react";
 import { beforeEach,describe, expect, it, vi } from "vitest";
 
+import useWallet from "@/hooks/useWallet";
 import * as stellar from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
 import { NetworkProvider } from "./NetworkProvider";
-import { useWallet,WalletProvider } from "./WalletProvider";
+import { WalletProvider } from "./WalletProvider";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   getAddress: vi.fn(),
@@ -31,7 +32,7 @@ function TestComponent() {
       <div data-testid="publicKey">{publicKey}</div>
       <div data-testid="token">{token}</div>
       <div data-testid="isLoading">{isLoading.toString()}</div>
-      <div data-testid="error">{error}</div>
+      <div data-testid="error">{error?.message ?? ""}</div>
       <button onClick={connect}>Connect</button>
     </div>
   );

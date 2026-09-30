@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@config "../tailwind.config.ts";
 
 /* Issue #287: explicit content paths — tighter than auto-detection */
 @source "../app/**/*.{js,ts,jsx,tsx,mdx}";
@@ -31,23 +32,23 @@
   /* --- Brand -------------------------------------------------------------
      TrustLink identity. Used for CTAs, gradients, and focus rings. Held
      constant across themes so the brand reads the same in light and dark. */
-  --primary: #1B2A6B;
-  --accent: #7B68EE;
+  --primary: var(--color-brand-primary);
+  --accent: var(--color-brand-accent);
 
   /* --- Feedback ----------------------------------------------------------
      Status semantics: escrow states, toasts, and form validation.
      success = funded/released, warning = pending action, destructive = dispute
      or failure. Theme-independent so status colour never shifts meaning. */
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --destructive: #EF4444;
+  --success: var(--color-status-success);
+  --warning: var(--color-status-warning);
+  --destructive: var(--color-status-destructive);
 
   /* --- Neutral / chrome --------------------------------------------------
      Secondary text, subtle fills, and dividers. Overridden per theme so
      contrast against `--background` stays within AA. */
-  --muted: #9CA3AF;
-  --muted-bg: #F3F4F6;
-  --border: #E5E7EB;
+  --muted: var(--color-neutral-muted);
+  --muted-bg: var(--color-neutral-surface);
+  --border: var(--color-neutral-border);
 }
 
 /* ==========================================================================
@@ -110,6 +111,18 @@
   --color-muted: var(--muted);
   --color-muted-bg: var(--muted-bg);
   --color-border: var(--border);
+}
+
+.analytics-page-background {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--muted-bg) 0%, var(--background) 100%);
+}
+
+.dark .analytics-page-background {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
 }
 
 /* ==========================================================================

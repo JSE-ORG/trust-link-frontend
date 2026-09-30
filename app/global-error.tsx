@@ -22,41 +22,22 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            padding: "24px",
-            textAlign: "center",
-            fontFamily: "sans-serif",
-          }}
-        >
-          <h1 style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "8px" }}>
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center font-sans">
+          <h1 className="text-3xl font-bold mb-2">
             Something went wrong
           </h1>
-          <p style={{ color: "#666", marginBottom: "24px" }}>
+          <p className="text-[#666] mb-6">
             An unexpected error occurred. Please try again.
           </p>
           <button
             type="button"
             onClick={() => reset()}
-            style={{
-              padding: "10px 24px",
-              borderRadius: "8px",
-              background: "#1B2A6B",
-              color: "#fff",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
+            className="px-6 py-2.5 rounded-lg bg-[#1B2A6B] text-white border-0 cursor-pointer font-semibold"
           >
             Try Again
           </button>
           {error.digest && (
-            <p style={{ marginTop: "16px", fontSize: "12px", color: "#999", fontFamily: "monospace" }}>
+            <p className="mt-4 text-xs text-[#999] font-mono">
               Error reference: {error.digest}
             </p>
           )}

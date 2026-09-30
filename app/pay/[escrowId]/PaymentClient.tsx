@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useWallet } from "@/components/providers/WalletProvider";
+import useWallet from "@/hooks/useWallet";
 import { track } from "@/lib/analytics";
 import { getStellarExpertTxUrl } from "@/lib/explorer";
 import { Escrow } from "@/types";
@@ -138,7 +138,7 @@ export default function PaymentClient({ escrow }: { escrow: Escrow }) {
       )}
 
       {walletError && (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{walletError}</p>
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{walletError.message}</p>
       )}
       {paymentError && (
         <p data-testid="payment-error" className="mt-3 text-sm text-red-600 dark:text-red-400">

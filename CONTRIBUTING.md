@@ -109,6 +109,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The app should load with testnet configuration.
 
+### Pre-Commit Hooks
+
+Husky is installed automatically via the `prepare` script whenever you run `npm install` — no manual setup is needed.
+
+The pre-commit hook runs `lint-staged`, which executes:
+
+- **ESLint** on staged TypeScript/JavaScript files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`), using the same config and flags as `npm run lint`.
+- **Type checking** via `tsc --noEmit` when `.ts`/`.tsx` files are staged. This always runs against the **full project** — it cannot be scoped to only the staged files.
+
+If a staged file fails lint or type-checking, the commit is blocked and the errors are printed to your terminal. Fix the reported issues, re-stage, and commit again.
+
+> **Emergency bypass:** you can skip the hooks with `git commit --no-verify`. Only use this as a last resort — it bypasses the same quality gates that CI enforces, so anything you push must still pass the pipeline.
+
 ### Connecting to Testnet
 
 For wallet-connected features, you'll need:

@@ -14,13 +14,13 @@ export function downloadCsv<T extends Record<string, any>>(
   columns: { key: keyof T; header: string }[],
   filename: string
 ): void {
-  if (rows.length === 0) return;
-
+  // Enforce .csv extension
+  const csvFilename = filename.endsWith(".csv") ? filename : `${filename}.csv`;
   const escape = (value: unknown): string => {
     // Neutralise spreadsheet formula injection before quoting.
     const str = sanitizeCsvCell(value);
-    // Wrap in quotes if the value contains a comma, quote, or newline
-    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    // Wrap in quotes if the value contains a comma, quote, newline, or carriage return
+    if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
@@ -31,14 +31,20 @@ export function downloadCsv<T extends Record<string, any>>(
     columns.map((c) => escape(row[c.key])).join(",")
   );
 
-  const csvContent = [headerRow, ...dataRows].join("\n");
+  // Use CRLF line endings for proper Excel compatibility and add UTF-8 BOM
+  const csvContent = "\uFEFF" + [headerRow, ...dataRows].join("\r\n");
+
+  // Guard against SSR context where document/URL may not be available
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("downloadCsv can only be called in a browser environment");
+  }
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = csvFilename;
   link.style.display = "none";
   document.body.appendChild(link);
   link.click();

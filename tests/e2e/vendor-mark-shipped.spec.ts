@@ -21,20 +21,25 @@ const mockEscrow: MockEscrow = {
 test("vendor mark shipped updates vendor and buyer status", async ({ page, next }) => {
   await authenticatePage(page);
 
+  const escrowsList = [{ ...mockEscrow }];
   await setupNetworkMocks(page, next, {
     escrowId,
     mockEscrow: { ...mockEscrow, status: "SHIPPED" },
-    mockEscrowsList: [mockEscrow]
+    mockEscrowsList: escrowsList
   });
 
   await page.goto("/dashboard");
 
   await page.getByRole("button", { name: /mark shipped/i }).click();
   await page.getByLabel("Tracking ID").fill(TRACKING_ID);
+  
+  // Update the mock list before submitting so the refresh gets the new state
+  escrowsList[0] = { ...mockEscrow, status: "SHIPPED" };
+  
   await page.getByRole("button", { name: /submit/i }).click();
 
-  await expect(page.getByText("SHIPPED")).toBeVisible();
+  await expect(page.getByText("SHIPPED", { exact: true })).toBeVisible();
 
   await page.goto(`/track/${escrowId}`);
-  await expect(page.getByText("SHIPPED")).toBeVisible();
+  await expect(page.getByText("SHIPPED", { exact: true })).toBeVisible();
 });

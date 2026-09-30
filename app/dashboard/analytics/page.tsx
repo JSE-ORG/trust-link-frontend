@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 
 import VendorAnalyticsSection from "@/components/dashboard/VendorAnalyticsSection";
+import translation from "@/locales/en/translation.json";
 
 export const metadata = {
-  title: "Vendor Analytics | TrustLink",
-  description: "Track transaction volume, average order value, completion rate, and dispute rate.",
+  title: translation.dashboard.metadata.analyticsTitle,
+  description: translation.dashboard.metadata.analyticsDescription,
 };
 
 export default function VendorAnalyticsPage() {

@@ -1,55 +1,11 @@
 "use client";
 
-import React, { createContext, startTransition,useContext, useEffect, useState } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-type Theme = "light" | "dark" | "system";
-
-interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      startTransition(() => {
-        setThemeState(stored);
-        applyClass(stored);
-      });
-    }
-  }, []);
-
-  const setTheme = (next: Theme) => {
-    setThemeState(next);
-    if (next === "system") {
-      localStorage.removeItem("theme");
-      document.documentElement.classList.remove("dark", "light");
-    } else {
-      localStorage.setItem("theme", next);
-      applyClass(next);
-    }
-  };
-
+export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange {...props}>
       {children}
-    </ThemeContext.Provider>
+    </NextThemesProvider>
   );
-}
-
-function applyClass(theme: "light" | "dark") {
-  const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  root.classList.toggle("light", theme === "light");
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
-  return ctx;
 }

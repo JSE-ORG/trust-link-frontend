@@ -41,9 +41,9 @@ describe("TrackingTimeline", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useEscrow).mockImplementation((escrowId: string | null | undefined, opts?: { initialData?: Escrow }) => ({
-      escrow: opts?.initialData ?? mockEscrow,
+      data: opts?.initialData ?? mockEscrow,
       isLoading: false,
-      error: undefined,
+      error: null,
       refetch: vi.fn(),
     }));
   });
@@ -166,10 +166,51 @@ describe("TrackingTimeline", () => {
     expect(screen.getByText("tracking.delivered")).toBeInTheDocument();
   });
 
+  it("makes timeline steps focusable with tabIndex", async () => {
+    await act(async () => {
+      render(
+        <TrackingTimeline escrowId="esc_123" initialEscrow={mockEscrow} />
+      );
+    });
+
+    const steps = screen.getAllByRole("listitem");
+    for (const step of steps) {
+      expect(step).toHaveAttribute("tabindex", "0");
+    }
+  });
+
+  it("sets aria-current=step on the active milestone", async () => {
+    const fundedEscrow = { ...mockEscrow, status: EscrowStatusConst.FUNDED };
+    await act(async () => {
+      render(
+        <TrackingTimeline escrowId="esc_123" initialEscrow={fundedEscrow} />
+      );
+    });
+
+    const currentStep = screen.getByRole("listitem", { current: "step" });
+    expect(currentStep).toHaveAttribute("aria-current", "step");
+    expect(currentStep).toHaveTextContent("tracking.paymentConfirmed");
+  });
+
+  it("does not set aria-current on non-active milestones", async () => {
+    const fundedEscrow = { ...mockEscrow, status: EscrowStatusConst.FUNDED };
+    await act(async () => {
+      render(
+        <TrackingTimeline escrowId="esc_123" initialEscrow={fundedEscrow} />
+      );
+    });
+
+    const steps = screen.getAllByRole("listitem");
+    const nonActiveSteps = steps.filter(
+      (s) => s.getAttribute("aria-current") !== "step"
+    );
+    expect(nonActiveSteps.length).toBe(4);
+  });
+
   it("shows a user-friendly error state when fetching fails", async () => {
     const refetch = vi.fn();
     vi.mocked(useEscrow).mockReturnValue({
-      escrow: undefined,
+      data: null,
       isLoading: false,
       error: new Error("Failed to fetch escrow"),
       refetch,

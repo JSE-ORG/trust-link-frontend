@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { useWallet } from "@/components/providers/WalletProvider";
+import useWallet from "@/hooks/useWallet";
 import { resolveDispute } from "@/lib/api";
 import { formatTimeAgo } from "@/lib/utils";
 import { Dispute, EscrowStatus } from "@/types";

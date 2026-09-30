@@ -16,8 +16,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock useWallet
-vi.mock("@/components/providers/WalletProvider", () => ({
-  useWallet: () => ({
+vi.mock("@/hooks/useWallet", () => ({
+  default: () => ({
     token: "mock-token",
   }),
 }));

@@ -18,8 +18,10 @@ import type {
   EscrowStatus,
   Subscription,
   Tracking,
+  VendorAnalyticsApiResponse,
   VendorAnalyticsResponse,
   VendorNotificationPreferences,
+  VendorProfile,
 } from "@/types";
 
 /* -------------------------------------------------------------------------- */
@@ -90,6 +92,13 @@ export interface ConfirmDeliveryResponse {
 /** `POST|PATCH /escrows/:id/ship` — shipment details echoed back as tracking. */
 export type ShipEscrowResponse = Tracking;
 
+/** `DELETE /escrow/:id` or `PATCH /escrow/:id/cancel` — cancels an unfunded escrow. */
+export interface CancelEscrowResponse {
+  success: boolean;
+  escrowId: string;
+  message?: string;
+}
+
 /** `GET /escrows/:id/tracking`. */
 export type GetTrackingResponse = Tracking;
 
@@ -132,8 +141,17 @@ export type UpgradeSubscriptionResponse = Subscription;
 /** `GET /vendor/notifications`. */
 export type GetVendorNotificationPreferencesResponse = VendorNotificationPreferences;
 
-/** `GET /vendor/analytics`. */
+/** Raw `GET /vendor/analytics` response before client-side normalization. */
+export type GetVendorAnalyticsApiResponse = VendorAnalyticsApiResponse;
+
+/** Normalized `GET /vendor/analytics` response exposed to consumers. */
 export type GetVendorAnalyticsResponse = VendorAnalyticsResponse;
+
+/** `GET /vendor/:id/profile` — public vendor profile, no auth required. */
+export type GetVendorProfileResponse = VendorProfile;
+
+/** `GET /vendor/:id/escrows` — a vendor's publicly listed escrow links. */
+export type GetPublicVendorEscrowsResponse = Escrow[];
 
 /**
  * Endpoints that answer with `204 No Content` (or an empty body we ignore):

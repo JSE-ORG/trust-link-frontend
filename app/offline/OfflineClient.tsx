@@ -15,7 +15,7 @@ export default function OfflineClient() {
       </p>
       <Link
         href="/"
-        className="rounded-full bg-[#1B2A6B] px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#152052] transition"
+        className="rounded-full bg-brand-primary px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover"
       >
         Try Again
       </Link>

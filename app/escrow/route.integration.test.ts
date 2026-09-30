@@ -8,6 +8,12 @@ import { PATCH } from "./[id]/ship/route";
 import { GET } from "./route";
 import * as EscrowRoute from "./route";
 
+vi.mock("@/lib/api", () => ({
+  getVendorEscrows: vi.fn().mockResolvedValue([
+    { escrowId: "escrow-1", status: "PENDING" }
+  ])
+}));
+
 // POST may not be exported yet on this branch — handle gracefully so the
 // integration suite still loads and the new tests are discoverable for review.
 // When POST is implemented, the conditional suite will activate.
@@ -18,6 +24,13 @@ const itWithPost = POST ? it : it.skip;
 describe("API Route Integration Tests: Escrow & Shipping", () => {
   beforeEach(() => {
     __resetRateLimitMemory();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ([
+        { escrowId: "escrow-1", vendor: "v1", orders: 1, status: "PENDING" }
+      ]),
+      text: async () => "{}"
+    }) as typeof fetch;
   });
 
   describe("GET /escrow Integration", () => {

@@ -1,5 +1,3 @@
-"use client";
-
 import { CheckCircle2,ShieldCheck, Truck } from "lucide-react";
 
 export function HowItWorks() {

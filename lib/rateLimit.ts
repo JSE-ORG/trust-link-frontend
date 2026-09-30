@@ -9,6 +9,8 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+import { captureError } from "@/lib/logger";
+
 export interface RateLimitResult {
   success: boolean;
   limit: number;
@@ -21,6 +23,16 @@ export interface RateLimitResult {
 const DEFAULT_LIMIT = 20;
 const DEFAULT_WINDOW_MS = 10_000; // 10s
 
+// ── Per-route rate limit configuration ────────────────────────────────────────
+
+export const RATE_LIMITS = {
+  default: { limit: 20, windowMs: 10_000 },
+  // Expensive routes get tighter limits
+  escrowCreate: { limit: 5, windowMs: 60_000 }, // 5 per minute
+  ogImage: { limit: 10, windowMs: 60_000 }, // 10 per minute
+  ship: { limit: 10, windowMs: 60_000 }, // 10 per minute
+} as const;
+
 // ── In-memory fallback (per-process; fine for dev/CI/single instance) ─────────
 
 const memoryHits = new Map<string, { count: number; reset: number }>();
@@ -28,7 +40,7 @@ const memoryHits = new Map<string, { count: number; reset: number }>();
 function memoryLimit(
   key: string,
   limit: number,
-  windowMs: number,
+  windowMs: number
 ): RateLimitResult {
   const now = Date.now();
   const entry = memoryHits.get(key);
@@ -57,8 +69,10 @@ export function __resetRateLimitMemory(): void {
 // ── Upstash-backed limiter (lazy, only when configured) ───────────────────────
 
 let upstashLimiter: Ratelimit | null = null;
+const redisFailedPermanently = false;
 
 function getUpstashLimiter(): Ratelimit | null {
+  if (redisFailedPermanently) return null;
   if (upstashLimiter) return upstashLimiter;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -76,34 +90,72 @@ function getUpstashLimiter(): Ratelimit | null {
 /**
  * Check whether `identifier` (typically the client IP) is within its rate quota.
  * Uses Upstash when configured, otherwise the in-memory fallback.
+ *
+ * **Fail-closed behavior**: If Upstash Redis fails after being configured, the
+ * function falls back to in-memory limiting but logs the error for monitoring.
+ * This prevents Redis outages from bypassing rate limits entirely while still
+ * allowing the service to function.
  */
 export async function checkRateLimit(
   identifier: string,
   limit: number = DEFAULT_LIMIT,
-  windowMs: number = DEFAULT_WINDOW_MS,
+  windowMs: number = DEFAULT_WINDOW_MS
 ): Promise<RateLimitResult> {
-  const limiter = getUpstashLimiter();
-  if (limiter) {
-    const res = await limiter.limit(identifier);
-    return {
-      success: res.success,
-      limit: res.limit,
-      remaining: res.remaining,
-      reset: res.reset,
-    };
+  let limiter: Ratelimit | null = null;
+  try {
+    limiter = getUpstashLimiter();
+    if (limiter) {
+      const res = await limiter.limit(identifier);
+      return {
+        success: res.success,
+        limit: res.limit,
+        remaining: res.remaining,
+        reset: res.reset,
+      };
+    }
+  } catch (error) {
+    // Log Redis connection failure to Sentry but fall back to in-memory
+    captureError(error, {
+      scope: "api",
+      action: "rateLimitRedisFailure",
+      extra: { identifier, limit, windowMs },
+    });
+
+    console.warn("Rate limiter Redis failure, falling back to in-memory (fail-closed)");
+    upstashLimiter = null; // Clear the failed limiter
   }
   return memoryLimit(identifier, limit, windowMs);
 }
 
-/** Derive a stable client identifier from a request's forwarded headers. */
+/**
+ * Derive a stable client identifier from a request's verified forwarded headers.
+ * Extracts the leftmost IP from x-forwarded-for (the client IP before any proxies).
+ * 
+ * **Security**: In production, ensure your reverse proxy/CDN strips untrusted
+ * x-forwarded-for headers and sets trusted ones. Otherwise, clients can spoof IPs.
+ */
 export function getClientId(request: Request): string {
   // Defensive: in some call sites (e.g. unit tests invoking a handler directly)
   // a Request may not be supplied. Treat that as the anonymous bucket.
   const headers = request?.headers;
   if (!headers) return "anonymous";
+  
   const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return headers.get("x-real-ip") ?? "anonymous";
+  if (forwarded) {
+    // Take the leftmost (client) IP, ignoring proxy chain
+    const clientIp = forwarded.split(",")[0].trim();
+    // Basic validation to prevent empty strings or malformed entries
+    if (clientIp && /^[\d.a-f:]+$/i.test(clientIp)) {
+      return clientIp;
+    }
+  }
+  
+  const realIp = headers.get("x-real-ip");
+  if (realIp && /^[\d.a-f:]+$/i.test(realIp.trim())) {
+    return realIp.trim();
+  }
+  
+  return "anonymous";
 }
 
 /**
@@ -114,13 +166,17 @@ export function getClientId(request: Request): string {
 export async function enforceRateLimit(
   request: Request,
   limit: number = DEFAULT_LIMIT,
-  windowMs: number = DEFAULT_WINDOW_MS,
+  windowMs: number = DEFAULT_WINDOW_MS
 ): Promise<Response | null> {
   const id = getClientId(request);
   const result = await checkRateLimit(id, limit, windowMs);
 
   if (!result.success) {
-    const retryAfterSec = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
+    console.warn("Rate limit exceeded for " + id, { limit, windowMs });
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((result.reset - Date.now()) / 1000)
+    );
     return new Response(
       JSON.stringify({ message: "Too many requests. Please slow down." }),
       {
@@ -132,7 +188,7 @@ export async function enforceRateLimit(
           "RateLimit-Reset": String(Math.ceil(result.reset / 1000)),
           "Retry-After": String(retryAfterSec),
         },
-      },
+      }
     );
   }
 
