@@ -21,6 +21,11 @@ import { WalletContext } from "@/components/providers/WalletProvider";
 import { handleSessionExpired } from "@/lib/session";
 
 /**
+ * Single source of truth for the localStorage key storing the wallet JWT.
+ */
+export const SESSION_KEY = "wallet.jwt";
+
+/**
  * Stores the current session-expired handler set by the active `useWallet`.
  * Only one handler can be active at a time; the most recent registration wins.
  */
@@ -48,6 +53,10 @@ export function onSessionExpired(handler: () => void): () => void {
  * Call this from `lib/api/client.ts` when a 401 response is received.
  */
 export function handleSessionExpired(): void {
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(SESSION_KEY);
+    window.location.assign("/?reason=session_expired");
+  }
   handleSessionExpired();
   sessionExpiredHandler?.();
 }

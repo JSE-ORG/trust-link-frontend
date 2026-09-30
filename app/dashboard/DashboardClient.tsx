@@ -52,7 +52,6 @@ export default function DashboardClient() {
   const searchParams = useSearchParams();
   const [isChecking, setIsChecking] = useState(true);
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
-  const [sessionExpired, setSessionExpired] = useState(false);
   const didStrip = useRef(false);
 
   useEffect(() => {
@@ -77,6 +76,49 @@ export function DashboardClient() {
     }
   }, [searchParams]);
 
+  if (isChecking) {
+    return (
+      <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+        <div className="mx-auto max-w-4xl">
+          <Skeleton className="mb-6 h-10 w-48" />
+          <Skeleton className="h-64 w-full rounded-3xl" />
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+      <div className="mx-auto max-w-4xl">
+        {showUpgradeBanner && (
+          <UpgradeBanner onDismiss={() => setShowUpgradeBanner(false)} />
+        )}
+        <UpgradeCTA />
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-semibold text-zinc-950 dark:text-white">
+              {t("dashboard.title")}
+            </h1>
+            <Link
+              href="/dashboard/analytics"
+              className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 sm:inline-flex"
+            >
+              <BarChart3 className="h-4 w-4" />
+              {t("dashboard.analytics")}
+            </Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <CurrencyDropdown />
+            <NotificationBell />
+          </div>
+        </div>
+        <ErrorBoundary>
+          <DashboardSection />
+        </ErrorBoundary>
+      </div>
+    </main>
+  );
+}
   useEffect(() => {
     // This event is dispatched by the API client when a 401 is received.
     // See lib/session.ts for the dispatch logic.

@@ -12,6 +12,7 @@ import { SESSION_KEY } from "@/lib/session";
 import * as stellarAuth from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
+import useWallet, { SESSION_KEY } from "./useWallet";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),

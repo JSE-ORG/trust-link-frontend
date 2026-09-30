@@ -80,7 +80,16 @@ export default function OnboardingStepper({
                     key={stepItem.title}
                     type="button"
                     onClick={() => onGoToStep(index)}
-                    className={`rounded-3xl border p-4 text-left transition ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onGoToStep(index);
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-label={`${stepItem.title}: ${isDone ? "Completed" : isActive ? "Current step" : "Pending"}`}
+                    aria-current={isActive ? "step" : undefined}
+                    className={`rounded-3xl border p-4 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                       isActive
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
