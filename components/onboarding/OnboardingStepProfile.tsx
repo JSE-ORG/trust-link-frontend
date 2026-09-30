@@ -1,23 +1,52 @@
 "use client";
 
+/**
+ * Validation errors for profile form fields
+ */
 interface ProfileErrors {
+  /** Error message for shop name field */
   shopName?: string;
+  /** Error message for description field */
   description?: string;
+  /** Error message for website field */
   website?: string;
 }
 
+/**
+ * Props for the OnboardingStepProfile component
+ */
 interface OnboardingStepProfileProps {
+  /** The vendor's shop name */
   shopName: string;
+  /** A description of the vendor's business */
   description: string;
+  /** The vendor's website URL */
   website: string;
+  /** Shipping locations or destinations the vendor supports */
   shippingLocations: string;
+  /** Validation errors for form fields */
   errors: ProfileErrors;
+  /**
+   * Callback invoked when a form field changes
+   * @param field - The name of the field being updated
+   * @param value - The new value for the field
+   */
   onChange: (
     field: "shopName" | "description" | "website" | "shippingLocations",
     value: string
   ) => void;
 }
 
+/**
+ * OnboardingStepProfile component for collecting vendor profile information.
+ * 
+ * This form allows vendors to provide their business details including shop name,
+ * description, website URL, and shipping destinations. It includes validation
+ * and displays error messages for invalid inputs.
+ * 
+ * @param props - Component props
+ * @returns A form for vendor profile information
+ */
 export default function OnboardingStepProfile({
   shopName,
   description,
