@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach,describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
 import { WalletProvider } from "@/components/providers/WalletProvider";
+import { SESSION_KEY } from "@/lib/session";
 import * as stellarAuth from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
@@ -48,12 +49,12 @@ describe("useWallet", () => {
   });
 
   it("connects and populates publicKey", async () => {
-    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
-    vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: false });
-    vi.mocked(freighter.connectFreighter).mockResolvedValue("GABCDEF1234567890XYZ");
-    vi.mocked(stellarAuth.getChallenge).mockResolvedValue("challenge-tx");
-    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-transaction");
-    vi.mocked(stellarAuth.verifyChallenge).mockResolvedValue("jwt-token");
+    vi.mocked(freighter.isFreighterInstalled).mockResolved(true);
+    vi.mocked(freighter.isConnected).mockResolved({ isConnected: false });
+    vi.mocked(freighter.connectFreighter).mockResolved("GABCDEF1234567890XYZ");
+    vi.mocked(stellarAuth.getChallenge).mockResolved("challenge-tx");
+    vi.mocked(freighter.signTransaction).mockResolved("signed-transaction");
+    vi.mocked(stellarAuth.verifyChallenge).mockResolved("jwt-token");
 
     render(
       <NetworkProvider>
@@ -66,17 +67,17 @@ describe("useWallet", () => {
     await userEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
 
     await waitFor(() => expect(screen.getByTestId("isConnected")).toHaveTextContent("true"));
-    expect(screen.getByTestId("publicKey")).toHaveTextContent("GABCDEF1234567890XYZ");
-    expect(window.localStorage.getItem("wallet.token")).toBe("jwt-token");
+    expect(screen.getByTestId("publicKey")).toHaveTextContent("GBBCDEF1234567890XYZ");
+    expect(window.localStorage.getItem(SESSION_KEY)).toBe("jwt-token");
   });
 
   it("stores token after auth flow", async () => {
-    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
-    vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: false });
-    vi.mocked(freighter.connectFreighter).mockResolvedValue("GXYZ1234567890ABCD");
-    vi.mocked(stellarAuth.getChallenge).mockResolvedValue("challenge-transaction");
-    vi.mocked(freighter.signTransaction).mockResolvedValue("signed-challenge");
-    vi.mocked(stellarAuth.verifyChallenge).mockResolvedValue("sep10-jwt");
+    vi.mocked(freighter.isFreighterInstalled).mockResolved(true);
+    vi.mocked(freighter.isConnected).mockResolved({ isConnected: false });
+    vi.mocked(freighter.connectFreighter).mockResolved("GXYZ1234567890ABCD");
+    vi.mocked(stellarAuth.getChallenge).mockResolved("challenge-transaction");
+    vi.mocked(freighter.signTransaction).mockResolved("signed-challenge");
+    vi.mocked(stellarAuth.verifyChallenge).mockResolved("sep10-jwt");
 
     render(
       <NetworkProvider>
@@ -88,15 +89,15 @@ describe("useWallet", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
 
-    await waitFor(() => expect(window.localStorage.getItem("wallet.token")).toBe("sep10-jwt"));
+    await waitFor(() => expect(window.localStorage.getItem(SESSION_KEY)).toBe("sep10-jwt"));
     expect(screen.getByTestId("token")).toHaveTextContent("sep10-jwt");
   });
 
   it("disconnects and clears publicKey and token", async () => {
-    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
-    vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: true });
-    
-    window.localStorage.setItem("wallet.token", "existing-jwt");
+    vi.mocked(freighter.isFreighterInstalled).mockResolved(true);
+    vi.mocked(freighter.isConnected).mockResolved({ isConnected: true });
+
+    window.localStorage.setItem(SESSION_KEY, "existing-jwt");
     window.localStorage.setItem("wallet.publicKey", "GDISCONNECT1234");
 
     render(
@@ -113,6 +114,26 @@ describe("useWallet", () => {
 
     expect(screen.getByTestId("publicKey")).toHaveTextContent("");
     expect(screen.getByTestId("token")).toHaveTextContent("");
+    expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();
+  });
+
+  it("clears all storage keys on 401", async () => {
+    vi.mocked(freighter.isFreighterInstalled).mockResolved(true);
+    vi.mocked(freighter.isConnected).mockResolved({ connected: true });
+
+    window.localStorage.setItem(SESSION_KEY, "existing-jwt");
+    window.localStorage.setItem("wallet.token", "legacy-token");
+    window.localStorage.setItem("wallet.jwt", "legacy-jwt");
+    window.localStorage.setItem("wallet.jwk", "legacy-jwk");
+    window.localStorage.setItem("wallet.publicKey", "GEXPIRED1234");
+
+    const { handleSessionExpired } = await import("@/lib/session");
+    handleSessionExpired();
+
+    expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();
     expect(window.localStorage.getItem("wallet.token")).toBeNull();
+    expect(window.localStorage.getItem("wallet.jwt")).toBeNull();
+    expect(window.localStorage.getItem("wallet.jwk")).toBeNull();
+    expect(window.localStorage.getItem("wallet.publicKey")).toBeNull();
   });
 });
