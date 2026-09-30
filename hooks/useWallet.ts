@@ -3,6 +3,7 @@
 import { useContext, useEffect } from "react";
 
 import { WalletContext } from "@/components/providers/WalletProvider";
+import { handleSessionExpired } from "@/lib/session";
 
 /**
  * Stores the current session-expired handler set by the active `useWallet`.
@@ -26,13 +27,13 @@ export function onSessionExpired(handler: () => void): () => void {
 }
 
 /**
- * Handles an expired session: clears the stored JWT and triggers the
- * session-expired callback registered by `useWallet`.
+ * Handles an expired session by delegating to the shared `handleSessionExpired`
+ * from `../lib/session`, then notifying the registered handler.
  *
  * Call this from `lib/api/client.ts` when a 401 response is received.
  */
 export function handleSessionExpired(): void {
-  window.localStorage.removeItem("wallet.jwt");
+  handleSessionExpired();
   sessionExpiredHandler?.();
 }
 
@@ -48,20 +49,20 @@ export function handleSessionExpired(): void {
  *
  * @returns An object containing:
  *   - `publicKey`       - The connected Stellar public key, or `null` when disconnected.
- *   - `token`           - JWT auth token obtained via SEP-10 challenge/response, or `null`.
- *   - `jwt`             - Alias for the current JWT; always available in memory.
+ *   - `token`          - JWT auth token obtained via SEP-10 challenge/response, or `null`.
+ *   - `jwt`            - Alias for the current JWT; always available in memory.
  *   - `isConnected`     - `true` when a public key is present and the wallet is connected.
- *   - `isInstalled`     - `true` when the Freighter browser extension is detected.
- *   - `status`        - Current wallet state:
+ *   - `isInstalled`      - `true` when the Freighter browser extension is detected.
+ *   - `status`          - Current wallet state:
  *     `loading` | `connected` | `disconnected` | `not-installed` | `error`.
  *   - `connect`         - `() => Promise<boolean>` - Initiates the Freighter connection
  *     and SEP-10 authentication flow. Resolves `true` on success, `false` on failure.
- *   - `disconnect`      - `() => void` - Clears the session and removes stored credentials.
- *   - `signTransaction` - `(xdr: string, network?: string) => Promise<string>` - Signs a
+ *   - `disconnect`      - () => void - Clears the session and removes stored credentials.
+ *   - `signTransaction` - `(xdr: string, network?: string) => Promise<string>`  - Signs a
  *     Stellar XDR transaction via Freighter. `network` overrides the configured network.
  *   - `isLoading`       - `true` while a connection or auth request is in flight.
- *   - `walletReady`    - `true` once the initial wallet state has been hydrated.
- *   - `error`           - The last `Error` thrown by connect/authenticate, or `null`.
+ *   - `walletReady`    -  true` once the initial wallet state has been hydrated.
+ *   - `error`          - The last `Error` thrown by connect/authenticate, or `null`.
  *
  * @throws {Error} If called outside of a <WalletProvider>.
  *
