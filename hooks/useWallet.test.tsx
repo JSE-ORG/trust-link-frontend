@@ -1,4 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { useWallet, WalletState } from './useWallet';
+import { SESSION_KEY, SESSION_EXPIRED_EVENT, handleSessionExpired } from '../lib/auth/constants';
+
+describe('useWallet', () => {
+import { render, screen, waitFor,renderHook, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,7 +12,6 @@ import { SESSION_KEY } from "@/lib/session";
 import * as stellarAuth from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
-import useWallet from "./useWallet";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),
@@ -43,11 +46,22 @@ function TestHarness() {
 
 describe("useWallet", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    window.localStorage.clear();
-    vi.stubGlobal("fetch", vi.fn());
+    sessionStorage.clear();
+    localStorage.clear();
+    jest.clearAllMocks();
   });
 
+  it('returns default state when no session exists', () => {
+    const { result } = renderHook(() => useWallet());
+    expect(result.current).toEqual({ address: null, connected: false });
+  });
+
+  it('reads session from storage', () => {
+    const session: WalletState = { address: '0x123', connected: true };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    const { result } = renderHook(() => useWallet());
+    expect(result.current).toEqual(session);
+  });
   it("connects and populates publicKey", async () => {
     vi.mocked(freighter.isFreighterInstalled).mockResolved(true);
     vi.mocked(freighter.isConnected).mockResolved({ isConnected: false });
@@ -79,16 +93,22 @@ describe("useWallet", () => {
     vi.mocked(freighter.signTransaction).mockResolved("signed-challenge");
     vi.mocked(stellarAuth.verifyChallenge).mockResolved("sep10-jwt");
 
-    render(
-      <NetworkProvider>
-        <WalletProvider>
-          <TestHarness />
-        </WalletProvider>
-      </NetworkProvider>
-    );
+  it('clears all storage keys on 401', () => {
+    const session: WalletState = { address: '0x123', connected: true };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 
-    await userEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
+    act(() => {
+      handleSessionExpired();
+    });
 
+    expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
+    expect(localStorage.getItem(SESSION_KEY)).toBeNull();
+  });
+
+  it('dispatches session expired event', () => {
+    const mockFn = jest.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, mockFn);
     await waitFor(() => expect(window.localStorage.getItem(SESSION_KEY)).toBe("sep10-jwt"));
     expect(screen.getByTestId("token")).toHaveTextContent("sep10-jwt");
   });
@@ -110,8 +130,12 @@ describe("useWallet", () => {
 
     await waitFor(() => expect(screen.getByTestId("isConnected")).toHaveTextContent("true"));
 
-    await userEvent.click(screen.getByRole("button", { name: /disconnect/i }));
+    act(() => {
+      handleSessionExpired();
+    });
 
+    expect(mockFn).toHaveBeenCalled();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, mockFn);
     expect(screen.getByTestId("publicKey")).toHaveTextContent("");
     expect(screen.getByTestId("token")).toHaveTextContent("");
     expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();

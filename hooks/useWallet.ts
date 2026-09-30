@@ -1,5 +1,20 @@
-"use client";
+import { useCallback, useEffect } from 'react';
+import { SESSION_KEY, SESSION_EXPIRED_EVENT, handleSessionExpired } from '../lib/auth/constants';
 
+export interface WalletState {
+  address: string | null;
+  connected: boolean;
+}
+
+export function useWallet(): WalletState {
+  const getSession = useCallback((): WalletState => {
+    try {
+      const session = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+      return session ? JSON.parse(session) : { address: null, connected: false };
+    } catch {
+      return { address: null, connected: false };
+    }
+  }, []);
 import { useContext, useEffect } from "react";
 
 import { WalletContext } from "@/components/providers/WalletProvider";
@@ -89,14 +104,15 @@ export default function useWallet() {
     throw new Error("useWallet must be used within a WalletProvider");
   }
 
-  const { disconnect } = context;
+  const clearSession = useCallback((): void => {
+    handleSessionExpired();
+  }, []);
 
   useEffect(() => {
-    return onSessionExpired(() => {
-      disconnect();
-      window.alert("Session expired. Please reconnect your wallet.");
-    });
-  }, [disconnect]);
+    const handleExpired = () => clearSession();
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+  }, [clearSession]);
 
-  return context;
+  return getSession();
 }
