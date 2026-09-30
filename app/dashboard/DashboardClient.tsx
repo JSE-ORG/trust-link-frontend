@@ -1,3 +1,4 @@
+import { SESSION_EXPIRED_EVENT, handleSessionExpired } from '../../lib/auth/constants';
 "use client";
 
 import { Sparkles, X } from "lucide-react";
@@ -5,15 +6,15 @@ import { BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18n";
 
 import CurrencyDropdown from "@/components/dashboard/CurrencyDropdown";
 import DashboardSection from "@/components/dashboard/DashboardSection";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import UpgradeCTA from "@/components/subscription/UpgradeCTA";
+import UpgradeCTA from "@components/subscription/UpgradeCTA";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { SESSION_KEY } from "@/hooks/useWallet";
+import { SESSION_KEY, SESSION_EXPIRED_EVENT } from "@/lib/session";
 
 function UpgradeBanner({ onDismiss }: { onDismiss: () => void }) {
   const { t } = useTranslation();
@@ -54,16 +55,18 @@ export default function DashboardClient() {
   const didStrip = useRef(false);
 
   useEffect(() => {
-    const storedJwt = window.localStorage.getItem(SESSION_KEY);
-    if (!storedJwt) {
-      router.push("/?reason=session_expired");
+    const storedSession = window.localStorage.getItem(SESSION_KEY);
+    if (!storedSession) {
+      router.push("/");
     } else {
       const frame = window.requestAnimationFrame(() => setIsChecking(false));
       return () => window.cancelAnimationFrame(frame);
     }
   }, [router]);
 
+export function DashboardClient() {
   useEffect(() => {
+    const handleUnauthorized = () => handleSessionExpired();
     if (searchParams.get("upgraded") === "1" && !didStrip.current) {
       didStrip.current = true;
       setShowUpgradeBanner(true);
@@ -115,4 +118,18 @@ export default function DashboardClient() {
       </div>
     </main>
   );
+}
+  useEffect(() => {
+    // This event is dispatched by the API client when a 401 is received.
+    // See lib/session.ts for the dispatch logic.
+    const handleUnauthorized = () => {
+      window.localStorage.removeItem(SESSION_KEY);
+      setSessionExpired(true);
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleUnauthorized);
+  }, []);
+
+  return <div>Dashboard Content</div>;
 }

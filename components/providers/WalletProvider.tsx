@@ -1,14 +1,8 @@
-"use client";
+import React, { createContext, useContext, useMemo, ReactNode } from 'react';
+import { useWallet, WalletState } from '../../hooks/useWallet';
+import { SESSION_KEY } from '../../lib/auth/constants';
 
-import { jwtDecode } from "jwt-decode";
-import React, {
-  createContext,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { toast } from "sonner";
+const WalletContext = createContext<WalletState | null>(null);
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
 import { SESSION_KEY } from "@/hooks/useWallet";
@@ -20,11 +14,11 @@ import {
   isFreighterInstalled,
   signTransaction as freighterSignTransaction,
 } from "@/lib/stellar/freighter";
+export function WalletProvider({ children }: { children: ReactNode }): JSX.Element {
+  const wallet = useWallet();
+  const value = useMemo(() => wallet, [wallet]);
 
-interface JwtPayload {
-  exp: number;
-  sub?: string;
-  iat?: number;
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
@@ -249,25 +243,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         : error
           ? "error"
           : "disconnected";
+export function useWalletContext(): WalletState {
+  const context = useContext(WalletContext);
+  if (!context) throw new Error('useWalletContext must be used within WalletProvider');
+  return context;
+}
 
-  return (
-    <WalletContext.Provider
-      value={{
-        publicKey,
-        token,
-        jwt: token,
-        isConnected: !!publicKey,
-        isInstalled,
-        status,
-        connect,
-        disconnect,
-        signTransaction: signWalletTransaction,
-        isLoading,
-        walletReady,
-        error,
-      }}
-    >
-      {children}
-    </WalletContext.Provider>
-  );
+export function setWalletSession(session: WalletState): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function clearWalletSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }
