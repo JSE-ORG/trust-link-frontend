@@ -139,7 +139,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
           </div>
           {escrow.description && (
             <div className="flex flex-col gap-2">
-              <dt className="text-zinc-600 dark:text-zinc-400">Description</dt>
+              <dt className="text-zinc-600 dark:text-zinc-400">{t("payment.description")}</dt>
               <dd 
                 className="text-sm text-zinc-700 dark:text-zinc-300"
                 dangerouslySetInnerHTML={renderMarkdown(escrow.description)}
@@ -214,7 +214,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
                     className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
                   />
                   <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                    Send receipt to this email
+                    {t("payment.sendEmailReceipt")}
                   </span>
                 </label>
               )}

@@ -1,16 +1,11 @@
-"use client";
+import React, { createContext, useContext, useMemo, ReactNode } from 'react';
+import { useWallet, WalletState } from '../../hooks/useWallet';
+import { SESSION_KEY } from '../../lib/auth/constants';
 
-import { jwtDecode } from "jwt-decode";
-import React, {
-  createContext,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { toast } from "sonner";
+const WalletContext = createContext<WalletState | null>(null);
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
+import { SESSION_KEY } from "@/hooks/useWallet";
 import { captureError, setLoggerUser } from "@/lib/logger";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import {
@@ -19,15 +14,14 @@ import {
   isFreighterInstalled,
   signTransaction as freighterSignTransaction,
 } from "@/lib/stellar/freighter";
+export function WalletProvider({ children }: { children: ReactNode }): JSX.Element {
+  const wallet = useWallet();
+  const value = useMemo(() => wallet, [wallet]);
 
-interface JwtPayload {
-  exp: number;
-  sub?: string;
-  iat?: number;
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
-const TOKEN_STORAGE_KEY = "wallet.token";
 const UNAUTHORIZED_EVENT = "auth:unauthorized";
 
 interface WalletContextType {
@@ -79,7 +73,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const jwt = await verifyChallenge(signedXdr);
         setToken(jwt);
         if (typeof window !== "undefined") {
-          localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+          localStorage.setItem(SESSION_KEY, jwt);
         }
         return jwt;
       } catch (err: unknown) {
@@ -115,7 +109,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           } else {
             if (typeof window !== "undefined") {
               localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-              localStorage.removeItem(TOKEN_STORAGE_KEY);
+              localStorage.removeItem(SESSION_KEY);
             }
           }
         } catch (e) {
@@ -171,7 +165,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(SESSION_KEY);
     }
     toast.success("Wallet disconnected");
   }, []);
@@ -202,7 +196,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(SESSION_KEY);
     }
     toast.error("Session expired. Please reconnect your wallet.");
   }, []);
@@ -249,25 +243,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         : error
           ? "error"
           : "disconnected";
+export function useWalletContext(): WalletState {
+  const context = useContext(WalletContext);
+  if (!context) throw new Error('useWalletContext must be used within WalletProvider');
+  return context;
+}
 
-  return (
-    <WalletContext.Provider
-      value={{
-        publicKey,
-        token,
-        jwt: token,
-        isConnected: !!publicKey,
-        isInstalled,
-        status,
-        connect,
-        disconnect,
-        signTransaction: signWalletTransaction,
-        isLoading,
-        walletReady,
-        error,
-      }}
-    >
-      {children}
-    </WalletContext.Provider>
-  );
+export function setWalletSession(session: WalletState): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+export function clearWalletSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }

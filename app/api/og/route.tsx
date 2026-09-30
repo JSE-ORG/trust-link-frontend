@@ -1,9 +1,13 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 
-
+import { enforceRateLimit, RATE_LIMITS } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
+  // Rate limit OG image generation (CPU-intensive)
+  const limited = await enforceRateLimit(request, RATE_LIMITS.ogImage.limit, RATE_LIMITS.ogImage.windowMs);
+  if (limited) return limited;
+
   try {
     const { searchParams } = new URL(request.url);
     const title = searchParams.get('title');

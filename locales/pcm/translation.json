@@ -25,7 +25,19 @@
     "showingPage": "Showing page",
     "ofPages": "of",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "dismiss": "Dismiss",
+    "sessionExpired": "Session don expire",
+    "reconnectPrompt": "Abeg reconnect your wallet make you fit continue.",
+    "reconnectWallet": "Reconnect Wallet",
+    "metadata": {
+      "pageTitle": "Dashboard | TrustLink",
+      "pageDescription": "Manage your escrows, track shipments, and review your TrustLink dashboard.",
+      "title": "Escrow Dashboard | TrustLink",
+      "description": "Manage TrustLink escrows, review transaction status, track shipments, export history, and monitor active buyer payments.",
+      "analyticsTitle": "Vendor Analytics | TrustLink",
+      "analyticsDescription": "Track transaction volume, average order value, completion rate, and dispute rate."
+    }
   },
   "payment": {
     "title": "Payment",
@@ -58,6 +70,8 @@
     "contactErrorBase": "Abeg provide at least one contact method.",
     "contactErrorEmail": "Enter correct email address.",
     "contactErrorPhone": "Enter correct phone number for E.164 format (e.g. +12125551234).",
+    "description": "Description",
+    "sendEmailReceipt": "Send receipt go this email",
     "alreadyFunded": "Dis escrow don already fund.",
     "shipmentTracking": "Shipment Tracking",
     "expiredMessage": "Dis escrow don expire, e no fit fund again.",
@@ -106,5 +120,28 @@
     "language": "Language",
     "selectLanguage": "Select language",
     "copyright": "TrustLink"
+  },
+  "about": {
+    "title": "About TrustLink",
+    "description": "TrustLink na secure escrow platform wey dem build on top Stellar network.",
+    "mission": "Our Mission",
+    "missionText": "Make online transactions safe and trustworthy.",
+    "team": "Our Team",
+    "teamText": "We be small team of passionate builders.",
+    "contact": "Contact",
+    "contactText": "Reach us for hello@trustlink.example"
+  },
+  "home": {
+    "heroTitle": "Secure payments, wey build on trust",
+    "heroSubtitle": "Hold funds for escrow until both sides don satisfy.",
+    "ctaPrimary": "Create an Escrow Link",
+    "ctaSecondary": "Track an Order",
+    "featuresTitle": "Why TrustLink?",
+    "feature1Title": "Secure Escrow",
+    "feature1Text": "Funds dey safe until delivery don confirm.",
+    "feature2Title": "Fast Settlement",
+    "feature2Text": "Settle transactions quick for Stellar network.",
+    "feature3Title": "Built for Vendors",
+    "feature3Text": "Tools wey go help you grow and manage escrows."
   }
 }

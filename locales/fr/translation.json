@@ -25,7 +25,19 @@
     "showingPage": "Page",
     "ofPages": "sur",
     "previous": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "dismiss": "Rejeter",
+    "sessionExpired": "Session expirée",
+    "reconnectPrompt": "Veuillez reconnecter votre portefeuille pour continuer.",
+    "reconnectWallet": "Reconnecter le portefeuille",
+    "metadata": {
+      "pageTitle": "Tableau de bord | TrustLink",
+      "pageDescription": "Gérez vos séquestres, suivez les expéditions et consultez votre tableau de bord TrustLink.",
+      "title": "Tableau de bord de séquestre | TrustLink",
+      "description": "Gérez les séquestres TrustLink, examinez l'état des transactions, suivez les expéditions, exportez l'historique et surveillez les paiements actifs des acheteurs.",
+      "analyticsTitle": "Analytique des vendeurs | TrustLink",
+      "analyticsDescription": "Suivez le volume des transactions, la valeur moyenne des commandes, le taux de complétion et le taux de litiges."
+    }
   },
   "payment": {
     "title": "Paiement",
@@ -58,6 +70,8 @@
     "contactErrorBase": "Veuillez indiquer au moins un moyen de contact.",
     "contactErrorEmail": "Saisissez une adresse e-mail valide.",
     "contactErrorPhone": "Saisissez un numéro de téléphone valide au format E.164 (ex. +12125551234).",
+    "description": "Description",
+    "sendEmailReceipt": "Envoyer le reçu à cet e-mail",
     "alreadyFunded": "Ce séquestre est déjà financé.",
     "shipmentTracking": "Suivi de l'expédition",
     "expiredMessage": "Ce séquestre a expiré et ne peut plus être financé.",
@@ -106,5 +120,28 @@
     "language": "Langue",
     "selectLanguage": "Choisir la langue",
     "copyright": "TrustLink"
+  },
+  "about": {
+    "title": "À propos de TrustLink",
+    "description": "TrustLink est une plateforme de séquestre sécurisée construite sur le réseau Stellar.",
+    "mission": "Notre Mission",
+    "missionText": "Rendre les transactions en ligne sûres et dignes de confiance.",
+    "team": "Notre Équipe",
+    "teamText": "Nous sommes une petite équipe de constructeurs passionnés.",
+    "contact": "Contact",
+    "contactText": "Contactez-nous à hello@trustlink.example"
+  },
+  "home": {
+    "heroTitle": "Paiements sécurisés, construits sur la confiance",
+    "heroSubtitle": "Conservez les fonds en séquestre jusqu'à ce que les deux parties soient satisfaites.",
+    "ctaPrimary": "Créer un lien de séquestre",
+    "ctaSecondary": "Suivre une commande",
+    "featuresTitle": "Pourquoi TrustLink ?",
+    "feature1Title": "Séquestre sécurisé",
+    "feature1Text": "Les fonds sont conservés en toute sécurité jusqu'à la confirmation de la livraison.",
+    "feature2Title": "Règlement rapide",
+    "feature2Text": "Réglez les transactions rapidement sur le réseau Stellar.",
+    "feature3Title": "Conçu pour les vendeurs",
+    "feature3Text": "Des outils conçus pour vous aider à développer et gérer les séquestres."
   }
 }
