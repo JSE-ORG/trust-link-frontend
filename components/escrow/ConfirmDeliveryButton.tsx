@@ -6,9 +6,6 @@ import { toast } from "sonner";
 import FocusTrap from "@/components/ui/FocusTrap";
 import useWallet from "@/hooks/useWallet";
 import { createApiClient } from "@/lib/api-client";
-import type { ApiErrorResponse } from "@/types/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
  * Props for the ConfirmDeliveryButton component.
@@ -21,10 +18,6 @@ interface ConfirmDeliveryButtonProps {
    *  refetch the escrow and move it out of the awaiting-delivery state. */
   onSuccess: () => void;
 }
-
-/** Request headers for the confirm call. `Record<string, string>` rather than
- *  the DOM's `HeadersInit` union, which cannot be indexed by header name. */
-type ConfirmHeaders = Record<string, string>;
 
 /**
  * Builds a keydown handler that mirrors the control's click behaviour for
@@ -83,23 +76,8 @@ export function ConfirmDeliveryButton({
   async function handleConfirm() {
     setIsPending(true);
     try {
-      const headers: ConfirmHeaders = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const api = createApiClient({ token });
       await api.post(`/escrows/${escrowId}/confirm`);
-
-      const res = await fetch(`${API_URL}/escrows/${escrowId}/confirm`, {
-        method: "POST",
-        headers,
-      });
-
-      if (!res.ok) {
-        const payload = (await res
-          .json()
-          .catch(() => null)) as ApiErrorResponse | null;
-        throw new Error(payload?.message ?? "Failed to confirm delivery");
-      }
 
       closeDialog();
       toast.success("Delivery confirmed — funds released.");

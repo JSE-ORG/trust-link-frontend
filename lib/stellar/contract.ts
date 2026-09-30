@@ -21,7 +21,6 @@ import { signTransaction } from "./freighter";
  * @param {string} destination - The destination Stellar address
  * @returns {Promise<string>} The transaction hash
  * @throws {Error} If destination address is empty or transaction fails
- * @deprecated This is a simulated function for testing purposes
  * @example
  * const txHash = await submitPayment("100", "GXXXXXX...");
  * // Use txHash for transaction tracking or UI display
@@ -30,18 +29,20 @@ export async function submitPayment(
   amount: string,
   destination: string
 ): Promise<string> {
-  // In a real implementation, this would involve building a transaction
-  // and using signTransaction(xdr, network)
-  
-  // Simulated delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Let's assume some validation error for empty destination
-  if (!destination) {
+  if (!destination || !destination.trim()) {
     throw new Error("Destination address is required");
   }
 
-  return "b2d8e9f...a1c3b5d7";
+  // Feature flag check for mock payment in production
+  const useMockPayment = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENT === "true";
+  
+  if (useMockPayment) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return "b2d8e9f...a1c3b5d7";
+  }
+
+  // Real implementation would go here
+  throw new Error("Payment submission not yet implemented");
 }
 
 export type ContractArg =
@@ -141,9 +142,20 @@ async function pollTransaction(
   let remaining = attempts;
 
   while (response.status === rpc.Api.GetTransactionStatus.NOT_FOUND && remaining > 0) {
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    // Exponential backoff with jitter
+    const backoff = intervalMs * Math.pow(1.5, attempts - remaining);
+    const jitter = Math.random() * 200;
+    await new Promise((resolve) => setTimeout(resolve, backoff + jitter));
+    
     response = await server.getTransaction(hash);
     remaining -= 1;
+  }
+
+  // Even if timed out, preserve the hash for potential retry
+  if (response.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
+    const error = new Error(`Transaction ${hash} not found after ${attempts} attempts`) as Error & { hash?: string };
+    error.hash = hash;
+    throw error;
   }
 
   return response;
@@ -180,7 +192,7 @@ async function invokeSorobanContract(
     fee = BASE_FEE,
   } = options;
 
-  if (!contractId || !contractId.startsWith("C")) {
+  if (!contractId || !StrKey.isValidContract(contractId)) {
     throw new Error("Invalid contract ID");
   }
 
@@ -227,7 +239,9 @@ async function invokeSorobanContract(
     }
 
     if (txResponse.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
-      throw toTxError(undefined, "Timed out waiting for transaction to be included in a ledger");
+      const error = new Error(`Transaction ${response.hash} timed out waiting for inclusion in ledger`) as Error & { hash?: string };
+      error.hash = response.hash;
+      throw error;
     }
 
     return {
@@ -309,7 +323,7 @@ export function buildContractInvocation(options: ContractCallOptions): string {
   } = options;
 
   // Validate inputs
-  if (!contractId || !contractId.startsWith("C")) {
+  if (!contractId || !StrKey.isValidContract(contractId)) {
     throw new Error("Invalid contract ID");
   }
 
@@ -354,7 +368,16 @@ export function buildContractInvocation(options: ContractCallOptions): string {
  * }
  */
 export function isValidContractId(contractId: string): boolean {
-  return typeof contractId === "string" && contractId.startsWith("C");
+  if (typeof contractId !== "string" || contractId.length === 0) {
+    return false;
+  }
+  
+  // Use StrKey validation for proper contract ID verification
+  try {
+    return StrKey.isValidContract(contractId);
+  } catch {
+    return false;
+  }
 }
 
 /**
