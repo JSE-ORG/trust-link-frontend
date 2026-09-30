@@ -81,6 +81,20 @@ const resources = {
         selectLanguage: "Select language",
         copyright: "TrustLink",
       },
+      escrow: {
+        errors: {
+          itemNameRequired: "Item name is required.",
+          itemNameTooLong: "Item name must be {{max}} characters or fewer.",
+          priceRequired: "Price is required.",
+          priceFormat:
+            "Enter a positive amount in USDC using numbers only (for example 123.45).",
+          priceTooSmall: "Price must be at least {{min}} USDC.",
+          priceTooLarge: "Price must be {{max}} USDC or less.",
+          descriptionRequired: "Description is required.",
+          descriptionTooLong: "Description must be {{max}} characters or fewer.",
+          shippingWindowInvalid: "Select a valid shipping window.",
+        },
+      },
     },
   },
   fr: {
@@ -140,6 +154,22 @@ const resources = {
         selectLanguage: "Choisir la langue",
         copyright: "TrustLink",
       },
+      escrow: {
+        errors: {
+          itemNameRequired: "Le nom de l'article est requis.",
+          itemNameTooLong:
+            "Le nom de l'article doit contenir au maximum {{max}} caractères.",
+          priceRequired: "Le prix est requis.",
+          priceFormat:
+            "Saisissez un montant positif en USDC, uniquement avec des chiffres (par exemple 123.45).",
+          priceTooSmall: "Le prix doit être d'au moins {{min}} USDC.",
+          priceTooLarge: "Le prix ne doit pas dépasser {{max}} USDC.",
+          descriptionRequired: "La description est requise.",
+          descriptionTooLong:
+            "La description doit contenir au maximum {{max}} caractères.",
+          shippingWindowInvalid: "Sélectionnez un délai de livraison valide.",
+        },
+      },
     },
   },
   pcm: {
@@ -198,6 +228,20 @@ const resources = {
         language: "Language",
         selectLanguage: "Select language",
         copyright: "TrustLink",
+      },
+      escrow: {
+        errors: {
+          itemNameRequired: "E need the item name.",
+          itemNameTooLong: "Item name no suppose pass {{max}} character.",
+          priceRequired: "E need the price.",
+          priceFormat:
+            "Put positive amount for the USDC, number only (lek say 123.45).",
+          priceTooSmall: "Price no suppose below {{min}} USDC.",
+          priceTooLarge: "Price no suppose pass {{max}} USDC.",
+          descriptionRequired: "E need the description.",
+          descriptionTooLong: "Description no suppose pass {{max}} character.",
+          shippingWindowInvalid: "Choose the correct shipping window.",
+        },
       },
     },
   },
