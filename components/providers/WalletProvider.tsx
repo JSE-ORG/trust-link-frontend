@@ -11,6 +11,7 @@ import React, {
 import { toast } from "sonner";
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
+import { SESSION_KEY } from "@/hooks/useWallet";
 import { captureError, setLoggerUser } from "@/lib/logger";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import {
@@ -27,7 +28,6 @@ interface JwtPayload {
 }
 
 const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
-const TOKEN_STORAGE_KEY = "wallet.token";
 const UNAUTHORIZED_EVENT = "auth:unauthorized";
 
 interface WalletContextType {
@@ -79,7 +79,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const jwt = await verifyChallenge(signedXdr);
         setToken(jwt);
         if (typeof window !== "undefined") {
-          localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+          localStorage.setItem(SESSION_KEY, jwt);
         }
         return jwt;
       } catch (err: unknown) {
@@ -115,7 +115,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           } else {
             if (typeof window !== "undefined") {
               localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-              localStorage.removeItem(TOKEN_STORAGE_KEY);
+              localStorage.removeItem(SESSION_KEY);
             }
           }
         } catch (e) {
@@ -171,7 +171,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(SESSION_KEY);
     }
     toast.success("Wallet disconnected");
   }, []);
@@ -202,7 +202,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(SESSION_KEY);
     }
     toast.error("Session expired. Please reconnect your wallet.");
   }, []);

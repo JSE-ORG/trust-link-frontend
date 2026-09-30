@@ -7,7 +7,7 @@ import { WalletProvider } from "@/components/providers/WalletProvider";
 import * as stellarAuth from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
-import useWallet from "./useWallet";
+import useWallet, { SESSION_KEY } from "./useWallet";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),
@@ -67,7 +67,7 @@ describe("useWallet", () => {
 
     await waitFor(() => expect(screen.getByTestId("isConnected")).toHaveTextContent("true"));
     expect(screen.getByTestId("publicKey")).toHaveTextContent("GABCDEF1234567890XYZ");
-    expect(window.localStorage.getItem("wallet.token")).toBe("jwt-token");
+    expect(window.localStorage.getItem(SESSION_KEY)).toBe("jwt-token");
   });
 
   it("stores token after auth flow", async () => {
@@ -88,7 +88,7 @@ describe("useWallet", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /^Connect$/i }));
 
-    await waitFor(() => expect(window.localStorage.getItem("wallet.token")).toBe("sep10-jwt"));
+    await waitFor(() => expect(window.localStorage.getItem(SESSION_KEY)).toBe("sep10-jwt"));
     expect(screen.getByTestId("token")).toHaveTextContent("sep10-jwt");
   });
 
@@ -96,7 +96,7 @@ describe("useWallet", () => {
     vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
     vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: true });
     
-    window.localStorage.setItem("wallet.token", "existing-jwt");
+    window.localStorage.setItem(SESSION_KEY, "existing-jwt");
     window.localStorage.setItem("wallet.publicKey", "GDISCONNECT1234");
 
     render(
@@ -113,6 +113,6 @@ describe("useWallet", () => {
 
     expect(screen.getByTestId("publicKey")).toHaveTextContent("");
     expect(screen.getByTestId("token")).toHaveTextContent("");
-    expect(window.localStorage.getItem("wallet.token")).toBeNull();
+    expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();
   });
 });

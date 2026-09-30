@@ -27,6 +27,9 @@
     "previous": "Previous",
     "next": "Next",
     "dismiss": "Dismiss",
+    "sessionExpired": "Session expired",
+    "reconnectPrompt": "Please reconnect your wallet to continue.",
+    "reconnectWallet": "Reconnect Wallet",
     "metadata": {
       "pageTitle": "Dashboard | TrustLink",
       "pageDescription": "Manage your escrows, track shipments, and review your TrustLink dashboard.",
@@ -154,6 +157,8 @@
     "contactErrorBase": "Please provide at least one contact method.",
     "contactErrorEmail": "Enter a valid email address.",
     "contactErrorPhone": "Enter a valid phone number in E.164 format (e.g. +12125551234).",
+    "description": "Description",
+    "sendEmailReceipt": "Send receipt to this email",
     "alreadyFunded": "This escrow is already funded.",
     "shipmentTracking": "Shipment Tracking",
     "expiredMessage": "This escrow has expired and can no longer be funded.",

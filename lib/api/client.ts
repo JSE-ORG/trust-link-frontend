@@ -1,3 +1,4 @@
+import { handleSessionExpired } from "@/hooks/useWallet";
 import type {
   VendorAnalyticsApiResponse,
   VendorAnalyticsResponse,
@@ -94,8 +95,7 @@ async function request<T>(
   const res = await fetch(`${API_URL}${path}`, { ...init, headers, cache: init.cache ?? "no-store" });
   if (!res.ok) {
     if (res.status === 401 && token && typeof window !== "undefined") {
-      window.localStorage.removeItem("wallet.jwt");
-      window.location.href = "/";
+      handleSessionExpired();
     }
     throw await parseError(res);
   }

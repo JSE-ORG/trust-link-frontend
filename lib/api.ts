@@ -12,6 +12,7 @@
  *   - VendorAnalyticsResponse
  */
 
+import { handleSessionExpired } from "@/hooks/useWallet";
 import {
   type ApiClient,
   ApiError,
@@ -73,12 +74,7 @@ function withSessionExpiryHandling<T extends (...args: any[]) => Promise<any>>(f
       return await fn(...args);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        // Only manipulate the browser environment if available
-        if (typeof window !== "undefined") {
-          window.localStorage.removeItem("wallet.jwk");
-          // Direct the user to reconnect their wallet
-          window.location.assign("/wallet/reconnect?reason=session_expired");
-        }
+        handleSessionExpired();
       }
       throw error;
     }
