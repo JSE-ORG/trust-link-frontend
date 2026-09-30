@@ -1,103 +1,74 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-/**
- * Custom error class thrown by ApiClient when HTTP requests fail.
- * Contains the response HTTP status code and parsed body payload.
- */
-export class ApiClientError extends Error {
-  status: number;
-  body?: unknown;
+if (!API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
+}
 
-  /**
-   * Constructs an ApiClientError.
-   * @param status - The HTTP status code returned by the server.
-   * @param message - Human-readable error message.
-   * @param body - Optional parsed error payload.
-   */
-  constructor(status: number, message: string, body?: unknown) {
-    super(message);
-    this.name = "ApiClientError";
-    this.status = status;
-    this.body = body;
+export async function fetchEscrowData(escrowId: string) {
+  try {
+    const response = await fetch(`${API_URL}/escrow/${escrowId}`);
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
+    }
+    return await parseJsonResponse(response);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch escrow data: ${error.message}`);
+    }
+    throw new Error('Failed to fetch escrow data');
   }
 }
 
-interface ApiClientOptions {
-  token?: string | null;
-  baseUrl?: string;
+export async function submitEscrow(data: unknown) {
+  try {
+    const response = await fetch(`${API_URL}/escrow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
+    }
+    return await parseJsonResponse(response);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to submit escrow: ${error.message}`);
+    }
+    throw new Error('Failed to submit escrow');
+  }
 }
 
-/**
- * Creates an API client instance with helper methods (get, post, patch, delete)
- * and built-in automatic retries for server errors.
- *
- * @param opts - Configuration options including authentication token and base URL.
- * @returns Object providing typed HTTP request methods.
- */
-export function createApiClient(opts?: ApiClientOptions) {
-  const baseUrl = opts?.baseUrl ?? API_URL;
-  const token = opts?.token ?? undefined;
-
-  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const headers = new Headers(init.headers ?? {});
-    if (!headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
+async function parseJsonResponse(response: Response): Promise<unknown> {
+  try {
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch {
+      throw new Error(`Invalid JSON: ${text}`);
     }
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to parse response: ${error.message}`);
     }
-
-    const url = `${baseUrl}${path}`;
-    const maxRetries = 2;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const res = await fetch(url, { ...init, headers, cache: init.cache ?? "no-store" });
-
-      if (res.ok) {
-        const text = await res.text();
-        return text ? (JSON.parse(text) as T) : (undefined as unknown as T);
-      }
-
-      if (res.status >= 500 && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
-        continue;
-      }
-
-      const body = await res.text();
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(body);
-      } catch {
-        parsed = body;
-      }
-      throw new ApiClientError(
-        res.status,
-        (parsed as Record<string, unknown>)?.message as string ?? (parsed as string) ?? res.statusText,
-        parsed,
-      );
-    }
-
-    throw new ApiClientError(500, "Request failed after retries");
+    throw new Error('Failed to parse response');
   }
+}
 
-  return {
-    get<T>(path: string): Promise<T> {
-      return request<T>(path, { method: "GET" });
-    },
-    post<T>(path: string, body?: unknown): Promise<T> {
-      return request<T>(path, {
-        method: "POST",
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-    },
-    patch<T>(path: string, body?: unknown): Promise<T> {
-      return request<T>(path, {
-        method: "PATCH",
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-    },
-    delete<T>(path: string): Promise<T> {
-      return request<T>(path, { method: "DELETE" });
-    },
-  };
+export function parseError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (typeof error === 'object' && error !== null) {
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+    return String(error);
+  }
+  return 'Unknown error';
 }
