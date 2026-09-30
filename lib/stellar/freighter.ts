@@ -1,99 +1,92 @@
-import {
-  getAddress,
-  isAllowed,
-  isConnected,
-  setAllowed,
-  signTransaction as freighterSignTransaction,
-} from "@stellar/freighter-api";
+import { Networks, Transaction, TransactionBuilder, BASE_FEE, Operation, Keypair, StrKey, xdr } from 'stellar-sdk';
+import { captureWalletError } from '../sentry';
+import { isFeatureEnabled } from '../config';
 
-/**
- * Checks if the Freighter wallet extension is installed in the browser
- * @returns {Promise<boolean>} True if Freighter is installed, false otherwise
- * @example
- * const installed = await isFreighterInstalled();
- * if (!installed) {
- *   alert("Please install Freighter wallet");
- * }
- */
-export async function isFreighterInstalled(): Promise<boolean> {
-  return (
-    typeof window !== "undefined" &&
-    Boolean((window as unknown as { freighter: unknown }).freighter)
-  );
-}
-
-/**
- * Connects to the Freighter wallet and requests user permission
- * @returns {Promise<string>} The user's Stellar public key
- * @throws {Error} If Freighter is not installed or permission is denied
- * @example
- * try {
- *   const publicKey = await connectFreighter();
- *   console.log("Connected with key:", publicKey);
- * } catch (error) {
- *   console.error("Failed to connect:", error);
- * }
- */
-export async function connectFreighter(): Promise<string> {
-  if (!(await isFreighterInstalled())) {
-    throw new Error("Freighter not installed");
-  }
-
-  if (!(await isAllowed())) {
-    await setAllowed();
-  }
-
-  const { address: publicKey } = await getAddress();
-  if (!publicKey) {
-    throw new Error("Failed to get public key from Freighter");
-  }
-
-  return publicKey;
-}
-
-import { captureWalletError } from "@/lib/logger";
-
-/**
- * Signs a Stellar transaction using the Freighter wallet
- * @param {string} xdr - The transaction XDR string to sign
- * @param {string} network - The network to use ("PUBLIC", "TESTNET", or custom passphrase)
- * @returns {Promise<string>} The signed transaction XDR
- * @throws {Error} If Freighter is not installed, signing fails, or user rejects
- * @example
- * try {
- *   const signedXdr = await signTransaction(transactionXdr, "TESTNET");
- *   // Submit signedXdr to network
- * } catch (error) {
- *   console.error("Transaction signing failed:", error);
- * }
- */
-export async function signTransaction(
-  xdr: string,
-  network: "PUBLIC" | "TESTNET" | string
-): Promise<string> {
+// Correct availability check using Freighter API methods
+export const isFreighterAvailable = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  const freighter = (window as any).freighter;
+  if (!freighter) return false;
   try {
-    if (!(await isFreighterInstalled())) {
-      throw new Error("Freighter not installed");
+    return await freighter.isConnected() || await freighter.isAllowed();
+  } catch {
+    return false;
+  }
+};
+
+export const getFreighterPublicKey = async (): Promise<string | null> => {
+  if (!(await isFreighterAvailable())) return null;
+  try {
+    const publicKey = await (window as any).freighter.getPublicKey();
+    if (!StrKey.isValidEd25519PublicKey(publicKey)) {
+      throw new Error('Invalid public key from Freighter');
+    }
+    return publicKey;
+  } catch (error) {
+    captureWalletError(error, { context: 'freighter.getPublicKey' });
+    return null;
+  }
+};
+
+export const signTransaction = async (
+  transaction: Transaction,
+  networkPassphrase: string
+): Promise<Transaction> => {
+  if (!(await isFreighterAvailable())) {
+    throw new Error('Freighter not available');
+  }
+
+  // Validate network passphrase
+  const validPassphrases = {
+    [Networks.PUBLIC]: true,
+    [Networks.TESTNET]: true,
+  };
+  if (!validPassphrases[networkPassphrase as keyof typeof validPassphrases]) {
+    throw new Error(`Invalid network passphrase: ${networkPassphrase}`);
+  }
+
+  try {
+    const signedXdr = await (window as any).freighter.signTransaction(
+      transaction.toXDR(),
+      {
+        networkPassphrase,
+      }
+    );
+
+    // Redact XDR from logs - never log full XDR in production
+    if (isFeatureEnabled('debugStellar')) {
+      console.debug('Transaction signed (XDR redacted)');
     }
 
-    const response = (await freighterSignTransaction(xdr, {
-      networkPassphrase: network,
-    })) as {
-      signedTxXdr?: string;
-      signerAddress?: string;
-    };
+    return TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
+  } catch (error) {
+    // Redact XDR from error reporting
+    const redactedError = new Error(error.message);
+    redactedError.stack = error.stack?.replace(/(xdr=[^&]+)/gi, 'xdr=[REDACTED]');
+    captureWalletError(redactedError, {
+      context: 'freighter.signTransaction',
+      networkPassphrase,
+    });
+    throw redactedError;
+  }
+};
 
-    const signedTxXdr = response?.signedTxXdr;
-
-    if (!signedTxXdr) {
-      throw new Error("Failed to sign transaction");
-    }
-
-    return signedTxXdr;
-  } catch (error: unknown) {
-    captureWalletError(error, { xdr, network, action: "signTransaction" });
+export const submitTransaction = async (
+  transaction: Transaction,
+  networkPassphrase: string
+): Promise<string> => {
+  const signedTx = await signTransaction(transaction, networkPassphrase);
+  try {
+    const response = await (window as any).freighter.submitTransaction(
+      signedTx.toXDR(),
+      { networkPassphrase }
+    );
+    return response.hash;
+  } catch (error) {
+    captureWalletError(error, {
+      context: 'freighter.submitTransaction',
+      networkPassphrase,
+    });
     throw error;
   }
-}
-
-export { getAddress,isConnected };
+};
