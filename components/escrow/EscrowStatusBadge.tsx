@@ -5,20 +5,34 @@ import { cn } from "@/lib/utils";
 
 import { ESCROW_STATUS_MAP, EscrowState } from "./escrow-status";
 
+/**
+ * Props for the EscrowStatusBadge component.
+ */
 interface EscrowStatusBadgeProps {
+  /** The escrow status string (e.g., "Pending", "Funded", "Shipped"). Case-insensitive. */
   status: string;
+  /** Optional additional CSS classes to apply to the badge wrapper. */
   className?: string;
 }
 
-// Map escrow states to accessible badge variants.
+/**
+ * Displays an accessible badge indicating the current escrow status.
+ *
+ * Normalizes the status string to Title Case and maps it to a visual variant
+ * using ESCROW_STATUS_MAP. Unknown states fall back to a secondary style.
+ *
+ * @example
+ * ```tsx
+ * <EscrowStatusBadge status="pending" />
+ * <EscrowStatusBadge status="Funded" className="ml-2" />
+ * ```
+ */
 export function EscrowStatusBadge({ status, className }: EscrowStatusBadgeProps) {
-  // Normalize status string to Title Case to handle varying API casing safely
-  const normalizedStatus = (status.charAt(0).toUpperCase() + status.slice(1).toLowerCase());
-  
-  // Look up mapping, default to a safe fallback for unknown states
-  const config = ESCROW_STATUS_MAP[normalizedStatus as EscrowState] || {
+  const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+
+  const config = ESCROW_STATUS_MAP[normalizedStatus as EscrowState] ?? {
     label: status,
-    variant: "secondary",
+    variant: "secondary" as const,
   };
 
   const announcement = `Escrow status updated to: ${config.label}`;

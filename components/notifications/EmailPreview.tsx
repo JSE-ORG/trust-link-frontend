@@ -7,11 +7,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { EmailBody } from "./EmailBody";
+import { EmailFooter } from "./EmailFooter";
+import { EmailHeader } from "./EmailHeader";
+
 type EventKey = "funded" | "shipped" | "delivered" | "disputed" | "completed";
 
+/** Props for the EmailPreview dialog component. */
 interface EmailPreviewProps {
+  /** The escrow event type used to select email content. */
   eventKey: EventKey;
+  /** Whether the dialog is currently visible. */
   open: boolean;
+  /** Callback invoked when the dialog open state should change. */
   onOpenChange: (open: boolean) => void;
 }
 
@@ -51,6 +59,7 @@ const EMAIL_CONTENT: Record<
   },
 };
 
+/** Dialog that previews how an escrow-event email will look to the recipient. */
 export default function EmailPreview({
   eventKey,
   open,
@@ -76,195 +85,14 @@ export default function EmailPreview({
               overflow: "hidden",
             }}
           >
-            {/* Email header with branding */}
-            <div
-              style={{
-                backgroundColor: "#1B2A6B",
-                padding: "24px 32px",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  color: "#ffffff",
-                  fontSize: "24px",
-                  fontWeight: 700,
-                  letterSpacing: "-0.5px",
-                  lineHeight: 1,
-                }}
-              >
-                TrustLink
-              </div>
-              <div
-                style={{
-                  color: "#8DA0FF",
-                  fontSize: "12px",
-                  marginTop: "4px",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                }}
-              >
-                Secure Escrow Transactions
-              </div>
-            </div>
-
-            {/* Email body */}
-            <div style={{ backgroundColor: "#ffffff", padding: "32px" }}>
-              <h2
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  color: "#1a1a1a",
-                  marginTop: 0,
-                  marginBottom: "16px",
-                }}
-              >
-                {content.heading}
-              </h2>
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#555555",
-                  lineHeight: 1.6,
-                  marginTop: 0,
-                  marginBottom: "16px",
-                }}
-              >
-                {content.body}
-              </p>
-
-              {/* Sample transaction card */}
-              <div
-                style={{
-                  backgroundColor: "#f9f9f9",
-                  border: "1px solid #e5e5e5",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#888888",
-                    marginBottom: "8px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Transaction Details
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "14px",
-                    color: "#333333",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span>Escrow ID</span>
-                  <span style={{ fontFamily: "monospace" }}>#TL-2026-0847</span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "14px",
-                    color: "#333333",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span>Amount</span>
-                  <span style={{ fontWeight: 600 }}>$1,250.00</span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "14px",
-                    color: "#333333",
-                  }}
-                >
-                  <span>Status</span>
-                  <span
-                    style={{
-                      backgroundColor: "#e8f5e9",
-                      color: "#2e7d32",
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {eventKey}
-                  </span>
-                </div>
-              </div>
-
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#555555",
-                  lineHeight: 1.6,
-                  marginTop: 0,
-                  marginBottom: "24px",
-                }}
-              >
-                {content.footer}
-              </p>
-
-              <div style={{ textAlign: "center" }}>
-                <a
-                  href="#"
-                  style={{
-                    display: "inline-block",
-                    backgroundColor: "#1B2A6B",
-                    color: "#ffffff",
-                    padding: "12px 32px",
-                    borderRadius: "8px",
-                    textDecoration: "none",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  View in Dashboard
-                </a>
-              </div>
-            </div>
-
-            {/* Email footer */}
-            <div
-              style={{
-                backgroundColor: "#f6f6f6",
-                padding: "24px 32px",
-                borderTop: "1px solid #e5e5e5",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#999999",
-                  textAlign: "center",
-                  marginTop: 0,
-                  marginBottom: "8px",
-                }}
-              >
-                You are receiving this email because you have notification
-                preferences enabled for escrow events.
-              </p>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#999999",
-                  textAlign: "center",
-                  margin: 0,
-                }}
-              >
-                TrustLink &mdash; Secure Escrow Platform
-              </p>
-            </div>
+            <EmailHeader />
+            <EmailBody
+              heading={content.heading}
+              body={content.body}
+              footer={content.footer}
+              eventKey={eventKey}
+            />
+            <EmailFooter />
           </div>
         </div>
       </DialogContent>

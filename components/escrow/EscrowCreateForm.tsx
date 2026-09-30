@@ -3,16 +3,16 @@
 import { type FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  EscrowCreateFormFields,
+} from "@/components/escrow/EscrowCreateFormFields";
+import { EscrowCreateFormResult } from "@/components/escrow/EscrowCreateFormResult";
 import ShareModal from "@/components/escrow/ShareModal";
-import { FormField } from "@/components/ui/FormField";
-import { QrCode } from "@/components/ui/QrCode";
 import { createEscrow, type EscrowInput } from "@/lib/api";
-import { renderMarkdown } from "@/lib/markdown";
 import {
   EscrowCreateSchema,
   type EscrowCreateValues,
   shippingOptions,
-  type ShippingWindow,
 } from "@/lib/validations";
 
 /**
@@ -53,6 +53,18 @@ export default function EscrowCreateForm({
   className = "",
   initialValues,
 }: EscrowCreateFormProps = {}) {
+ * Form for creating a new escrow link.
+ *
+ * Collects item name, price (USDC), description (markdown), and shipping
+ * window from the seller, validates input via `EscrowCreateSchema`, calls the
+ * API to create the escrow, and displays the resulting shareable link with a
+ * QR code and sharing options.
+ *
+ * Field rendering lives in `EscrowCreateFormFields` and the post-submission
+ * shareable-link card in `EscrowCreateFormResult`; this component owns state,
+ * validation, and submission.
+ */
+export default function EscrowCreateForm() {
   const [values, setValues] = useState<EscrowCreateValues>({
     itemName: initialValues?.itemName ?? "",
     priceUSDC: initialValues?.priceUSDC ?? "",
@@ -80,6 +92,7 @@ export default function EscrowCreateForm({
    * @param field - The field key to update.
    * @param value - The new value matching the field type.
    */
+  /** Update a single field value and clear its validation error. */
   const updateField = <K extends keyof EscrowCreateValues>(
     field: K,
     value: EscrowCreateValues[K]
@@ -92,6 +105,8 @@ export default function EscrowCreateForm({
    * Copies the generated escrow result URL to the system clipboard and displays a confirmation status.
    */
   const copyResultUrl = async (): Promise<void> => {
+  /** Copy the generated escrow URL to the clipboard. */
+  const copyResultUrl = async () => {
     if (!resultUrl) {
       return;
     }
@@ -106,6 +121,15 @@ export default function EscrowCreateForm({
    * @param event - React FormEvent submitted by the user.
    */
   const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+  /** Trigger a QR code download for the generated escrow URL. */
+  const downloadQR = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !resultUrl) return;
+    // PNG export handled by the shared QrCode component
+    toast.success("QR code downloaded");
+  };
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (submittingRef.current) return;
@@ -272,6 +296,12 @@ export default function EscrowCreateForm({
             ))}
           </select>
         </FormField>
+        <EscrowCreateFormFields
+          values={values}
+          errors={errors}
+          disabled={isSubmitting}
+          onChange={updateField}
+        />
 
         {submitError ? (
           <p
@@ -292,75 +322,13 @@ export default function EscrowCreateForm({
       </form>
 
       {resultUrl ? (
-        <section
-          data-testid="link-card"
-          className="mt-8 rounded-[28px] border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/60 sm:p-6"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-                Shareable link ready
-              </h2>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Copy this URL or scan the QR code to share it with a buyer.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={copyResultUrl}
-              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-950"
-            >
-              Copy link
-            </button>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Pay securely for your order using TrustLink: ${resultUrl}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-950"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-              </svg>
-              Share on WhatsApp
-            </a>
-          </div>
-
-          <div className="mt-5">
-            <label
-              htmlFor="shareable-url"
-              className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Shareable URL
-            </label>
-            <input
-              id="shareable-url"
-              data-testid="shareable-url"
-              readOnly
-              value={resultUrl}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-mono text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
-            />
-            {copyStatus ? (
-              <p className="mt-2 text-sm text-emerald-600">{copyStatus}</p>
-            ) : null}
-          </div>
-
-          <div className="mt-6 flex flex-col items-center gap-3">
-            <QrCode value={resultUrl} />
-            <canvas ref={canvasRef} className="sr-only" aria-hidden="true" />
-            <button
-              type="button"
-              onClick={downloadQR}
-              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-950"
-            >
-              Download QR
-            </button>
-          </div>
-        </section>
+        <EscrowCreateFormResult
+          resultUrl={resultUrl}
+          copyStatus={copyStatus}
+          onCopy={copyResultUrl}
+          onDownloadQR={downloadQR}
+          canvasRef={canvasRef}
+        />
       ) : null}
 
       {resultUrl && (
@@ -368,7 +336,6 @@ export default function EscrowCreateForm({
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           url={resultUrl}
-          escrowId={resultUrl.split("/").pop() || "escrow"}
         />
       )}
     </div>

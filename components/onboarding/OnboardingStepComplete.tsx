@@ -2,10 +2,19 @@
 
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+/** Props for the onboarding completion panel. */
 interface OnboardingStepCompleteProps {
+  /** Navigates the vendor to the dashboard after onboarding. */
   onGoToDashboard: () => void;
 }
 
+/**
+ * Displays the successful completion state of vendor onboarding.
+ *
+ * @param props - Component properties.
+ * @param props.onGoToDashboard - Callback for the dashboard action.
+ * @returns The onboarding completion message and dashboard button.
+ */
 export default function OnboardingStepComplete({
   onGoToDashboard,
 }: OnboardingStepCompleteProps) {
