@@ -33,6 +33,10 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+if (!API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL environment variable is not defined');
+}
+
 /** @deprecated Use `ApiErrorResponse` from `@/types/api`. Kept for existing imports. */
 export type ApiErrorShape = ApiErrorResponse;
 
@@ -72,9 +76,10 @@ async function parseError(res: Response): Promise<ApiError> {
   const body = await res.text();
   try {
     const json = JSON.parse(body) as ApiErrorResponse;
-    return new ApiError(res.status, json.message || json.error || json.details || res.statusText, json);
+    const message = json.message || json.error || json.details || res.statusText || 'Request failed';
+    return new ApiError(res.status, message, json);
   } catch {
-    return new ApiError(res.status, body || res.statusText, undefined);
+    return new ApiError(res.status, body || res.statusText || 'Request failed', undefined);
   }
 }
 
@@ -104,8 +109,9 @@ async function request<T>(
   let response: unknown;
   try {
     response = text ? JSON.parse(text) : undefined;
-  } catch {
-    throw new Error(`Invalid API response for ${path}: malformed JSON`);
+  } catch (parseError) {
+    const errorMsg = parseError instanceof Error ? parseError.message : 'malformed JSON';
+    throw new Error(`Invalid API response for ${path}: ${errorMsg}`);
   }
   if (validate && !validate(response)) {
     throw new Error(`Invalid API response for ${path}: unexpected response shape`);

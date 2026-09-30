@@ -5,6 +5,7 @@ import {
   setAllowed,
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
+import { Networks } from "@stellar/stellar-sdk";
 
 /**
  * Checks if the Freighter wallet extension is installed in the browser
@@ -16,10 +17,13 @@ import {
  * }
  */
 export async function isFreighterInstalled(): Promise<boolean> {
-  return (
-    typeof window !== "undefined" &&
-    Boolean((window as unknown as { freighter: unknown }).freighter)
-  );
+  if (typeof window === "undefined") return false;
+  
+  try {
+    return await isConnected();
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -76,8 +80,14 @@ export async function signTransaction(
       throw new Error("Freighter not installed");
     }
 
+    const networkPassphrase = network === "PUBLIC" 
+      ? Networks.PUBLIC 
+      : network === "TESTNET" 
+        ? Networks.TESTNET 
+        : network;
+
     const response = (await freighterSignTransaction(xdr, {
-      networkPassphrase: network,
+      networkPassphrase,
     })) as {
       signedTxXdr?: string;
       signerAddress?: string;
@@ -91,7 +101,7 @@ export async function signTransaction(
 
     return signedTxXdr;
   } catch (error: unknown) {
-    captureWalletError(error, { xdr, network, action: "signTransaction" });
+    captureWalletError(error, { network, action: "signTransaction" });
     throw error;
   }
 }
