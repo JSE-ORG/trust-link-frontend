@@ -1,34 +1,49 @@
-import { apiRequest } from './api/client';
-import { SESSION_KEY } from './auth/constants';
+/**
+ * API barrel — the only import path components and hooks should use.
+ *
+ * All implementation lives in `lib/api/client.ts` (typed, `ApiError` class,
+ * centralized request helper). This module re-exports every public binding so
+ * existing imports from `@/lib/api` keep working.
+ *
+ * The following type-only bindings are re-exported from `@/types` to avoid
+ * duplication (they were historically defined inline in this file):
+ *   - VendorNotificationPreferences
+ *   - VendorAnalyticsPoint
+ *   - VendorAnalyticsResponse
+ */
 
-import { handleSessionExpired } from "@/hooks/useWallet";
-import {
+// Re-export every function + interface from the canonical client
+export {
   type ApiClient,
+  // client class & helpers
   ApiError,
   type ApiErrorShape,
-  cancelEscrow as cancelEscrowRaw,
-  createApiClient as createApiClientRaw,
-  createDispute as createDisputeRaw,
+  cancelEscrow,
+  confirmDelivery,
+  createDispute,
   type CreateDisputeInput,
-  createEscrow as createEscrowRaw,
+  // functions
+  createEscrow,
+  // input / response interfaces
   type EscrowInput,
   type EscrowResponse,
-  getAdminDisputes as getAdminDisputesRaw,
-  getDispute as getDisputeRaw,
-  getEscrow as getEscrowRaw,
-  getPublicVendorEscrows as getPublicVendorEscrowsRaw,
-  getSubscription as getSubscriptionRaw,
-  getTracking as getTrackingRaw,
-  getVendorAnalytics as getVendorAnalyticsRaw,
-  getVendorEscrows as getVendorEscrowsRaw,
-  getVendorNotificationPreferences as getVendorNotificationPreferencesRaw,
-  getVendorProfile as getVendorProfileRaw,
-  patchBuyerContact as patchBuyerContactRaw,
-  patchVendorNotifications as patchVendorNotificationsRaw,
-  resolveDispute as resolveDisputeRaw,
-  shipEscrow as shipEscrowRaw,
+  getAdminDisputes,
+  getDispute,
+  getEscrow,
+  getPublicVendorEscrows,
+  getSubscription,
+  getTracking,
+  getVendorAnalytics,
+  getVendorEscrows,
+  getVendorNotificationPreferences,
+  getVendorProfile,
+  normalizeVendorAnalyticsResponse,
+  patchBuyerContact,
+  patchVendorNotifications,
+  resolveDispute,
+  shipEscrow,
   type ShipEscrowInput,
-  upgradeSubscription as upgradeSubscriptionRaw,
+  upgradeSubscription,
 } from "@/lib/api/client";
 
 // Re-export types that were historically defined here but now live in @/types
@@ -39,40 +54,11 @@ export type {
   VendorNotificationPreferences,
 } from "@/types";
 
+/**
+ * BuyerContactInput — kept for backward-compatibility.
+ * The canonical client uses an inline `{ email?: string; phone?: string }`.
+ */
 export interface BuyerContactInput {
   email?: string;
   phone?: string;
-}
-
-export { ApiError };
-export type { ApiClient, ApiErrorShape, CreateDisputeInput, EscrowInput, EscrowResponse, ShipEscrowInput };
-
-/**
- * Wraps an API call so that 401 responses are handled gracefully:
- * - clears the expired JWT from localStorage
- * - redirects the user to reconnect their wallet
- *
- * @param fn the API function to wrap
- * @returns the wrapped function with identical signature
- */
-/* eslint-disable @typescript-eslint/no-explicit-any -- generic wrapper preserves caller signatures */
-function withSessionExpiryHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
-   
-  return (async (...args: any[]) => {
-    try {
-      return await fn(...args);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        handleSessionExpired();
-      }
-      throw error;
-    }
-  }) as T;
-export async function fetchProtectedData() {
-  return apiRequest({ url: '/protected', method: 'GET' });
-}
-
-export function clearAuth(): void {
-  sessionStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(SESSION_KEY);
 }
