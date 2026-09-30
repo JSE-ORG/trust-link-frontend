@@ -1,12 +1,29 @@
 "use client";
 
+/**
+ * Props for the OnboardingStepReview component
+ */
 interface OnboardingStepReviewProps {
+  /** The vendor's shop name */
   shopName: string;
+  /** A description of the vendor's business */
   description: string;
+  /** The vendor's website URL */
   website: string;
+  /** Shipping locations or destinations the vendor supports */
   shippingLocations: string;
 }
 
+/**
+ * OnboardingStepReview component for reviewing vendor profile information.
+ * 
+ * This component displays a read-only review of all vendor profile details
+ * before completing the onboarding process. It shows fallback values for
+ * empty fields.
+ * 
+ * @param props - Component props
+ * @returns A review display of vendor profile information
+ */
 export default function OnboardingStepReview({
   shopName,
   description,
