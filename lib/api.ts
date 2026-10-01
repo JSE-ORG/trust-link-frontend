@@ -16,8 +16,10 @@
 export {
   type ApiClient,
   // client class & helpers
+  ApiConfigurationError,
   ApiError,
   type ApiErrorShape,
+  ApiNetworkError,
   cancelEscrow,
   confirmDelivery,
   createDispute,

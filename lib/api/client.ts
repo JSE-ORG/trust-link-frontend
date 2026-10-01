@@ -38,7 +38,7 @@ import {
   isTracking,
 } from "@/types/guards";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_URL_ENV_VAR = "NEXT_PUBLIC_API_URL";
 
 /** @deprecated Use `ApiErrorResponse` from `@/types/api`. Kept for existing imports. */
 export type ApiErrorShape = ApiErrorResponse;
@@ -58,6 +58,116 @@ export class ApiError extends Error {
     this.status = status;
     this.body = body;
   }
+}
+
+/**
+ * Thrown before a request leaves the process because the API base URL is not
+ * configured. Resolved lazily per request rather than at module load so that
+ * importing this module never fails on its own, and so the guard is testable.
+ */
+export class ApiConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiConfigurationError";
+  }
+}
+
+/**
+ * Thrown when `fetch` itself rejects — DNS, TLS, offline, CORS. The request
+ * never reached the API, so there is no HTTP status; `status` is `0` to keep
+ * that distinguishable from a real response, and the original `TypeError` is
+ * kept on `cause` so loggers still see the low-level reason.
+ */
+export class ApiNetworkError extends ApiError {
+  constructor(path: string, cause: unknown) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    super(0, `Network request to ${path} failed: ${reason}`);
+    this.name = "ApiNetworkError";
+    this.cause = cause;
+  }
+}
+
+/**
+ * Reads the API base URL, failing fast when it is missing or blank.
+ *
+ * Interpolating an unset variable would produce requests against
+ * `undefined/escrow/1`, which the browser resolves as a relative URL and the
+ * API answers with an opaque failure — or, worse, a 404 from the app's own
+ * origin. Any trailing slash is trimmed so `${base}${path}` stays well formed.
+ *
+ * @returns The configured base URL, without a trailing slash.
+ * @throws {ApiConfigurationError} If `NEXT_PUBLIC_API_URL` is unset or blank.
+ */
+function getBaseUrl(): string {
+  const baseUrl = process.env[API_URL_ENV_VAR]?.trim();
+  if (!baseUrl) {
+    throw new ApiConfigurationError(
+      `${API_URL_ENV_VAR} is not defined. Set it in .env.local or your deployment ` +
+        `environment (e.g. ${API_URL_ENV_VAR}=http://localhost:3001) before making API requests.`,
+    );
+  }
+  return baseUrl.replace(/\/+$/, "");
+}
+
+/** Returns the first argument that is a non-empty string. */
+function firstText(...candidates: unknown[]): string | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return undefined;
+}
+
+/** Narrows an unknown value to a plain object we can read fields off. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Turns a failed response into an {@link ApiError}, always producing a readable
+ * message.
+ *
+ * The API is inconsistent about which key holds the text (`message`, `error`,
+ * `details`), may answer with plain text or an HTML error page, and may answer
+ * with a JSON body carrying none of those keys. Falling back to stringifying
+ * the parsed body would surface `[object Object]`, so every branch ends at a
+ * real sentence instead.
+ *
+ * @param res - The non-2xx response to describe.
+ * @returns The error to throw, with `status` and the parsed body preserved.
+ */
+async function parseError(res: Response): Promise<ApiError> {
+  const fallback = firstText(res.statusText) ?? `Request failed with status ${res.status}`;
+
+  let raw = "";
+  try {
+    raw = await res.text();
+  } catch {
+    // The body stream failed mid-read; the status alone is all we can report.
+    return new ApiError(res.status, fallback, undefined);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = raw ? JSON.parse(raw) : undefined;
+  } catch {
+    // Not JSON — an HTML error page or plain text, where the body *is* the message.
+    return new ApiError(res.status, firstText(raw) ?? fallback, undefined);
+  }
+
+  if (isRecord(parsed)) {
+    const body = parsed as ApiErrorResponse;
+    const message = firstText(body.message, body.error, body.details);
+    return new ApiError(res.status, message ?? fallback, body);
+  }
+
+  if (typeof parsed === "string") {
+    return new ApiError(res.status, firstText(parsed) ?? fallback, undefined);
+  }
+
+  // Numbers, booleans and null carry no readable text.
+  return new ApiError(res.status, fallback, undefined);
 }
 
 export interface EscrowInput {
@@ -80,28 +190,6 @@ export interface ShipEscrowInput {
   carrier?: string;
 }
 
-/**
- * Turns a failed response into an {@link ApiError}. The API is inconsistent
- * about which key holds the readable text, so `message → error → details` is
- * tried before falling back to the raw body or the HTTP status text.
- *
- * @param res - The non-2xx response to describe.
- * @returns The error to throw for this response.
- */
-async function parseError(res: Response): Promise<ApiError> {
-  const body = await res.text();
-  try {
-    const json = JSON.parse(body) as ApiErrorResponse;
-    return new ApiError(
-      res.status,
-      json.message || json.error || json.details || res.statusText,
-      json,
-    );
-  } catch {
-    return new ApiError(res.status, body || res.statusText, undefined);
-  }
-}
-
 /** Narrows a parsed JSON payload to its declared response type. */
 type ResponseGuard<T> = (value: unknown) => value is T;
 
@@ -111,12 +199,15 @@ type ResponseGuard<T> = (value: unknown) => value is T;
  * A 401 on an authenticated request tears down the wallet session exactly once,
  * at this layer, so no caller has to remember to do it.
  *
- * @param path - Path appended to {@link API_URL}, e.g. `/escrows/1/confirm`.
+ * @param path - Path appended to the configured base URL, e.g. `/escrows/1/confirm`.
  * @param init - Standard fetch init object.
  * @param token - Optional Bearer auth token.
  * @param validate - Optional shape guard; a mismatch is reported as an error
  *                   rather than silently typing the payload as `T`.
  * @returns The parsed JSON body, or `undefined` for empty responses.
+ * @throws {ApiConfigurationError} If `NEXT_PUBLIC_API_URL` is unset.
+ * @throws {ApiNetworkError} If the request never reached the API.
+ * @throws {ApiError} For any non-2xx response.
  */
 async function request<T>(
   path: string,
@@ -124,16 +215,26 @@ async function request<T>(
   token?: string,
   validate?: ResponseGuard<T>,
 ): Promise<T> {
+  const url = `${getBaseUrl()}${path}`;
   const headers = new Headers(init.headers ?? {});
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers,
-    cache: init.cache ?? "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers,
+      cache: init.cache ?? "no-store",
+    });
+  } catch (cause) {
+    // `fetch` only rejects for network-level failures — DNS, TLS, offline, a
+    // blocked CORS preflight — and always as a bare `TypeError`. Wrap it so the
+    // failure names the endpoint instead of surfacing "Failed to fetch".
+    throw new ApiNetworkError(path, cause);
+  }
+
   if (!res.ok) {
     if (res.status === 401 && token && typeof window !== "undefined") {
       handleSessionExpired();
@@ -147,7 +248,7 @@ async function request<T>(
     response = text ? JSON.parse(text) : undefined;
   } catch (cause) {
     const reason = cause instanceof Error ? cause.message : "malformed JSON";
-    throw new Error(`Invalid API response for ${path}: ${reason}`);
+    throw new Error(`Invalid API response for ${path}: ${reason}`, { cause });
   }
   if (validate && !validate(response)) {
     throw new Error(
