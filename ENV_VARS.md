@@ -14,7 +14,7 @@ These variables must be set for the application to start (validated at build and
 - **Exposure**: Public — `NEXT_PUBLIC_` (bundled to client)
 - **Purpose**: Backend API base URL for all server requests
 - **Example**: `http://localhost:3001` (local) or `https://api.trustlink.app` (production)
-- **Used in**: API client (`lib/api/client.ts`, `lib/api-client.ts`), escrow operations, payment flows
+- **Used in**: API client (`lib/api/client.ts`), escrow operations, payment flows
 - **Validation**: Listed in `env-validation.js` `REQUIRED_VARIABLES` and `next.config.ts` `REQUIRED_ENV_VARS`
 
 ### `NEXT_PUBLIC_STELLAR_NETWORK`

@@ -12,7 +12,7 @@ import {
 } from "vitest";
 
 import useWallet from "@/hooks/useWallet";
-import { createApiClient } from "@/lib/api-client";
+import { confirmDelivery } from "@/lib/api";
 
 import { ConfirmDeliveryButton } from "../ConfirmDeliveryButton";
 
@@ -24,15 +24,19 @@ vi.mock("@/hooks/useWallet", () => ({
   default: vi.fn(),
 }));
 
-vi.mock("@/lib/api-client", () => ({
-  createApiClient: vi.fn(),
+vi.mock("@/lib/api", () => ({
+  confirmDelivery: vi.fn(),
 }));
 
 const ESCROW_ID = "escrow-42";
-const CONFIRM_ENDPOINT = `/escrows/${ESCROW_ID}/confirm`;
+const TOKEN = "jwt-token";
 
-function mockClientPost(post: Mock) {
-  (createApiClient as unknown as Mock).mockReturnValue({ post });
+const confirmDeliveryMock = confirmDelivery as unknown as Mock;
+
+/** Opens the dialog and clicks the primary action. */
+async function confirmFromDialog(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
+  await user.click(await screen.findByRole("button", { name: /yes, confirm/i }));
 }
 
 describe("ConfirmDeliveryButton", () => {
@@ -40,7 +44,8 @@ describe("ConfirmDeliveryButton", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useWallet as unknown as Mock).mockReturnValue({ token: "jwt-token" });
+    (useWallet as unknown as Mock).mockReturnValue({ token: TOKEN });
+    confirmDeliveryMock.mockResolvedValue({ escrowId: ESCROW_ID });
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -74,33 +79,38 @@ describe("ConfirmDeliveryButton", () => {
 
   it("closes the dialog from the Cancel button without confirming", async () => {
     const user = userEvent.setup();
-    const post = vi.fn().mockResolvedValue({});
-    mockClientPost(post);
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
     await user.click(await screen.findByRole("button", { name: /cancel/i }));
 
     expect(await screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(post).not.toHaveBeenCalled();
+    expect(confirmDeliveryMock).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("confirms delivery, releases funds and calls onSuccess on success", async () => {
+  it("posts the confirmation exactly once through the shared API client", async () => {
+    const user = userEvent.setup();
+    render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
+
+    await confirmFromDialog(user);
+
+    await waitFor(() => expect(confirmDeliveryMock).toHaveBeenCalledTimes(1));
+    expect(confirmDeliveryMock).toHaveBeenCalledWith(ESCROW_ID, TOKEN);
+    // Issue #878: the component must not bypass the client with its own fetch,
+    // otherwise the confirm endpoint is hit twice and a single success can be
+    // reported to the user as a failure.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the success toast, closes the dialog and calls onSuccess", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    const post = vi.fn().mockResolvedValue({});
-    mockClientPost(post);
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
-
     render(
       <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />
     );
 
-    await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /yes, confirm/i })
-    );
+    await confirmFromDialog(user);
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
@@ -108,78 +118,42 @@ describe("ConfirmDeliveryButton", () => {
       );
     });
 
-    expect(createApiClient).toHaveBeenCalledWith({ token: "jwt-token" });
-    expect(post).toHaveBeenCalledWith(CONFIRM_ENDPOINT);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining(CONFIRM_ENDPOINT),
-      expect.objectContaining({ method: "POST" })
-    );
+    expect(toast.error).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("sends the wallet bearer token in the confirm request headers", async () => {
-    const user = userEvent.setup();
-    mockClientPost(vi.fn().mockResolvedValue({}));
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
-
-    render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
-
-    await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /yes, confirm/i })
-    );
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const headers = init.headers as Record<string, string>;
-    expect(headers["Authorization"]).toBe("Bearer jwt-token");
-  });
-
   it("shows a pending state and blocks the buttons while confirming", async () => {
     const user = userEvent.setup();
-    let resolvePost: (value: unknown) => void = () => {};
-    mockClientPost(
-      vi.fn().mockReturnValue(
-        new Promise((resolve) => {
-          resolvePost = resolve;
-        })
-      )
+    let resolveConfirm: (value: unknown) => void = () => {};
+    confirmDeliveryMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveConfirm = resolve;
+      })
     );
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
 
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /yes, confirm/i })
-    );
+    await confirmFromDialog(user);
 
     expect(screen.getByText(/confirming…/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /confirming…/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
 
-    resolvePost({});
+    resolveConfirm({ escrowId: ESCROW_ID });
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
   });
 
-  it("surfaces the server error message and keeps the dialog open on failure", async () => {
+  it("surfaces the server message and keeps the dialog open on failure", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    mockClientPost(vi.fn().mockResolvedValue({}));
-    fetchMock.mockResolvedValue({
-      ok: false,
-      json: async () => ({ message: "Escrow already released" }),
-    });
+    confirmDeliveryMock.mockRejectedValue(new Error("Escrow already released"));
 
     render(
       <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={onSuccess} />
     );
 
-    await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /yes, confirm/i })
-    );
+    await confirmFromDialog(user);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Escrow already released");
@@ -189,20 +163,16 @@ describe("ConfirmDeliveryButton", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("falls back to a generic error when the error response has no message", async () => {
+  it("falls back to a generic error when the failure carries no message", async () => {
     const user = userEvent.setup();
-    mockClientPost(vi.fn().mockResolvedValue({}));
-    fetchMock.mockResolvedValue({ ok: false, json: async () => null });
+    confirmDeliveryMock.mockRejectedValue("network down");
 
     render(<ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /confirm delivery/i }));
-    await user.click(
-      await screen.findByRole("button", { name: /yes, confirm/i })
-    );
+    await confirmFromDialog(user);
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to confirm delivery");
+      expect(toast.error).toHaveBeenCalledWith("Could not confirm delivery");
     });
   });
 
@@ -271,9 +241,6 @@ describe("ConfirmDeliveryButton", () => {
 
     it("confirms the delivery with Space on the primary action", async () => {
       const user = userEvent.setup();
-      const post = vi.fn().mockResolvedValue({});
-      mockClientPost(post);
-      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
       const onSuccess = vi.fn();
 
       render(
@@ -290,15 +257,11 @@ describe("ConfirmDeliveryButton", () => {
       fireEvent.keyDown(confirm, { key: " " });
 
       await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
-      expect(post).toHaveBeenCalledWith(CONFIRM_ENDPOINT);
+      expect(confirmDeliveryMock).toHaveBeenCalledWith(ESCROW_ID, TOKEN);
     });
 
     it("runs the confirm action exactly once per keyboard activation", async () => {
       const user = userEvent.setup();
-      const post = vi.fn().mockResolvedValue({});
-      mockClientPost(post);
-      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
-
       render(
         <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
       );
@@ -318,14 +281,11 @@ describe("ConfirmDeliveryButton", () => {
 
       await user.keyboard("{Enter}");
 
-      await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(confirmDeliveryMock).toHaveBeenCalledTimes(1));
     });
 
     it("cycles focus between the dialog controls with Tab", async () => {
       const user = userEvent.setup();
-      mockClientPost(vi.fn().mockResolvedValue({}));
-      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
-
       render(
         <ConfirmDeliveryButton escrowId={ESCROW_ID} onSuccess={vi.fn()} />
       );
@@ -334,7 +294,9 @@ describe("ConfirmDeliveryButton", () => {
         screen.getByRole("button", { name: /confirm delivery/i })
       );
       const cancel = await screen.findByRole("button", { name: /cancel/i });
-      const confirm = screen.getByRole("button", { name: /yes, confirm/i });
+      const confirm = await screen.findByRole("button", {
+        name: /yes, confirm/i,
+      });
 
       // The trap pulls focus to the first control on the next frame.
       await waitFor(() => expect(cancel).toHaveFocus());

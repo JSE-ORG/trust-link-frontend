@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, createApiClient, normalizeVendorAnalyticsResponse } from "./client";
+import {
+  ApiConfigurationError,
+  ApiError,
+  ApiNetworkError,
+  createApiClient,
+  normalizeVendorAnalyticsResponse,
+} from "./client";
 
 const fetchMock = vi.fn();
 
@@ -44,13 +50,22 @@ function mockResponse(body: unknown, { ok = true, status = 200, statusText = "OK
   } as unknown as Response;
 }
 
+const API_URL_ENV_VAR = "NEXT_PUBLIC_API_URL";
+const originalApiUrl = process.env[API_URL_ENV_VAR];
+
 beforeEach(() => {
   fetchMock.mockReset();
+  process.env[API_URL_ENV_VAR] = "http://localhost:3000/api";
   vi.stubGlobal("fetch", fetchMock);
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  if (originalApiUrl === undefined) {
+    delete process.env[API_URL_ENV_VAR];
+  } else {
+    process.env[API_URL_ENV_VAR] = originalApiUrl;
+  }
 });
 
 describe("api client", () => {
@@ -168,5 +183,164 @@ describe("api client", () => {
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = init.headers as Headers;
     expect(headers.get("Authorization")).toBeNull();
+  });
+});
+
+describe("base URL configuration", () => {
+  it("fails fast with an actionable message when the env var is unset", async () => {
+    delete process.env[API_URL_ENV_VAR];
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiConfigurationError);
+    expect(error.message).toContain(API_URL_ENV_VAR);
+    expect(error.message).toContain(".env.local");
+    // The whole point of the guard: never build a "undefined/escrow/e1" URL.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("treats a blank env var as missing", async () => {
+    process.env[API_URL_ENV_VAR] = "   ";
+
+    await expect(createApiClient().getEscrow("e1")).rejects.toBeInstanceOf(
+      ApiConfigurationError,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("trims a trailing slash so paths are not doubled up", async () => {
+    process.env[API_URL_ENV_VAR] = "https://api.trustlink.app/";
+    fetchMock.mockResolvedValueOnce(mockResponse(escrow));
+
+    await createApiClient().getEscrow("e1");
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://api.trustlink.app/escrow/e1",
+    );
+  });
+});
+
+describe("network failures", () => {
+  it("wraps a fetch rejection, naming the endpoint and keeping the cause", async () => {
+    const cause = new TypeError("fetch failed");
+    fetchMock.mockRejectedValueOnce(cause);
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiNetworkError);
+    // A network failure never reached the API, so there is no HTTP status.
+    expect(error.status).toBe(0);
+    expect(error.message).toContain("/escrow/e1");
+    expect(error.message).toContain("fetch failed");
+    expect(error.cause).toBe(cause);
+  });
+
+  it("wraps a non-Error rejection instead of leaking it", async () => {
+    fetchMock.mockRejectedValueOnce("connection reset");
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiNetworkError);
+    expect(error.message).toContain("connection reset");
+  });
+});
+
+describe("error message extraction", () => {
+  it.each([
+    [{ error: "boom" }, "boom"],
+    [{ details: "too many attempts" }, "too many attempts"],
+  ])("reads %o into the message", async (body, expected) => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse(body, { ok: false, status: 400, statusText: "Bad Request" }),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.message).toBe(expected);
+    expect(error.body).toMatchObject(body);
+  });
+
+  it("never renders [object Object] when the body has no message field", async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse(
+        { unexpected: "shape" },
+        { ok: false, status: 422, statusText: "Unprocessable Entity" },
+      ),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.message).toBe("Unprocessable Entity");
+    expect(error.message).not.toContain("[object Object]");
+    expect(error.status).toBe(422);
+  });
+
+  it.each([
+    ["null", null],
+    ["a number", 42],
+    ["an array", [{ message: "nested" }]],
+  ])("falls back to the status text for %s body", async (_label, body) => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse(body, { ok: false, status: 400, statusText: "Bad Request" }),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.message).toBe("Bad Request");
+    expect(error.message).not.toContain("[object Object]");
+  });
+
+  it("falls back to the status code when the response has no status text", async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse(null, { ok: false, status: 502, statusText: "" }),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.message).toBe("Request failed with status 502");
+  });
+
+  it("uses a JSON string body as the message", async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse("upstream is down", { ok: false, status: 503 }),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.message).toBe("upstream is down");
+  });
+
+  it("keeps the parsed body for a JSON error payload", async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse(
+        { message: "Escrow already released", statusCode: 409 },
+        { ok: false, status: 409, statusText: "Conflict" },
+      ),
+    );
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error.status).toBe(409);
+    expect(error.body).toEqual({
+      message: "Escrow already released",
+      statusCode: 409,
+    });
+  });
+
+  it("survives a body stream that fails mid-read", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      text: async () => {
+        throw new Error("stream closed");
+      },
+    } as unknown as Response);
+
+    const error = await createApiClient().getEscrow("e1").catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(500);
+    expect(error.message).toBe("Internal Server Error");
   });
 });

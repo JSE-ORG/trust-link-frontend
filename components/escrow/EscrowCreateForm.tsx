@@ -160,10 +160,10 @@ export default function EscrowCreateForm() {
 
     try {
       const payload: EscrowInput = {
-        itemName: values.itemName.trim(),
-        priceUSDC: values.priceUSDC.trim(),
-        description: values.description.trim(),
-        shippingWindow: values.shippingWindow,
+        itemName: result.data.itemName,
+        priceUSDC: result.data.priceUSDC,
+        description: result.data.description,
+        shippingWindow: result.data.shippingWindow,
       };
 
       const response = await createEscrow(payload);
@@ -205,7 +205,11 @@ export default function EscrowCreateForm() {
             onChange={(event) => updateField("itemName", event.target.value)}
             placeholder="e.g. Vintage mechanical keyboard"
             disabled={isSubmitting}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition placeholder:text-zinc-400 focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-300"
+            maxLength={ESCROW_LIMITS.itemNameMaxLength}
+            placeholder="Awesome Widget"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+            aria-invalid={Boolean(errors.itemName)}
+            aria-describedby={errors.itemName ? "itemName-error" : undefined}
           />
         </FormField>
 
@@ -236,6 +240,32 @@ export default function EscrowCreateForm() {
           </div>
         </FormField>
 
+        <div>
+          <label
+            htmlFor="description"
+            className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
+            Description
+          </label>
+          <input
+            id="description"
+            name="description"
+            type="text"
+            value={values.description}
+            onChange={(event) => updateField("description", event.target.value)}
+            disabled={isSubmitting}
+            maxLength={ESCROW_LIMITS.descriptionMaxLength}
+            placeholder="Brief description"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+            aria-invalid={Boolean(errors.description)}
+            aria-describedby={errors.description ? "description-error" : undefined}
+          />
+          {errors.description ? (
+            <p id="description-error" role="alert" className="mt-2 text-sm text-red-600">
+              {errors.description}
+            </p>
+          ) : null}
+        </div>
         <FormField
           label="Description"
           id="description"
@@ -288,6 +318,8 @@ export default function EscrowCreateForm() {
             }
             disabled={isSubmitting}
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300"
+            aria-invalid={Boolean(errors.shippingWindow)}
+            aria-describedby={errors.shippingWindow ? "shippingWindow-error" : undefined}
           >
             {shippingOptions.map((option) => (
               <option key={option} value={option}>
@@ -295,6 +327,12 @@ export default function EscrowCreateForm() {
               </option>
             ))}
           </select>
+          {errors.shippingWindow ? (
+            <p id="shippingWindow-error" role="alert" className="mt-2 text-sm text-red-600">
+              {errors.shippingWindow}
+            </p>
+          ) : null}
+        </div>
         </FormField>
         <EscrowCreateFormFields
           values={values}

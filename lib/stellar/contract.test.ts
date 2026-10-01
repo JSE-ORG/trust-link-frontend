@@ -1,5 +1,5 @@
 import { rpc } from "@stellar/stellar-sdk";
-import { beforeEach,describe, expect, it, vi } from "vitest";
+import { afterEach,beforeEach,describe, expect, it, vi } from "vitest";
 
 import {
   buildContractDeployment,
@@ -9,10 +9,13 @@ import {
   ContractCallOptions,
   fundEscrow,
   isContractSuccess,
+  isMockPaymentsEnabled,
   isValidContractId,
   parseContractError,
   parseContractResult,
   raiseDispute,
+  submitPayment,
+  TransactionConfirmationTimeoutError,
   validateContractMethodCall,
 } from "./contract";
 import * as freighter from "./freighter";
@@ -22,7 +25,10 @@ vi.mock("./freighter", () => ({
 }));
 
 // Mock Stellar SDK
-vi.mock("@stellar/stellar-sdk", () => {
+vi.mock("@stellar/stellar-sdk", async () => {
+  const actual = await vi.importActual<typeof import("@stellar/stellar-sdk")>(
+    "@stellar/stellar-sdk"
+  );
   function buildTx() {
     return {
       addOperation: vi.fn().mockReturnThis(),
@@ -51,6 +57,10 @@ vi.mock("@stellar/stellar-sdk", () => {
   class MockScVal {}
 
   return {
+    // StrKey is used for real address/contract-id validation, so the checks
+    // exercised here are the SDK's own, not a hand-rolled stand-in.
+    StrKey: actual.StrKey,
+    Asset: { native: vi.fn(() => ({ code: "XLM" })) },
     Account: vi.fn().mockImplementation(function (accountId: string, sequence: string) {
       return {
         accountId: () => accountId,
@@ -66,15 +76,13 @@ vi.mock("@stellar/stellar-sdk", () => {
     }),
     Keypair: { random: vi.fn() },
     TransactionBuilder: MockTxBuilder,
-    Networks: {
-      PUBLIC: "Public Global Stellar Network ; September 2015",
-      TESTNET: "Test SDF Network ; September 2015",
-    },
+    Networks: actual.Networks,
     Operation: {
       invokeHostFunction: vi.fn().mockReturnValue({}),
       extendFootprintTtl: vi.fn().mockReturnValue({}),
       invokeContractFunction: vi.fn().mockReturnValue({}),
       uploadContractWasm: vi.fn().mockReturnValue({}),
+      payment: vi.fn().mockReturnValue({}),
     },
     nativeToScVal: vi.fn().mockImplementation((val: unknown) => ({ type: "mock-scval", value: val })),
     xdr: {
@@ -97,13 +105,14 @@ vi.mock("@stellar/stellar-sdk", () => {
       Server: vi.fn().mockImplementation(MockServer),
     },
     BASE_FEE: "100",
-    StrKey: {
-      isValidEd25519PublicKey: vi.fn(function(key) {
-        return typeof key === "string" && key.startsWith("G") && key.length === 56;
-      }),
-    },
   };
 });
+
+/** Real Ed25519 account key (StrKey-valid). */
+const VALID_SOURCE_ACCOUNT = "GAEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEQSCIJBEEQSH7S";
+
+/** Real contract StrKey (C…, 56 chars, valid CRC-16 checksum). */
+const VALID_CONTRACT_ID = "CAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC526";
 
 describe("lib/stellar/contract.ts", () => {
   beforeEach(() => {
@@ -112,8 +121,8 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("buildContractInvocation", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
-    const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
+    const validContractId = VALID_CONTRACT_ID;
 
     it("builds contract invocation XDR for testnet", () => {
       const options: ContractCallOptions = {
@@ -206,7 +215,7 @@ describe("lib/stellar/contract.ts", () => {
 
   describe("isValidContractId", () => {
     it("returns true for valid contract ID", () => {
-      expect(isValidContractId("CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S")).toBe(true);
+      expect(isValidContractId(VALID_CONTRACT_ID)).toBe(true);
     });
 
     it("returns false for non-string input", () => {
@@ -216,12 +225,38 @@ describe("lib/stellar/contract.ts", () => {
     });
 
     it("returns false when not starting with C", () => {
-      expect(isValidContractId("GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3")).toBe(false);
+      expect(isValidContractId(VALID_SOURCE_ACCOUNT)).toBe(false);
       expect(isValidContractId("INVALID")).toBe(false);
     });
 
     it("returns false for empty string", () => {
       expect(isValidContractId("")).toBe(false);
+    });
+
+    it("rejects a bare C prefix", () => {
+      expect(isValidContractId("C")).toBe(false);
+    });
+
+    it("rejects a C-prefixed placeholder with no valid checksum", () => {
+      expect(isValidContractId("Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")).toBe(false);
+      expect(isValidContractId("CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S")).toBe(false);
+    });
+
+    it("rejects a truncated contract ID", () => {
+      expect(isValidContractId(VALID_CONTRACT_ID.slice(0, 40))).toBe(false);
+      expect(isValidContractId(`${VALID_CONTRACT_ID}A`)).toBe(false);
+    });
+
+    it("rejects a contract ID with a corrupted checksum", () => {
+      const tampered = `${VALID_CONTRACT_ID.slice(0, -1)}${
+        VALID_CONTRACT_ID.endsWith("6") ? "7" : "6"
+      }`;
+
+      expect(isValidContractId(tampered)).toBe(false);
+    });
+
+    it("rejects an Ed25519 account key", () => {
+      expect(isValidContractId(VALID_SOURCE_ACCOUNT)).toBe(false);
     });
   });
 
@@ -338,7 +373,7 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("buildContractDeployment", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
     const mockWasm = Buffer.from("mock wasm content");
 
     it("builds deployment transaction for testnet", () => {
@@ -411,8 +446,8 @@ describe("lib/stellar/contract.ts", () => {
   });
 
   describe("Soroban contract call helpers", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
-    const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
+    const validContractId = VALID_CONTRACT_ID;
 
     it("fundEscrow returns hash and result XDR on success", async () => {
       const server = rpc.Server;
@@ -490,9 +525,250 @@ describe("lib/stellar/contract.ts", () => {
     });
   });
 
+  describe("Soroban confirmation polling", () => {
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
+    const validContractId = VALID_CONTRACT_ID;
+
+    function mockServer(overrides: Record<string, unknown>) {
+      vi.mocked(rpc.Server).mockImplementationOnce(function () {
+        return {
+          getAccount: vi
+            .fn()
+            .mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          ...overrides,
+        } as unknown as rpc.Server;
+      });
+    }
+
+    it("polls a PENDING transaction until it succeeds", async () => {
+      const getTransaction = vi
+        .fn()
+        .mockResolvedValueOnce({ status: "NOT_FOUND" })
+        .mockResolvedValueOnce({ status: "PENDING" })
+        .mockResolvedValueOnce({ status: "SUCCESS", resultXdr: "late-result" });
+
+      mockServer({
+        sendTransaction: vi
+          .fn()
+          .mockResolvedValue({ status: "PENDING", hash: "pending-hash" }),
+        getTransaction,
+      });
+
+      const result = await fundEscrow(validContractId, [], validSourceAccount, "TESTNET");
+
+      expect(result).toEqual({ hash: "pending-hash", resultXdr: "late-result" });
+      expect(getTransaction).toHaveBeenCalledWith("pending-hash");
+    });
+
+    it("fails as soon as the polled transaction reports FAILED", async () => {
+      const getTransaction = vi
+        .fn()
+        .mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: nope" });
+
+      mockServer({
+        sendTransaction: vi
+          .fn()
+          .mockResolvedValue({ status: "PENDING", hash: "doomed-hash" }),
+        getTransaction,
+      });
+
+      await expect(
+        fundEscrow(validContractId, [], validSourceAccount, "TESTNET")
+      ).rejects.toThrow("TxFailed");
+    });
+
+    it("rejects a PENDING response with no hash", async () => {
+      mockServer({
+        sendTransaction: vi.fn().mockResolvedValue({ status: "PENDING" }),
+        getTransaction: vi.fn(),
+      });
+
+      await expect(
+        fundEscrow(validContractId, [], validSourceAccount, "TESTNET")
+      ).rejects.toThrow("Pending transaction was submitted without a hash");
+    });
+
+    it("preserves the transaction hash when polling times out", async () => {
+      const getTransaction = vi.fn().mockResolvedValue({ status: "PENDING" });
+
+      mockServer({
+        sendTransaction: vi
+          .fn()
+          .mockResolvedValue({ status: "PENDING", hash: "slow-hash" }),
+        getTransaction,
+      });
+
+      vi.useFakeTimers();
+      try {
+        const pending = fundEscrow(validContractId, [], validSourceAccount, "TESTNET");
+        const assertion = expect(pending).rejects.toThrow(
+          TransactionConfirmationTimeoutError
+        );
+
+        await vi.advanceTimersByTimeAsync(120_000);
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(getTransaction).toHaveBeenCalled();
+    });
+
+    it("exposes the hash on the timeout error so it can be looked up", async () => {
+      mockServer({
+        sendTransaction: vi
+          .fn()
+          .mockResolvedValue({ status: "PENDING", hash: "lookup-me" }),
+        getTransaction: vi.fn().mockResolvedValue({ status: "PENDING" }),
+      });
+
+      vi.useFakeTimers();
+      let caught: unknown;
+      try {
+        const pending = fundEscrow(validContractId, [], validSourceAccount, "TESTNET");
+        const assertion = pending.catch((error: unknown) => {
+          caught = error;
+        });
+
+        await vi.advanceTimersByTimeAsync(120_000);
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(caught).toBeInstanceOf(TransactionConfirmationTimeoutError);
+      const timeoutError = caught as InstanceType<typeof TransactionConfirmationTimeoutError>;
+      expect(timeoutError.hash).toBe("lookup-me");
+      expect(timeoutError.message).toContain("lookup-me");
+      expect(timeoutError.attempts).toBeGreaterThan(0);
+    });
+  });
+
+  describe("submitPayment", () => {
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
+    const validDestination = VALID_SOURCE_ACCOUNT;
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS;
+    });
+
+    it("does not return a mock hash by default", async () => {
+      const hash = await submitPayment("10", validDestination).catch(
+        (error: Error) => error.message
+      );
+
+      expect(hash).toBe("sourceAccount is required to submit a payment");
+      expect(hash).not.toContain("mock");
+    });
+
+    it("returns a deterministic mock hash only when the feature flag is on", async () => {
+      process.env.NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS = "true";
+
+      expect(isMockPaymentsEnabled()).toBe(true);
+      const first = await submitPayment("10", validDestination);
+      const second = await submitPayment("10", validDestination);
+
+      expect(first).toBe(second);
+      expect(first.startsWith("mock-")).toBe(true);
+    });
+
+    it("ignores the flag for any value other than 'true'", async () => {
+      process.env.NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS = "1";
+
+      expect(isMockPaymentsEnabled()).toBe(false);
+      await expect(submitPayment("10", validDestination)).rejects.toThrow(
+        "sourceAccount is required"
+      );
+    });
+
+    it("lets a caller opt in per call without the env flag", async () => {
+      const hash = await submitPayment("10", validDestination, { mock: true });
+
+      expect(hash.startsWith("mock-")).toBe(true);
+    });
+
+    it("rejects a missing destination", async () => {
+      await expect(submitPayment("10", "")).rejects.toThrow(
+        "Destination address is required"
+      );
+    });
+
+    it("rejects a destination that is not a valid account key", async () => {
+      await expect(submitPayment("10", "C")).rejects.toThrow(
+        "Invalid destination address"
+      );
+      await expect(submitPayment("10", "not-a-key")).rejects.toThrow(
+        "Invalid destination address"
+      );
+    });
+
+    it("rejects a malformed amount", async () => {
+      for (const amount of ["", "0", "-1", "abc", "1.12345678", "1e5"]) {
+        await expect(
+          submitPayment(amount, validDestination, { mock: true })
+        ).rejects.toThrow("Amount must be a positive number");
+      }
+    });
+
+    it("accepts an amount with up to 7 decimals", async () => {
+      await expect(
+        submitPayment("1.1234567", validDestination, { mock: true })
+      ).resolves.toContain("mock-");
+    });
+
+    it("rejects an invalid source account on the real path", async () => {
+      await expect(
+        submitPayment("10", validDestination, { sourceAccount: "not-a-key" })
+      ).rejects.toThrow("Invalid source account public key");
+    });
+
+    it("submits and returns the network hash on the real path", async () => {
+      const sendTransaction = vi
+        .fn()
+        .mockResolvedValue({ status: "PENDING", hash: "payment-hash" });
+
+      vi.mocked(rpc.Server).mockImplementationOnce(function () {
+        return {
+          getAccount: vi
+            .fn()
+            .mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction,
+        } as unknown as rpc.Server;
+      });
+
+      const hash = await submitPayment("12.5", validDestination, {
+        sourceAccount: validSourceAccount,
+        network: "PUBLIC",
+      });
+
+      expect(hash).toBe("payment-hash");
+      expect(sendTransaction).toHaveBeenCalled();
+      expect(freighter.signTransaction).toHaveBeenCalled();
+    });
+
+    it("propagates a failed submission on the real path", async () => {
+      vi.mocked(rpc.Server).mockImplementationOnce(function () {
+        return {
+          getAccount: vi
+            .fn()
+            .mockResolvedValue({ accountId: validSourceAccount, sequenceNumber: "0" }),
+          sendTransaction: vi
+            .fn()
+            .mockResolvedValue({ status: "FAILED", errorResultXdr: "TxFailed: no" }),
+        } as unknown as rpc.Server;
+      });
+
+      await expect(
+        submitPayment("12.5", validDestination, {
+          sourceAccount: validSourceAccount,
+        })
+      ).rejects.toThrow("TxFailed");
+    });
+  });
+
   describe("Contract call construction integration", () => {
-    const validSourceAccount = "GBRPYHIL2CI3WHZDTOOQFC6EB4RRQQ5O5L3RHODOXJWYDOGNXVFC3J3A";
-    const validContractId = "CCCZQVD4JFF2Z56XDQY2XHXGTWHBZWBRWQJL4QBFQZR77EAPBFQWKQ6S";
+    const validSourceAccount = VALID_SOURCE_ACCOUNT;
+    const validContractId = VALID_CONTRACT_ID;
 
     it("validates all components before building invocation", () => {
       const options: ContractCallOptions = {

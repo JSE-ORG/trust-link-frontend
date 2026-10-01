@@ -68,7 +68,7 @@ function detectLanguage(): string {
 
 if (!i18n.isInitialized) {
   const detectedLang = detectLanguage();
-  
+
   i18n.use(initReactI18next).init({
     resources,
     lng: detectedLang,

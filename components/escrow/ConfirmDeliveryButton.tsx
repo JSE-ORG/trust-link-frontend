@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import FocusTrap from "@/components/ui/FocusTrap";
 import useWallet from "@/hooks/useWallet";
-import { createApiClient } from "@/lib/api-client";
+import { confirmDelivery } from "@/lib/api";
 
 /**
  * Props for the ConfirmDeliveryButton component.
@@ -69,15 +69,15 @@ export function ConfirmDeliveryButton({
   }
 
   /**
-   * Releases the escrow funds. Posts the confirmation, closes the dialog and
-   * hands back to the parent on success; on failure the dialog stays open and
-   * the server's message (or a generic fallback) is surfaced as an error toast.
+   * Releases the escrow funds through a single `POST /escrows/:id/confirm`
+   * call. On success the dialog closes, a toast confirms the release and the
+   * parent is asked to refetch; on failure the dialog stays open and the
+   * server's message (or a generic fallback) is surfaced as an error toast.
    */
   async function handleConfirm() {
     setIsPending(true);
     try {
-      const api = createApiClient({ token });
-      await api.post(`/escrows/${escrowId}/confirm`);
+      await confirmDelivery(escrowId, token);
 
       closeDialog();
       toast.success("Delivery confirmed — funds released.");
