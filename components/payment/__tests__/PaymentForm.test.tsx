@@ -12,6 +12,17 @@ import type { PaymentFormProps } from "../PaymentForm";
 
 let PaymentForm: React.ComponentType<PaymentFormProps>;
 
+const { mockUseNetwork } = vi.hoisted(() => ({
+  mockUseNetwork: vi.fn(() => ({
+    network: "testnet",
+    isTestnet: true,
+    isMainnet: false,
+    isOnline: true,
+    toggleNetwork: vi.fn(),
+    setNetwork: vi.fn(),
+  })),
+}));
+
 // Mock dependencies
 vi.mock("@/hooks/useWallet", () => ({
   default: vi.fn(),
@@ -60,7 +71,7 @@ vi.mock("@/lib/explorer", () => ({
 }));
 
 vi.mock("@/components/providers/NetworkProvider", () => ({
-  useNetwork: vi.fn(() => ({ network: "testnet", isTestnet: true, isMainnet: false, toggleNetwork: vi.fn(), setNetwork: vi.fn() })),
+  useNetwork: () => mockUseNetwork(),
   NetworkProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -100,6 +111,14 @@ describe("PaymentForm", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseNetwork.mockReturnValue({
+      network: "testnet",
+      isTestnet: true,
+      isMainnet: false,
+      isOnline: true,
+      toggleNetwork: vi.fn(),
+      setNetwork: vi.fn(),
+    });
     (useWallet as unknown as Mock).mockReturnValue({ isConnected: true, status: "connected" });
   });
 
@@ -237,6 +256,25 @@ describe("PaymentForm", () => {
 
     expect(screen.getByText("Escrow is no longer payable")).toBeInTheDocument();
     expect(toast.error).toHaveBeenCalledWith("Escrow is no longer payable");
+    expect(signTransaction).not.toHaveBeenCalled();
+  });
+
+  it("disables payment and shows offline message when the network is offline", () => {
+    mockUseNetwork.mockReturnValue({
+      network: "testnet",
+      isTestnet: true,
+      isMainnet: false,
+      isOnline: false,
+      toggleNetwork: vi.fn(),
+      setNetwork: vi.fn(),
+    });
+
+    render(<PaymentForm {...defaultProps} />);
+
+    expect(screen.getByText("You are offline")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Pay with Freighter/i })
+    ).toBeDisabled();
     expect(signTransaction).not.toHaveBeenCalled();
   });
 });

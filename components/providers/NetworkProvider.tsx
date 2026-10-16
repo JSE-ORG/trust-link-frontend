@@ -1,7 +1,15 @@
 "use client";
 
 import * as StellarSdk from "@stellar/stellar-sdk";
-import React, { createContext, useCallback, useContext, useMemo,useState } from "react";
+import React, {
+  createContext,
+  startTransition,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type Network = "testnet" | "mainnet";
 
@@ -18,6 +26,8 @@ interface NetworkContextType {
   toggleNetwork: () => void;
   isTestnet: boolean;
   isMainnet: boolean;
+  /** Browser connectivity; false when the device is offline. */
+  isOnline: boolean;
   config: NetworkConfig;
 }
 
@@ -52,6 +62,24 @@ const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetworkState] = useState<Network>(resolveInitialNetwork);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    startTransition(() => setIsOnline(navigator.onLine));
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const setNetwork = useCallback((net: Network) => {
     setNetworkState(net);
@@ -78,8 +106,9 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     toggleNetwork,
     isTestnet: network === "testnet",
     isMainnet: network === "mainnet",
+    isOnline,
     config,
-  }), [network, setNetwork, toggleNetwork, config]);
+  }), [network, setNetwork, toggleNetwork, isOnline, config]);
 
   return (
     <NetworkContext.Provider value={value}>
