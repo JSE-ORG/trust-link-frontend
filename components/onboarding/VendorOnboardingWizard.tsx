@@ -39,6 +39,7 @@ export default function VendorOnboardingWizard() {
     state,
     errors,
     buttonDisabled,
+    isFinishing,
     updateField,
     goToStep,
     handleBack,
@@ -110,6 +111,7 @@ export default function VendorOnboardingWizard() {
             showBack={state.step > 0}
             showNext={state.step < 2}
             nextDisabled={buttonDisabled}
+            isFinishing={isFinishing}
             onBack={handleBack}
             onNext={handleNext}
             onFinish={handleFinish}

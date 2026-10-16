@@ -65,6 +65,7 @@ export function useOnboardingWizard() {
   const [state, setState] = useState<VendorOnboardingState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -165,6 +166,8 @@ export function useOnboardingWizard() {
   };
 
   const handleFinish = () => {
+    if (isFinishing) return;
+    setIsFinishing(true);
     setState((current) => ({ ...current, completed: true }));
     router.push("/dashboard");
   };
@@ -175,6 +178,7 @@ export function useOnboardingWizard() {
     errors,
     isProfileValid,
     buttonDisabled,
+    isFinishing,
     updateField,
     goToStep,
     handleBack,
