@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { captureError } from "@/lib/logger";
+
 export function ServiceWorkerProvider() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -62,7 +64,7 @@ export function ServiceWorkerProvider() {
         registration = currentRegistration;
         registration.addEventListener("updatefound", handleUpdateFound);
       } catch (err) {
-        console.error("Service Worker registration failed:", err);
+        captureError(err, { scope: "ui", action: "registerServiceWorker" });
       }
     }
 
