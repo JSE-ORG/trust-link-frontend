@@ -11,14 +11,17 @@ beforeEach(() => {
 describe("getChallenge", () => {
   it("returns the transaction string on success", async () => {
     const mockTransaction = "AAAAAgAAAABh...";
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ transaction: mockTransaction }),
-    } as Response);
+    const response = new Response(JSON.stringify({ transaction: mockTransaction }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+    const readBody = vi.spyOn(response, "text");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
 
     const result = await getChallenge("GBAM5V6X2J7E3...K4L9M2N8P1");
 
     expect(result).toBe(mockTransaction);
+    expect(readBody).toHaveBeenCalledOnce();
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${API_URL}/auth/challenge`,
       expect.objectContaining({
@@ -30,12 +33,28 @@ describe("getChallenge", () => {
   });
 
   it("throws an error when the response is not ok", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: false,
-    } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: "Challenge rejected" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
 
     await expect(getChallenge("GBAM5V6X2J7E3...K4L9M2N8P1")).rejects.toThrow(
-      "Failed to get auth challenge",
+      "Challenge rejected",
+    );
+  });
+
+  it("rejects malformed successful JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("{invalid json", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getChallenge("GABC123")).rejects.toThrow(
+      "Failed to parse auth challenge response: invalid JSON",
     );
   });
 
@@ -50,10 +69,12 @@ describe("getChallenge", () => {
   });
 
   it("handles empty public key gracefully", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ transaction: "tx-empty-key" }),
-    } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ transaction: "tx-empty-key" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
 
     const result = await getChallenge("");
 
@@ -70,14 +91,17 @@ describe("getChallenge", () => {
 describe("verifyChallenge", () => {
   it("returns the JWT token on success", async () => {
     const mockToken = "eyJhbGciOiJIUzI1NiIs...";
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ token: mockToken }),
-    } as Response);
+    const response = new Response(JSON.stringify({ token: mockToken }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+    const readBody = vi.spyOn(response, "text");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
 
     const result = await verifyChallenge("AAAAAgAAAABh...signedXdr");
 
     expect(result).toBe(mockToken);
+    expect(readBody).toHaveBeenCalledOnce();
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${API_URL}/auth/verify`,
       expect.objectContaining({
@@ -89,12 +113,28 @@ describe("verifyChallenge", () => {
   });
 
   it("throws an error when the response is not ok", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: false,
-    } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("Verification service unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    );
 
     await expect(verifyChallenge("invalid-xdr")).rejects.toThrow(
-      "Failed to verify challenge",
+      "Verification service unavailable",
+    );
+  });
+
+  it("rejects malformed successful JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("not-json", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(verifyChallenge("signed-xdr")).rejects.toThrow(
+      "Failed to parse verification response: invalid JSON",
     );
   });
 
@@ -107,10 +147,12 @@ describe("verifyChallenge", () => {
   });
 
   it("handles empty signed XDR gracefully", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ token: "token-from-empty-xdr" }),
-    } as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ token: "token-from-empty-xdr" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
 
     const result = await verifyChallenge("");
 
