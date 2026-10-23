@@ -1,3 +1,4 @@
+import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -63,6 +64,32 @@ describe("GET /api/og", () => {
     const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
 
     expect(response.status).toBe(200);
+  });
+
+  it("renders one correctly styled status and supported card styles", async () => {
+    const url = new URL("http://localhost/api/og");
+    url.searchParams.set("title", "Custom Escrow");
+    url.searchParams.set("amount", "250");
+    url.searchParams.set("status", "Funded");
+
+    const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
+    expect(response.status).toBe(200);
+
+    const imageResp = response as unknown as {
+      element: React.ReactElement<{
+        style: Record<string, unknown>;
+        children: React.ReactNode[];
+      }>;
+      options: { width: number; height: number };
+    };
+
+    expect(imageResp.options.width).toBe(1200);
+    expect(imageResp.options.height).toBe(630);
+    expect(imageResp.element.props.style.backgroundColor).toBe("#1B2A6B");
+
+    const elementStr = JSON.stringify(imageResp.element);
+    const statusMatches = elementStr.match(/Status:\s*Funded/g);
+    expect(statusMatches).toHaveLength(1);
   });
 
   it("returns 401 for an unauthenticated request", async () => {

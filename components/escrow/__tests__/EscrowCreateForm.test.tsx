@@ -139,7 +139,7 @@ describe("EscrowCreateForm", () => {
       await user.type(screen.getByLabelText("Description"), "Something");
       await submitForm(user);
 
-      expect(screen.getByText("Price must be a positive number.")).toBeInTheDocument();
+      expect(screen.getByText("Price must be at least 0.01 USDC.")).toBeInTheDocument();
       expect(mockCreateEscrow).not.toHaveBeenCalled();
     });
 

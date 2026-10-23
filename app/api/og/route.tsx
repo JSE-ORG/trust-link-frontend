@@ -28,36 +28,78 @@ export async function GET(request: NextRequest) {
 
     return new ImageResponse(
       (
-        <div className="h-full w-full flex flex-col items-start justify-center bg-[#1B2A6B] p-[80px] relative">
-          <div className="flex flex-col text-white w-full">
-            <h1 className="text-[60px] font-bold m-0 mb-[20px]">
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            backgroundColor: '#1B2A6B',
+            padding: '80px',
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              color: '#ffffff',
+              width: '100%',
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 60,
+                fontWeight: 'bold',
+                margin: 0,
+                marginBottom: 20,
+              }}
+            >
               {title || 'TrustLink Escrow'}
             </h1>
-            
+
             {amount && (
-              <div className="text-[40px] mt-[20px] text-[#38bdf8]">
+              <div
+                style={{
+                  fontSize: 40,
+                  marginTop: 20,
+                  color: '#38bdf8',
+                  display: 'flex',
+                }}
+              >
                 Amount: {amount} USDC
               </div>
             )}
-            
+
             {status && (
-              <div className="text-[32px] mt-[20px] bg-white/10 px-[20px] py-[10px] rounded-[20px] flex w-max">
-                <div style={{ 
-                  fontSize: 32, 
-                  marginTop: 20, 
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+              <div
+                style={{
+                  fontSize: 32,
+                  marginTop: 20,
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   padding: '10px 20px',
-                  borderRadius: '20px',
+                  borderRadius: 20,
                   display: 'flex',
-                  width: 'auto'
-                }}>
-                  Status: {status}
-                </div>
+                  width: 'auto',
+                }}
+              >
                 Status: {status}
               </div>
             )}
           </div>
-          <div className="absolute bottom-[40px] right-[80px] text-white text-[24px] opacity-80">
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 40,
+              right: 80,
+              color: '#ffffff',
+              fontSize: 24,
+              opacity: 0.8,
+              display: 'flex',
+            }}
+          >
             TrustLink - Secure Escrows
           </div>
         </div>

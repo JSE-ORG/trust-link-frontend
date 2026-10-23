@@ -221,5 +221,18 @@
     "feature2Text": "Settle transactions quick for Stellar network.",
     "feature3Title": "Built for Vendors",
     "feature3Text": "Tools wey go help you grow and manage escrows."
+  },
+  "escrow": {
+    "errors": {
+      "itemNameRequired": "E need the item name.",
+      "itemNameTooLong": "Item name no suppose pass {{max}} character.",
+      "priceRequired": "E need the price.",
+      "priceFormat": "Put positive amount for the USDC, number only (lek say 123.45).",
+      "priceTooSmall": "Price no suppose below {{min}} USDC.",
+      "priceTooLarge": "Price no suppose pass {{max}} USDC.",
+      "descriptionRequired": "E need the description.",
+      "descriptionTooLong": "Description no suppose pass {{max}} character.",
+      "shippingWindowInvalid": "Choose the correct shipping window."
+    }
   }
 }
