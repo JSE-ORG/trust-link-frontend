@@ -2,9 +2,12 @@ import { act, render, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { captureError } from "@/lib/logger";
+
 import { ServiceWorkerProvider } from "./ServiceWorkerProvider";
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
+vi.mock("@/lib/logger", () => ({ captureError: vi.fn() }));
 
 class MockWorker extends EventTarget {
   state: ServiceWorkerState = "installing";
@@ -117,5 +120,22 @@ describe("ServiceWorkerProvider", () => {
       expect.any(Function)
     );
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed registration through the logger, not the console", async () => {
+    const failure = new Error("sw.js 404");
+    serviceWorker.register.mockRejectedValue(failure);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    render(<ServiceWorkerProvider />);
+
+    await waitFor(() =>
+      expect(captureError).toHaveBeenCalledWith(failure, {
+        scope: "ui",
+        action: "registerServiceWorker",
+      })
+    );
+    expect(consoleSpy).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });
