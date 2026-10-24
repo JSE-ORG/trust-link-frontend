@@ -1,6 +1,6 @@
-import { describe, expect,it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { formatUSDC } from "./currency";
+import { convertFromUSDC, formatCurrency, formatUSDC } from "./currency";
 
 describe("formatUSDC", () => {
   it("formats a whole number with two decimal places", () => {
@@ -44,6 +44,50 @@ describe("formatUSDC", () => {
   });
 
   it("formats very large numbers with thousand separators", () => {
-    expect(formatUSDC(1000000)).toBe("1,000,000.00 USDC");
+    expect(formatUSDC(1_000_000_000_000)).toBe("1,000,000,000,000.00 USDC");
+  });
+
+  it.each([NaN, Infinity, -Infinity])("returns the fallback for %s", (value) => {
+    expect(formatUSDC(value)).toBe("0.00 USDC");
+  });
+});
+
+describe("convertFromUSDC", () => {
+  it.each([
+    ["USDC", 1],
+    ["USD", 1],
+    ["EUR", 0.92],
+    ["NGN", 1500],
+    ["GBP", 0.78],
+  ] as const)("converts to %s using its display rate", (currency, rate) => {
+    expect(convertFromUSDC(10, currency)).toBe(10 * rate);
+  });
+
+  it("preserves negative amounts during conversion", () => {
+    expect(convertFromUSDC(-10, "EUR")).toBeCloseTo(-9.2);
+  });
+
+  it.each([NaN, Infinity, -Infinity])("returns zero for %s", (value) => {
+    expect(convertFromUSDC(value, "USD")).toBe(0);
+  });
+});
+
+describe("formatCurrency", () => {
+  it.each([
+    ["USDC", "USDC 1,234.50"],
+    ["USD", "$1,234.50"],
+    ["EUR", "€1,135.74"],
+    ["NGN", "₦1,851,750.00"],
+    ["GBP", "£962.91"],
+  ] as const)("formats %s with its symbol and display rate", (currency, expected) => {
+    expect(formatCurrency(1234.5, currency)).toBe(expected);
+  });
+
+  it("formats negative amounts", () => {
+    expect(formatCurrency(-100, "USD")).toBe("$-100.00");
+  });
+
+  it.each([NaN, Infinity, -Infinity])("formats %s as zero", (value) => {
+    expect(formatCurrency(value, "USD")).toBe("$0.00");
   });
 });
