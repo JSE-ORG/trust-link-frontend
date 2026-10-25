@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import TrackingLookupForm from "@/components/tracking/TrackingLookupForm";
+
 export const metadata: Metadata = {
   title: "Track Order | TrustLink",
   description:
@@ -40,6 +42,7 @@ export default function TrackingPage() {
           <p className="text-sm text-zinc-500 dark:text-zinc-500">
             The tracking URL should look like: <span className="font-mono">/track/[escrowId]</span>
           </p>
+          <TrackingLookupForm />
         </div>
       </div>
     </main>

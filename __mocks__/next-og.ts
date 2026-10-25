@@ -8,8 +8,11 @@
  */
 
 export class ImageResponse extends Response {
+  element: unknown;
+  options?: { width?: number; height?: number; headers?: Record<string, string> };
+
   constructor(
-    _element: unknown,
+    element: unknown,
     options?: { width?: number; height?: number; headers?: Record<string, string> }
   ) {
     // Return a 1×1 transparent PNG so content-type and status are valid.
@@ -23,5 +26,7 @@ export class ImageResponse extends Response {
         ...(options?.headers ?? {}),
       },
     });
+    this.element = element;
+    this.options = options;
   }
 }

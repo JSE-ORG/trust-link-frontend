@@ -221,5 +221,18 @@
     "feature2Text": "Réglez les transactions rapidement sur le réseau Stellar.",
     "feature3Title": "Conçu pour les vendeurs",
     "feature3Text": "Des outils conçus pour vous aider à développer et gérer les séquestres."
+  },
+  "escrow": {
+    "errors": {
+      "itemNameRequired": "Le nom de l'article est requis.",
+      "itemNameTooLong": "Le nom de l'article doit contenir au maximum {{max}} caractères.",
+      "priceRequired": "Le prix est requis.",
+      "priceFormat": "Saisissez un montant positif en USDC, uniquement avec des chiffres (par exemple 123.45).",
+      "priceTooSmall": "Le prix doit être d'au moins {{min}} USDC.",
+      "priceTooLarge": "Le prix ne doit pas dépasser {{max}} USDC.",
+      "descriptionRequired": "La description est requise.",
+      "descriptionTooLong": "La description doit contenir au maximum {{max}} caractères.",
+      "shippingWindowInvalid": "Sélectionnez un délai de livraison valide."
+    }
   }
 }

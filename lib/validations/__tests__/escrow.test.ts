@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import { EscrowCreateSchema } from "../escrow";
+import { ESCROW_LIMITS, EscrowCreateSchema } from "../escrow";
 
 describe("EscrowCreateSchema", () => {
   describe("itemName", () => {
@@ -39,7 +38,7 @@ describe("EscrowCreateSchema", () => {
 
     it("should reject item names exceeding max length", () => {
       const result = EscrowCreateSchema.safeParse({
-        itemName: "a".repeat(201),
+        itemName: "a".repeat(ESCROW_LIMITS.itemNameMaxLength + 1),
         priceUSDC: "10.50",
         description: "Test",
         shippingWindow: "1-3 days",
@@ -86,7 +85,7 @@ describe("EscrowCreateSchema", () => {
       const result = EscrowCreateSchema.safeParse({
         itemName: "Test Item",
         priceUSDC: "10.50",
-        description: "a".repeat(2001),
+        description: "a".repeat(ESCROW_LIMITS.descriptionMaxLength + 1),
         shippingWindow: "1-3 days",
       });
       expect(result.success).toBe(false);
@@ -221,7 +220,7 @@ describe("EscrowCreateSchema", () => {
       });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Please select a valid shipping window.");
+        expect(result.error.issues[0].message).toBe("Select a valid shipping window.");
       }
     });
   });

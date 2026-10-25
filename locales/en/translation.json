@@ -254,5 +254,18 @@
     "feature2Text": "Settle transactions quickly on the Stellar network.",
     "feature3Title": "Built for Vendors",
     "feature3Text": "Tools designed to help you grow and manage escrows."
+  },
+  "escrow": {
+    "errors": {
+      "itemNameRequired": "Item name is required.",
+      "itemNameTooLong": "Item name must be {{max}} characters or fewer.",
+      "priceRequired": "Price is required.",
+      "priceFormat": "Enter a positive amount in USDC using numbers only (for example 123.45).",
+      "priceTooSmall": "Price must be at least {{min}} USDC.",
+      "priceTooLarge": "Price must be {{max}} USDC or less.",
+      "descriptionRequired": "Description is required.",
+      "descriptionTooLong": "Description must be {{max}} characters or fewer.",
+      "shippingWindowInvalid": "Select a valid shipping window."
+    }
   }
 }

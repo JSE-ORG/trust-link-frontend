@@ -5,67 +5,80 @@
  * the price must be a plain decimal amount inside a sane range. Scientific
  * notation, dust and overflowing amounts are rejected because the escrow
  * service only accepts fixed-precision USDC strings.
+ *
+ * Every message is resolved through the i18next singleton *at parse time*
+ * (the `error` factories below), so switching the active language in the
+ * footer is immediately reflected in the form without rebuilding the schema.
  */
 import { z } from "zod";
+
+import i18n from "@/lib/i18n";
 
 export const shippingOptions = ["Same day", "1-3 days", "1 week", "Custom"] as const;
 
 export const ESCROW_LIMITS = {
   /** Maximum length of the item name, in characters. */
-  itemNameMaxLength: 200,
+  itemNameMaxLength: 80,
   /** Maximum length of the item description, in characters. */
-  descriptionMaxLength: 2000,
+  descriptionMaxLength: 500,
   /** Maximum number of decimal places accepted in the price. */
   priceMaxDecimals: 6,
+  /** Smallest accepted price — anything lower is dust. */
+  priceMinUSDC: 0.01,
   /** Largest accepted price — guards against overflow. */
   priceMaxUSDC: 1_000_000,
 } as const;
 
 /**
- * Plain decimal only: integer part, optional fractional part of at most
+ * Plain decimal only: optional integer part, optional fractional part of at most
  * `priceMaxDecimals` digits. Rejects signs, exponents (`1e1000`), thousands
  * separators, hex and any other `Number()` coercion trick.
  */
-const PRICE_REGEX = new RegExp(
+const PRICE_PATTERN = new RegExp(
   `^\\d+(?:\\.\\d{1,${ESCROW_LIMITS.priceMaxDecimals}})?$`
 );
 
+const t = (key: string, options?: Record<string, string | number>) =>
+  i18n.t(key, options);
+
+export const itemNameSchema = z
+  .string({ error: () => t("escrow.errors.itemNameRequired") })
+  .trim()
+  .min(1, { error: () => t("escrow.errors.itemNameRequired") })
+  .max(ESCROW_LIMITS.itemNameMaxLength, {
+    error: () =>
+      t("escrow.errors.itemNameTooLong", { max: ESCROW_LIMITS.itemNameMaxLength }),
+  });
+
+export const priceSchema = z
+  .string({ error: () => t("escrow.errors.priceRequired") })
+  .trim()
+  .min(1, { error: () => t("escrow.errors.priceRequired") })
+  .regex(PRICE_PATTERN, { error: () => t("escrow.errors.priceFormat") })
+  .refine((value) => Number(value) >= ESCROW_LIMITS.priceMinUSDC, {
+    error: () => t("escrow.errors.priceTooSmall", { min: ESCROW_LIMITS.priceMinUSDC }),
+  })
+  .refine((value) => Number(value) <= ESCROW_LIMITS.priceMaxUSDC, {
+    error: () => t("escrow.errors.priceTooLarge", { max: ESCROW_LIMITS.priceMaxUSDC }),
+  });
+
+export const descriptionSchema = z
+  .string({ error: () => t("escrow.errors.descriptionRequired") })
+  .trim()
+  .min(1, { error: () => t("escrow.errors.descriptionRequired") })
+  .max(ESCROW_LIMITS.descriptionMaxLength, {
+    error: () =>
+      t("escrow.errors.descriptionTooLong", {
+        max: ESCROW_LIMITS.descriptionMaxLength,
+      }),
+  });
+
 export const EscrowCreateSchema = z.object({
-  // The `error` option customises zod's built-in "expected string, received
-  // undefined" for a *missing* field; the `.min(1)` covers an empty string.
-  itemName: z
-    .string({ error: "Item name is required." })
-    .trim()
-    .min(1, "Item name is required.")
-    .max(
-      ESCROW_LIMITS.itemNameMaxLength,
-      `Item name must not exceed ${ESCROW_LIMITS.itemNameMaxLength} characters.`
-    ),
-  priceUSDC: z
-    .string({ error: "Price is required." })
-    .trim()
-    .min(1, "Price is required.")
-    .refine(
-      (val) => PRICE_REGEX.test(val),
-      `Price must be a positive number with up to ${ESCROW_LIMITS.priceMaxDecimals} decimal places.`
-    )
-    .refine(
-      (val) => {
-        const num = Number(val);
-        return !Number.isNaN(num) && num > 0 && num <= ESCROW_LIMITS.priceMaxUSDC;
-      },
-      `Price must be a positive number no greater than ${ESCROW_LIMITS.priceMaxUSDC} USDC.`
-    ),
-  description: z
-    .string({ error: "Description is required." })
-    .trim()
-    .min(1, "Description is required.")
-    .max(
-      ESCROW_LIMITS.descriptionMaxLength,
-      `Description must not exceed ${ESCROW_LIMITS.descriptionMaxLength} characters.`
-    ),
+  itemName: itemNameSchema,
+  priceUSDC: priceSchema,
+  description: descriptionSchema,
   shippingWindow: z.enum(shippingOptions, {
-    error: "Please select a valid shipping window.",
+    error: () => t("escrow.errors.shippingWindowInvalid"),
   }),
 }).strict();
 
