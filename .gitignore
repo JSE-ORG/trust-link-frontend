@@ -37,7 +37,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 !.env.example
 
 # vercel
@@ -54,3 +53,4 @@ WAVE_ISSUES.md
 issues.txt
 
 upload_issues.sh
+config.bat
