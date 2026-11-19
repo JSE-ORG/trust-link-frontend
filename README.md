@@ -355,6 +355,8 @@ PORT=3001 npm run dev
 For more detailed configuration information, see:
 
 - `docs/ENV_VARS.md` - Complete environment variable documentation (also available as `ENV_VARS.md` at root)
+- `docs/SERVICE_WORKER.md` - Service worker offline fallback and update lifecycle guide
+- `docs/LOCALIZATION.md` - Localization (i18n) key conventions and contribution guide
 - `DEPLOYMENT.md` - Production deployment checklist
 - `CONTRIBUTING.md` - Development workflow and guidelines
 
