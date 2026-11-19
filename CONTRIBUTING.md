@@ -398,18 +398,32 @@ Closes #
 
 ## Testing
 
+TrustLink uses **Vitest** for unit/component tests and **Playwright** for end-to-end testing. See the [Test Selection & Fixture Architecture Guide](docs/TEST_SELECTION_AND_FIXTURES.md) for full details on module shims, SSR vs CSR fixtures, and CI job states.
+
 ```bash
-# Unit + component tests (Jest + React Testing Library)
+# Unit + component tests (Vitest + React Testing Library)
 npm run test
 
-# Watch mode
-npm run test:watch
+# Run a specific unit test file
+npx vitest run components/providers/SubscriptionProvider.test.tsx
+
+# Watch mode (interactive)
+npx vitest
 
 # Coverage report
-npm run test:coverage
+npx vitest run --coverage
 
-# End-to-end tests (Playwright)
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# End-to-end tests (Playwright — requires `npm run build` first)
 npm run test:e2e
+
+# Interactive Playwright debugger
+npm run test:e2e:ui
 ```
 
 ### What to Test

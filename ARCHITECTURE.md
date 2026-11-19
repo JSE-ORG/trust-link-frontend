@@ -1,226 +1,281 @@
 # Architecture Overview
 
-This document describes the current frontend architecture for TrustLink and how the main pieces connect during a typical escrow flow.
+This document describes the frontend architecture for TrustLink, documenting actual modules, provider mounting structure, data access paths, and legacy boundaries alongside planned consolidations.
 
-## Component Tree
+---
+
+## Component & Module Tree
+
+The following diagram reflects the concrete files and modules present in the repository, distinguishing current parallel access paths from planned consolidations.
 
 ```mermaid
 flowchart TD
-    %% ── App Router ──
-    A[app/] --> B[layout.tsx<br/>Root Layout & Provider Tree]
-    A --> C[page.tsx<br/>Landing Page]
-    A --> D[dashboard/page.tsx<br/>Vendor Dashboard]
-    A --> E[pay/escrowId/page.tsx<br/>Buyer Payment]
-    A --> F[track/escrowId/page.tsx<br/>Order Tracking]
-    A --> G[admin/disputes/page.tsx<br/>Admin Panel]
-    A --> H[onboarding/page.tsx<br/>Vendor Onboarding]
-    A --> I[notifications/page.tsx<br/>Notifications]
-    A --> J[api/<br/>Next.js API Routes]
+    %% ── App Router (app/) ──
+    subgraph APP["app/ (App Router)"]
+        A_LAYOUT["layout.tsx<br/>Root Layout & Provider Hierarchy"]
+        A_PAGE["page.tsx<br/>Landing Page"]
+        A_DASH["dashboard/page.tsx<br/>Vendor Dashboard"]
+        A_PAY["pay/[escrowId]/page.tsx<br/>Buyer Payment (Server Component)"]
+        A_TRACK["track/[escrowId]/page.tsx<br/>Order Tracking"]
+        A_ADMIN["admin/disputes/page.tsx<br/>Admin Dispute Resolution"]
+        A_ONBOARD["onboarding/page.tsx<br/>Vendor Onboarding"]
+        A_NOTIF["notifications/page.tsx<br/>Notifications View"]
+        A_CREATE["create/page.tsx<br/>Escrow Creation"]
+        A_OG["api/og/route.tsx<br/>OG Image Generation"]
+        A_ESC_ROUTE["escrow/route.ts<br/>Local API Proxy (GET, POST)"]
+        A_SHIP_ROUTE["escrow/[id]/ship/route.ts<br/>Local Mock Ship Handler"]
+    end
 
-    %% ── Providers (mounted in layout.tsx) ──
-    P[components/providers/]
-    P --> P1[ThemeProvider]
-    P --> P2[NetworkProvider]
-    P --> P3[WalletProvider<br/>Freighter + SEP-10]
-    P --> P4[SubscriptionProvider<br/>Plan FREE/PRO]
-    P --> P5[CurrencyProvider]
-    P --> P6[I18nProvider]
-    P --> P7[NotificationProvider<br/>Polling + read state]
-    P --> P8[ServiceWorkerProvider]
+    %% ── Provider Hierarchy (mounted in layout.tsx) ──
+    subgraph PROV["components/providers/ (Provider Hierarchy)"]
+        P_THEME["ThemeProvider<br/>next-themes dark/light"]
+        P_NET["NetworkProvider<br/>Mainnet/Testnet context"]
+        P_SW["ServiceWorkerProvider<br/>Offline PWA support"]
+        P_WALLET["WalletProvider<br/>Freighter + SEP-10 Auth Context"]
+        P_SUB["SubscriptionProvider<br/>FREE/PRO plan + 5m cache"]
+        P_CURR["CurrencyProvider<br/>Currency selection & formatting"]
+        P_I18N["I18nProvider<br/>react-i18next context"]
+        P_NOTIF["NotificationProvider<br/>Polling (30s) + read state"]
+    end
 
-    %% ── Domain Components ──
-    C1[components/escrow/]
-    C1 --> C1a[EscrowCreateForm]
-    C1 --> C1b[EscrowLinkCard]
-    C1 --> C1c[DisputeForm<br/>+ DisputeStep*]
-    C1 --> C1d[TrackingTimeline]
-
-    C2[components/dashboard/]
-    C2 --> C2a[VendorDashboardList<br/>+ Card/Table Toggle]
-    C2 --> C2b[EscrowTableRow]
-    C2 --> C2c[VendorAnalyticsSection]
-    C2 --> C2d[TransactionHistoryExport]
-    C2 --> C2e[ShipTrackingModal]
-
-    C3[components/payment/]
-    C3 --> C3a[PaymentSection]
-    C3 --> C3b[PaymentForm]
-    C3 --> C3c[TrustBadge]
-    C3 --> C3d[EscrowCountdown]
-
-    C4[components/notifications/]
-    C4 --> C4a[NotificationBell<br/>Dropdown + unread badge]
-    C4 --> C4b[NotificationsPageContent]
-
-    C5[components/onboarding/]
-    C5 --> C5a[VendorOnboardingWizard<br/>3-step + localStorage]
-
-    C6[components/subscription/]
-    C6 --> C6a[ProGate<br/>Feature gating]
-    C6 --> C6b[UpgradeCTA]
-
-    C7[components/layout/]
-    C7 --> C7a[Navbar]
-    C7 --> C7b[Footer]
-    C7 --> C7c[BottomNav]
-    C7 --> C7d[TestnetBanner]
-
-    C8[components/ui/]
-    C8 --> C8a[shadcn/ui primitives<br/>Button Dialog Skeleton etc.]
+    %% ── UI & Domain Components ──
+    subgraph COMP["components/"]
+        C_ESCROW["components/escrow/<br/>EscrowCreateForm, EscrowLinkCard, DisputeForm"]
+        C_TRACK["components/tracking/<br/>TrackingTimeline, TrackingSection, TrackingLookupForm"]
+        C_DASH["components/dashboard/<br/>VendorDashboardList, EscrowTableRow, VendorAnalyticsSection, ShipTrackingModal"]
+        C_PAY["components/payment/<br/>PaymentSection, PaymentForm, TrustBadge, EscrowCountdown"]
+        C_NOTIF["components/notifications/<br/>NotificationBell, NotificationsPageContent"]
+        C_ONBOARD["components/onboarding/<br/>VendorOnboardingWizard (3-step)"]
+        C_SUB["components/subscription/<br/>ProGate, UpgradeCTA"]
+        C_WALLET["components/wallet/<br/>WalletConnectButton"]
+        C_LAYOUT["components/layout/<br/>Navbar, Footer, BottomNav, TestnetBanner, OfflineBanner"]
+        C_UI["components/ui/<br/>shadcn/ui primitives, CommandPalette, Toaster"]
+    end
 
     %% ── Hooks ──
-    HK[hooks/]
-    HK --> HK1[useWallet]
-    HK --> HK2[useEscrow]
-    HK --> HK3[useTracking]
-    HK --> HK4[useNetwork]
-    HK --> HK5[useNotifications]
-    HK --> HK6[useSubscription]
-    HK --> HK7[useCurrency]
-    HK --> HK8[useToast]
+    subgraph HOOKS["hooks/ & Provider Hooks"]
+        HK_WALLET["hooks/useWallet.ts<br/>Context consumer for WalletProvider"]
+        HK_ESCROW["hooks/useEscrow.ts<br/>Vendor escrows and creation"]
+        HK_TRACK["hooks/useTracking.ts<br/>Escrow tracking details"]
+        HK_NET["hooks/useNetwork.ts<br/>Re-export from NetworkProvider"]
+        HK_TOAST["hooks/useToast.ts<br/>Toast feedback"]
+        HK_NOTIF["useNotifications<br/>Exported from NotificationProvider.tsx"]
+        HK_SUB["useSubscription<br/>Exported from SubscriptionProvider.tsx"]
+        HK_CURR["useCurrency<br/>Exported from CurrencyProvider.tsx"]
+        HK_LEGACY_WALLET["hooks/useStellarWallet.ts<br/>(Legacy / Parallel Wallet Hook)"]
+    end
 
-    %% ── Lib / Utils ──
-    L[lib/]
-    L --> L1[api/client.ts<br/>getVendorEscrows createEscrow etc.]
-    L --> L2[stellar/contract.ts<br/>Soroban calls]
-    L --> L3[stellar/freighter.ts<br/>Wallet SDK wrapper]
-    L --> L4[stellar/horizon.ts<br/>Horizon helpers]
-    L --> L5[notifications.ts<br/>deriveNotifications]
-    L --> L6[rateLimit.ts<br/>Upstash / memory]
-    L --> L7[explorer.ts<br/>Stellar Expert links]
-    L --> L8[utils/currency.ts<br/>formatUSDC]
+    %% ── Data & Utility Layer ──
+    subgraph LIB["lib/ & utils/"]
+        L_CANONICAL["lib/api/client.ts<br/>Canonical API Client (request helper)"]
+        L_BARREL["lib/api.ts<br/>API Barrel re-exports"]
+        L_AUTH_STELLAR["lib/stellar.ts<br/>Direct fetch: /auth/challenge & verify"]
+        L_CONTRACT["lib/stellar/contract.ts<br/>Soroban contract invocations"]
+        L_FREIGHTER["lib/stellar/freighter.ts<br/>Freighter browser API wrapper"]
+        L_NETWORKS["lib/stellar/networks.ts<br/>Passphrase and RPC config"]
+        L_NOTIF["lib/notifications.ts<br/>deriveNotifications, localStorage read IDs"]
+        L_STORE["lib/escrowStore.ts<br/>In-memory mock store (for local mock route)"]
+        L_SESSION["lib/session.ts<br/>SESSION_KEY, refresh schedules, expiry events"]
+        L_RATELIMIT["lib/rateLimit.ts<br/>Upstash Redis & in-memory limiter"]
+        L_EXPLORER["lib/explorer.ts<br/>Stellar Expert link generator"]
+        U_CURRENCY["utils/currency.ts<br/>formatUSDC, formatCurrency"]
+    end
 
-    T[types/]
-    T --> T1[escrow.ts]
-    T --> T2[notifications.ts]
-    T --> T3[subscription.ts]
+    %% ── Types Layer ──
+    subgraph TYPES["types/"]
+        T_INDEX["types/index.ts<br/>Domain types: Escrow, Dispute, SubscriptionTier"]
+        T_API["types/api.ts<br/>API Request/Response interfaces"]
+        T_STELLAR["types/stellar.ts<br/>Network and Stellar account types"]
+        T_GUARDS["types/guards.ts<br/>Runtime response shape guards"]
+        T_STATUS["types/status.ts<br/>Escrow & Dispute status constants"]
+    end
 
-    %% ── Relationships ──
-    B --> P
-    D --> C2
-    E --> C3
-    F --> C1d
-    G --> C1c
-    H --> C5a
-    I --> C4b
-    C2a --> C2b
-    C4a --> P7
-    C5a --> P3
-    C6a --> P4
-    C7a --> C4a
-    C7a --> P2
+    %% ── Mounting & Tree Connections ──
+    A_LAYOUT --> P_THEME
+    P_THEME --> P_NET
+    P_NET --> P_SW
+    P_NET --> P_WALLET
+    P_WALLET --> P_SUB
+    P_SUB --> P_CURR
+    P_CURR --> P_I18N
+    P_I18N --> P_NOTIF
+    P_NOTIF --> C_LAYOUT
+    P_THEME --> C_UI
 
-    HK1 --> P3
-    HK2 --> L1
-    HK3 --> L1
-    HK5 --> P7
-    HK6 --> P4
-    HK1 --> L3
-    HK2 --> L2
-    C1a --> HK2
-    C3b --> HK1
-    C1d --> HK3
-    C2a --> HK2
-    C4a --> HK5
+    %% ── Page rendering components ──
+    A_DASH --> C_DASH
+    A_PAY --> C_PAY
+    A_TRACK --> C_TRACK
+    A_ADMIN --> C_ESCROW
+    A_ONBOARD --> C_ONBOARD
+    A_NOTIF --> C_NOTIF
+    A_CREATE --> C_ESCROW
+    A_CREATE --> C_WALLET
 
-    L1 --> L6
-    L2 --> L3
-    L2 --> L4
+    %% ── Hook to Provider relationships ──
+    HK_WALLET --> P_WALLET
+    HK_SUB --> P_SUB
+    HK_NOTIF --> P_NOTIF
+    HK_CURR --> P_CURR
+    HK_NET --> P_NET
 
-    %% ── Notification subsystem highlight ──
-    P7 -.->|polls 30s| L1
-    P7 -.->|derive| L5
-    C4a -.->|reads| P7
+    %% ── Component to Hook connections ──
+    C_DASH --> HK_ESCROW
+    C_DASH --> HK_WALLET
+    C_PAY --> HK_WALLET
+    C_PAY --> U_CURRENCY
+    C_NOTIF --> HK_NOTIF
+    C_SUB --> HK_SUB
+    C_ESCROW --> HK_ESCROW
 
-    %% ── Subscription subsystem highlight ──
-    P4 -.->|caches 5m| L1
-    C6a -.->|checks isPro| P4
+    %% ── Data Access Connections ──
+    HK_ESCROW --> L_BARREL
+    HK_TRACK --> L_BARREL
+    P_NOTIF -.->|polls 30s| L_BARREL
+    P_NOTIF -.->|derives| L_NOTIF
+    P_SUB -.->|caches 5m| L_BARREL
+    L_BARREL --> L_CANONICAL
+    L_CANONICAL --> L_SESSION
+    L_CANONICAL --> T_API
+    L_CANONICAL --> T_GUARDS
 
-    %% ── Onboarding highlight ──
-    C5a -.->|persists| HK1
+    %% ── Stellar & Wallet wiring ──
+    P_WALLET --> L_AUTH_STELLAR
+    P_WALLET --> L_FREIGHTER
+    P_WALLET --> L_SESSION
+    C_PAY --> L_CONTRACT
+    L_CONTRACT --> L_NETWORKS
+
+    %% ── Legacy & Parallel Boundaries (Dotted) ──
+    HK_LEGACY_WALLET -.->|uncoordinated parallel lifecycle| L_AUTH_STELLAR
+    A_SHIP_ROUTE -.->|in-memory local store| L_STORE
+    A_ESC_ROUTE -.->|server proxy| L_BARREL
 ```
 
-### Legend
+---
 
-| Symbol | Meaning |
-|--------|---------|
-| `[...]` rectangle | Module / file / component — a concrete code unit under `app/`, `components/`, `hooks/`, `lib/` or `types/` |
-| `subgraph` grouping (implied by prefix `P`, `C*`, `HK`, `L`, `T`) | Logical subsystem: **P** = Providers, **C1–C8** = Component domains, **HK** = Hooks, **L** = Library utilities, **T** = Types |
-| `A --> B` solid arrow | **Renders / imports / calls** — e.g., `dashboard/page.tsx` renders `VendorDashboardList`, `useWallet` reads `WalletProvider` |
-| `-.->` dashed arrow | **Async / polling / indirect data flow** — e.g., `NotificationProvider` polls `getVendorEscrows` every 30s, `deriveNotifications` transforms escrows |
-| `layout.tsx --> P` | Root layout mounts the provider tree that wraps the entire app — all client components must be descendants of these providers |
-| `NotificationBell` + `NotificationsPageContent` | **Notification subsystem** — `NotificationProvider` polls escrows, derives `AppNotification[]`, tracks read IDs in `localStorage`, exposes `useNotifications()` |
-| `VendorOnboardingWizard` | **Onboarding subsystem** — 3-step wizard (`Connect Wallet → Vendor Profile → Review`), state persisted to `localStorage` (`vendor.onboarding.state`), auto-advances on `useWallet().isConnected` |
-| `SubscriptionProvider` + `ProGate` | **Subscription subsystem** — fetches `getSubscription()`, caches plan 5 min (`subscription.cache`), `useSubscription()` exposes `isPro`, `ProGate` gates pro-only UI |
+## Provider Mounting Hierarchy (`app/layout.tsx`)
 
-> **Mermaid rendering note:** This diagram uses `flowchart TD` (top-down) with only alphanumeric IDs and HTML `<br/>` line breaks, which GitHub's Mermaid renderer supports. Avoid using `:` or `()` in node IDs if you extend the diagram.
-
-## Data Flow
-
-1. The user enters the app through the Next.js App Router under `app/`.
-2. `app/layout.tsx` mounts the provider tree: `ThemeProvider → NetworkProvider → WalletProvider → SubscriptionProvider → CurrencyProvider → I18nProvider → NotificationProvider`.
-3. Route-level pages (`dashboard`, `pay/[id]`, `track/[id]`, `onboarding`, `notifications`, `admin`) render domain components from `components/`.
-4. Components use hooks in `hooks/` (`useWallet`, `useEscrow`, `useTracking`, `useNotifications`, `useSubscription`, etc.) to read wallet, escrow, notification, and subscription state.
-5. Hooks and components call utility modules in `lib/` for API requests (`lib/api/client.ts`), Stellar interactions (`lib/stellar/contract.ts`, `lib/stellar/freighter.ts`), local storage (`escrowStore.ts`), and derived data (`lib/notifications.ts`).
-6. Shared contracts and response shapes are defined in `types/` (`escrow.ts`, `notifications.ts`, `subscription.ts`).
-
-## Main Responsibilities
-
-- `app/` — route entry points and page composition. Thin pages that compose providers and domain components.
-- `components/providers/` — React context providers that own state, side-effects, and persistence (wallet, notifications, subscription, currency, network, theme).
-- `components/escrow|dashboard|payment|notifications|onboarding|subscription|layout|ui/` — UI sections, forms, provider consumers, and page-specific views.
-- `hooks/` — reusable state and side-effect orchestration. Preferred public API for accessing provider state (e.g., `useWallet`, `useNotifications`, `useSubscription`).
-- `lib/` — network access, storage helpers, Stellar integration, rate limiting, and derived-data logic.
-- `types/` — shared TypeScript definitions used across the frontend.
-
-## Typical Escrow Flow
-
-1. A vendor completes `VendorOnboardingWizard` (connect wallet → profile → review) and opens `EscrowCreateForm`.
-2. The form uses `useEscrow` and `lib/api/client.ts` to create the link / escrow record (`POST /api/escrow`).
-3. The buyer visits `pay/[escrowId]` (`PaymentSection` + `PaymentForm`) or `track/[escrowId]` (`TrackingTimeline`) and connects a wallet via `WalletProvider` / `useWallet`.
-4. Wallet actions (`connect`, `signTransaction`) are handled through `WalletProvider` and the Stellar helper layer (`lib/stellar/freighter.ts`, `lib/stellar/contract.ts`).
-5. `NotificationProvider` polls `getVendorEscrows` every 30s, derives notifications via `lib/notifications.ts`, and `NotificationBell` displays the unread badge / dropdown; `NotificationsPageContent` shows the full list.
-6. Tracking and status updates are rendered from the escrow and timeline components; `VendorDashboardList` supports a persisted Card/Table toggle for the vendor's escrow list.
-7. Pro-only features are gated by `SubscriptionProvider` (`isPro`) and `ProGate` / `UpgradeCTA`.
-
-This structure keeps page routes thin, UI components reusable, and wallet/escrow/notification/subscription logic isolated for easier maintenance.
-
-## Provider Access Patterns
-
-All provider state has a single supported hook entry point — import the hook, never the provider directly:
-
-| Provider | Hook | Mounted in | Owns |
-|----------|------|------------|------|
-| `WalletProvider` (`components/providers/WalletProvider.tsx`) | `useWallet` from `@/hooks/useWallet` | `app/layout.tsx` | Freighter connection, SEP-10 challenge/response, `publicKey`/`jwt`/`signTransaction` |
-| `NotificationProvider` (`components/providers/NotificationProvider.tsx`) | `useNotifications` from same file | `app/layout.tsx` | Polling `getVendorEscrows`, deriving `AppNotification[]`, `readIds` in `localStorage`, `unreadCount` |
-| `SubscriptionProvider` (`components/providers/SubscriptionProvider.tsx`) | `useSubscription` from same file | `app/layout.tsx` | Fetching `getSubscription()`, 5-min cache (`subscription.cache`), `plan`/`isPro` |
-| `CurrencyProvider` | `useCurrency` | `app/layout.tsx` | Currency selection + `formatAmount` |
-| `NetworkProvider` | `useNetwork` | `app/layout.tsx` | `isMainnet` toggle |
+Providers wrap the application in a specific nested order to ensure dependencies (e.g. network selection required by wallet, and wallet authentication required by subscription and notifications) are initialized in sequence:
 
 ```
-useWallet()       →  WalletContext       →  WalletProvider       →  Freighter / SEP-10
-useNotifications()→  NotificationContext →  NotificationProvider →  getVendorEscrows + deriveNotifications + localStorage
-useSubscription() →  SubscriptionContext →  SubscriptionProvider →  getSubscription + localStorage cache
-(hooks/ or providers/) (internal)           (components/providers/)
+ThemeProvider
+  └── NetworkProvider
+        ├── ServiceWorkerProvider (sibling, registered for PWA / offline support)
+        ├── OfflineBanner (sibling)
+        ├── TestnetBanner (sibling)
+        └── WalletProvider
+              └── SubscriptionProvider
+                    └── CurrencyProvider
+                          └── I18nProvider
+                                └── NotificationProvider
+                                      ├── Navbar
+                                      ├── <main>{children}</main>
+                                      ├── Footer
+                                      ├── BottomNav
+                                      └── Toaster (Sonner)
+  └── CommandPalette (mounted under ThemeProvider, outside NetworkProvider)
 ```
 
-## Wallet Access
+### Provider Access Patterns & Real Exports
 
-Wallet state (connected public key, JWT, connect/disconnect/signTransaction) has a
-single supported entry point:
+Provider contexts are consumed via dedicated hooks. In several cases, the hook is exported directly from the provider file rather than a standalone file in `hooks/`:
 
-- **`useWallet` from `@/hooks/useWallet`** — import this in any component that
-  needs wallet state or actions. It must be rendered under `<WalletProvider>`
-  (mounted once in `app/layout.tsx`).
+| Provider | Exporting Module | Hook Import | Owns |
+|---|---|---|---|
+| `WalletProvider` | `components/providers/WalletProvider.tsx` | `useWallet` from `@/hooks/useWallet` | Freighter extension connection, SEP-10 challenge-response auth, JWT persistence, session expiry listener (`SESSION_EXPIRED_EVENT`), `signTransaction` |
+| `NotificationProvider` | `components/providers/NotificationProvider.tsx` | `useNotifications` from `@/components/providers/NotificationProvider` | 30s background polling of `getVendorEscrows`, deriving notifications (`lib/notifications.ts`), `readIds` persistence in `localStorage`, unread counts |
+| `SubscriptionProvider` | `components/providers/SubscriptionProvider.tsx` | `useSubscription` from `@/components/providers/SubscriptionProvider` | Subscription details (`getSubscription()`), 5-min caching in `localStorage` (`subscription.cache`), active tier (`FREE`/`PRO`), `isPro` flag |
+| `CurrencyProvider` | `components/providers/CurrencyProvider.tsx` | `useCurrency` from `@/components/providers/CurrencyProvider` | Selected display currency, FX rates, and `formatAmount` formatting helper |
+| `NetworkProvider` | `components/providers/NetworkProvider.tsx` | `useNetwork` from `@/components/providers/NetworkProvider` (or `@/hooks/useNetwork`) | Active Stellar network selection (`testnet` vs `mainnet`) and passphrases |
+| `ThemeProvider` | `components/providers/ThemeProvider.tsx` | `useTheme` from `next-themes` | Dark / light mode toggle with hydration-safe inline script |
 
-The wallet implementation lives entirely inside `WalletProvider` and should not
-be imported directly:
+---
 
-- `WalletProvider` (`components/providers/WalletProvider.tsx`) owns the React
-  context, implements the Freighter connection and SEP-10 challenge/response
-  flow, and exposes the `<WalletProvider>` wrapper component.
+## Actual Module Locations vs Legacy Documentation
+
+Earlier revisions of architecture documentation listed files that do not exist or placed utilities in incorrect folders. The table below clarifies actual locations:
+
+| Documented Inaccurately | Actual Repository Location | Notes |
+|---|---|---|
+| `lib/stellar/horizon.ts` | **Does not exist** | Horizon RPC calls are handled directly via `@stellar/stellar-sdk` or configured RPC URLs in `lib/stellar/networks.ts`. Stellar Expert explorer links are generated by `lib/explorer.ts`. |
+| `types/escrow.ts` | `types/index.ts` | Domain models (`Escrow`, `Dispute`, `SubscriptionTier`, `AppNotification`) are consolidated in `types/index.ts`. |
+| `types/notifications.ts` | `types/index.ts` | `AppNotification` and `NotificationFilter` reside in `types/index.ts`. Notification API preferences reside in `types/api.ts`. |
+| `types/subscription.ts` | `types/index.ts` & `types/api.ts` | Tier types reside in `types/index.ts`; API request/response types reside in `types/api.ts`. |
+| `lib/utils/currency.ts` | `utils/currency.ts` | `formatUSDC` and currency utility functions reside in the root `utils/` directory, imported as `@/utils/currency`. |
+| `components/escrow/TrackingTimeline.tsx` | `components/tracking/TrackingTimeline.tsx` | Tracking components (`TrackingTimeline`, `TrackingSection`, `TrackingLookupForm`) are grouped in `components/tracking/`. |
+| `hooks/useNotifications.ts` | `components/providers/NotificationProvider.tsx` | `useNotifications` is exported directly alongside the provider. |
+| `hooks/useSubscription.ts` | `components/providers/SubscriptionProvider.tsx` | `useSubscription` is exported directly alongside the provider. |
+| `hooks/useCurrency.ts` | `components/providers/CurrencyProvider.tsx` | `useCurrency` is exported directly alongside the provider. |
+
+---
+
+## Data Access Paths: Current Behavior vs Desired Consolidation
+
+TrustLink currently contains parallel data-access paths and legacy boundaries that are being consolidated in upcoming releases.
+
+### 1. Wallet Lifecycle Architecture
 
 ```
-useWallet()  →  WalletContext  →  WalletProvider  →  Freighter / SEP-10
-(hooks/)        (internal)         (components/)
+Current Reality (Parallel implementations):
+  [Components] ──> useWallet() ─────────> WalletProvider ──> Freighter / SEP-10 Auth (Session Sync)
+  [Legacy Path] ─> useStellarWallet() ──> Local State ────> Freighter / SEP-10 Auth (No Context Sync)
+
+Desired Consolidation (Backlog Issues #101, #102):
+  [All Components] ──> useWallet() ──> WalletProvider ──> Centralized Session & Refresh
 ```
+
+- **Current Behavior**:
+  - `WalletProvider` (`components/providers/WalletProvider.tsx`) is the supported context provider. It stores the JWT in `localStorage` (`wallet.jwt` via `SESSION_KEY`), manages session refresh timers (`lib/session.ts`), listens for `SESSION_EXPIRED_EVENT`, and sets the logger user identity.
+  - `useStellarWallet` (`hooks/useStellarWallet.ts`) is an uncoordinated parallel hook that implements its own independent state (`publicKey`, `token`) and writes to `wallet.token` instead of `wallet.jwt`. It does not share state across components or handle global expiry events.
+- **Consolidation Target**: Unify all wallet consumers behind `WalletProvider` and `useWallet`, removing `useStellarWallet`.
+
+### 2. HTTP Transport & API Client
+
+```
+Current Reality (Mixed transport layers):
+  [Hooks / Components] ──> lib/api.ts (barrel) ──> lib/api/client.ts (Canonical Client)
+  [Auth Helpers] ────────> lib/stellar.ts ─────────> Direct fetch() (/auth/challenge, /auth/verify)
+  [Client Fetches] ──────> TrackingSection/Pricing ─> Direct fetch()
+  [Local Next.js Routes] ─> app/escrow/route.ts ────> Proxies to lib/api
+  [Local Mock Route] ────> app/escrow/[id]/ship ───> lib/escrowStore.ts (In-memory mock)
+
+Desired Consolidation (Backlog Issue #106):
+  [All Network Calls] ───> lib/api/client.ts ──────> Single HTTP Transport & Error Layer
+```
+
+- **Current Behavior**:
+  - `lib/api/client.ts` is the canonical typed client. It implements the centralized `request<T>()` helper, attaches `Authorization: Bearer <token>`, catches network rejections via `ApiNetworkError`, parses structured error payloads with `ApiError`, triggers `handleSessionExpired()` on 401s, and validates responses against runtime type guards (`types/guards.ts`).
+  - `lib/api.ts` is a barrel file re-exporting client functions and types for backwards compatibility.
+  - `lib/stellar.ts` handles SEP-10 authentication (`getChallenge`, `verifyChallenge`) by calling `fetch` directly with custom error parsing rather than using `lib/api/client.ts`.
+  - Certain client components (e.g. `components/tracking/TrackingSection.tsx`, `app/pricing/PricingClient.tsx`) issue direct `fetch` calls.
+  - Next.js Route Handlers:
+    - `app/escrow/route.ts`: Server-side proxy with rate limiting (`lib/rateLimit.ts`) and Zod validation, delegating to `lib/api`.
+    - `app/escrow/[id]/ship/route.ts`: Local mock endpoint updating in-memory store `lib/escrowStore.ts`.
+- **Consolidation Target**: Migrate `lib/stellar.ts` and direct page fetches onto `lib/api/client.ts` to share transport, retry, and auth refresh logic.
+- **Detailed Matrix Reference**: For a comprehensive map of all 19 canonical client endpoints, auth helper functions, local route handlers, request/response payload types, and singular/plural fallback conventions, see [Frontend API Endpoint & Authentication Matrix](docs/API_MATRIX.md).
+
+### 3. Server Components vs Client Pages
+
+- Documentation previously stated all pages are thin wrappers composing domain components.
+- In practice:
+  - **Server Components with Data Fetching**: `app/pay/[escrowId]/page.tsx` is an async Server Component that executes `getEscrow(escrowId)` during server render (`generateMetadata`) to produce dynamic Open Graph metadata and title tags before streaming HTML.
+  - **Dynamic Client Pages**: `app/dashboard/page.tsx` and `app/create/page.tsx` serve as lightweight entry points wrapping client-side state managers (`DashboardClient`, `EscrowCreateForm`) inside React `<Suspense>` boundaries.
+
+---
+
+## Escrow Lifecycle Flow
+
+1. **Escrow Creation**: A vendor connects their wallet via `WalletProvider` (`useWallet`), inputs terms in `EscrowCreateForm`, and submits via `createEscrow()` (`POST /escrow`).
+2. **Buyer Payment**:
+   - The buyer accesses `app/pay/[escrowId]/page.tsx`. Server metadata loads the item title and amount.
+   - `PaymentForm` checks mock flags (`NEXT_PUBLIC_USE_MOCKS` and `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS`). For full documentation of flags, stages, and boundaries, see [Payment Mock Flags & Production Funding Boundaries](docs/PAYMENT_BOUNDARIES.md).
+   - In production/testnet, `buildFundingTransactionXdr()` constructs the Soroban `fund_escrow` invocation, the buyer signs via Freighter (`signTransaction`), and `submitTransaction()` submits the signed XDR to the Soroban RPC, polling until ledger inclusion.
+3. **Fulfillment & Shipping**:
+   - The vendor opens `ShipTrackingModal` on the dashboard and submits tracking details via `shipEscrow()` (`POST /escrows/:id/ship`).
+   - The buyer tracks package movement in `TrackingTimeline` (`GET /escrows/:id/tracking`).
+4. **Delivery Confirmation / Funds Release**:
+   - The buyer confirms receipt in `TrackingTimeline`, invoking `confirmDelivery()` (`POST /escrows/:id/confirm`) to release funds to the vendor.
+5. **Dispute Handling**:
+   - In case of a defect or non-delivery, either party submits `DisputeForm` via `createDispute()` (`POST /escrows/:id/dispute`).
+   - Admins review active disputes in `app/admin/disputes/page.tsx` (`GET /disputes?status=OPEN,UNDER_REVIEW`) and execute resolutions via `resolveDispute()` (`PATCH /disputes/:id/resolve`).

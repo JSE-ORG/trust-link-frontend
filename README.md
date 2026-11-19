@@ -418,24 +418,35 @@ const {
 
 ## Testing
 
+TrustLink uses **Vitest** for unit and component testing and **Playwright** for end-to-end integration flows. For full documentation on Next.js module shims, dual-layer fixture architecture, and CI status, see the [Test Selection & Fixture Architecture Guide](docs/TEST_SELECTION_AND_FIXTURES.md).
+
 ```bash
-# Unit tests (Jest + React Testing Library)
+# Unit + component tests (Vitest + React Testing Library)
 npm run test
 
-# End-to-end tests (Playwright)
-npm run test:e2e
+# Run a specific unit test file
+npx vitest run components/providers/SubscriptionProvider.test.tsx
 
-# End-to-end tests in Playwright UI mode (interactive debugging)
-npm run test:e2e:ui
+# Unit tests in interactive watch mode
+npx vitest
 
 # Type checking
 npm run type-check
 
 # Lint
 npm run lint
+
+# End-to-end tests (Playwright — requires prior `npm run build`)
+npm run test:e2e
+
+# End-to-end tests in Playwright UI mode (interactive debugging)
+npm run test:e2e:ui
+
+# Storybook UI workshop (port 6006)
+npm run storybook
 ```
 
-Subscription provider tests cover cache freshness and expiry, explicit refetch after an upgrade, and FREE/loading/PRO states in `ProGate` and `UpgradeCTA`. Run this suite with `npm run test -- components/providers/SubscriptionProvider.test.tsx`.
+Subscription provider tests cover cache freshness and expiry, explicit refetch after an upgrade, and FREE/loading/PRO states in `ProGate` and `UpgradeCTA`. Run this suite with `npx vitest run components/providers/SubscriptionProvider.test.tsx`.
 
 ### Test Coverage Goals
 
