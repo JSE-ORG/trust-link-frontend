@@ -1,47 +1,15 @@
 "use client";
 
-import {
-  AlertCircle,
-  Banknote,
-  CheckCheck,
-  CircleCheck,
-  Clock,
-  Package,
-  RotateCcw,
-  ShieldAlert,
-  Truck,
-} from "lucide-react";
 import Link from "next/link";
-import type { JSX } from "react";
 
+import { getEscrowStatusPresentation, STATUS_BG } from "@/components/escrow/escrow-status";
 import { relativeTime, statusLabel } from "@/lib/notifications";
 import type { AppNotification, EscrowStatus } from "@/types";
 
-const STATUS_BG: Record<string, string> = {
-  PENDING: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
-  FUNDED: "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-  SHIPPED: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400",
-  COMPLETED: "bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400",
-  DISPUTED: "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400",
-  RELEASED: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
-  REFUNDED: "bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400",
-  EXPIRED: "bg-zinc-100 text-zinc-400 dark:bg-zinc-800",
-};
-
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const className = "h-5 w-5 shrink-0";
-  const icons: Record<EscrowStatus, JSX.Element> = {
-    PENDING: <Clock className={className} />,
-    FUNDED: <Banknote className={className} />,
-    SHIPPED: <Truck className={className} />,
-    COMPLETED: <CircleCheck className={className} />,
-    DISPUTED: <ShieldAlert className={className} />,
-    RELEASED: <CheckCheck className={className} />,
-    REFUNDED: <RotateCcw className={className} />,
-    EXPIRED: <AlertCircle className={className} />,
-  };
-
-  return <>{icons[type] ?? <Package className={className} />}</>;
+  const { icon: Icon } = getEscrowStatusPresentation(type);
+  return <Icon className={className} />;
 }
 
 interface NotificationRowProps {
