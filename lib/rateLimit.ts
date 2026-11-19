@@ -49,7 +49,65 @@ export const RATE_LIMITS = {
 
 // ── In-memory fallback (per-process; fine for dev/CI/single instance) ─────────
 
+/**
+ * Maximum entries retained in the in-memory fallback map to bound process memory.
+ * Defines a safe ceiling preventing unbounded memory accumulation from one-time keys.
+ */
+export const MAX_MEMORY_ENTRIES = 10_000;
+
+let currentMaxMemoryEntries = MAX_MEMORY_ENTRIES;
+
 const memoryHits = new Map<string, { count: number; reset: number }>();
+
+/**
+ * Prunes expired entries from the in-memory rate-limit map.
+ * Operates with bounded work: scans starting from oldest entries in insertion/LRU
+ * order and deletes expired windows until active entries are reached or maxBatch is hit.
+ *
+ * @param now Current timestamp in milliseconds (defaults to Date.now()).
+ * @param maxBatch Maximum number of expired entries to prune in one call.
+ * @returns Number of entries pruned.
+ */
+export function pruneExpiredEntries(
+  now: number = Date.now(),
+  maxBatch: number = currentMaxMemoryEntries
+): number {
+  let pruned = 0;
+  for (const [key, entry] of memoryHits) {
+    if (entry.reset <= now) {
+      memoryHits.delete(key);
+      pruned += 1;
+      if (pruned >= maxBatch) break;
+    } else {
+      // Since entries are generally ordered by expiration/usage, stop early
+      // when encountering valid active windows, bounding scan work.
+      break;
+    }
+  }
+  return pruned;
+}
+
+/**
+ * Enforces the bounded map ceiling by evicting expired entries first, and
+ * falling back to LRU eviction of the oldest entries if capacity is still exceeded.
+ */
+function enforceMemoryBounds(now: number): void {
+  if (memoryHits.size < currentMaxMemoryEntries) return;
+
+  // First pass: prune expired entries across the map
+  for (const [key, entry] of memoryHits) {
+    if (entry.reset <= now) {
+      memoryHits.delete(key);
+    }
+  }
+
+  // Second pass: if still at or over ceiling, evict oldest entries (FIFO / LRU)
+  while (memoryHits.size >= currentMaxMemoryEntries) {
+    const oldestKey = memoryHits.keys().next().value;
+    if (oldestKey === undefined) break;
+    memoryHits.delete(oldestKey);
+  }
+}
 
 function memoryLimit(
   key: string,
@@ -57,15 +115,28 @@ function memoryLimit(
   windowMs: number
 ): RateLimitResult {
   const now = Date.now();
+
+  // Opportunistic bounded cleanup: prune expired entries at the head of the map
+  pruneExpiredEntries(now);
+
   const entry = memoryHits.get(key);
 
   if (!entry || entry.reset <= now) {
+    if (entry) {
+      memoryHits.delete(key);
+    }
+    enforceMemoryBounds(now);
     const reset = now + windowMs;
     memoryHits.set(key, { count: 1, reset });
     return { success: true, limit, remaining: limit - 1, reset };
   }
 
+  // Active entry hit: refresh position to the back of the Map (MRU order)
+  // so frequently active clients are preserved during capacity eviction
+  memoryHits.delete(key);
   entry.count += 1;
+  memoryHits.set(key, entry);
+
   const remaining = Math.max(0, limit - entry.count);
   return {
     success: entry.count <= limit,
@@ -75,9 +146,20 @@ function memoryLimit(
   };
 }
 
-/** Test-only: clears the in-memory window state. */
+/** Returns the current number of entries in the in-memory fallback map. */
+export function __getRateLimitMemorySize(): number {
+  return memoryHits.size;
+}
+
+/** Test-only: overrides the maximum allowed entries in memoryHits. */
+export function __setMaxMemoryEntries(max: number): void {
+  currentMaxMemoryEntries = max;
+}
+
+/** Test-only: clears the in-memory window state and resets capacity limits. */
 export function __resetRateLimitMemory(): void {
   memoryHits.clear();
+  currentMaxMemoryEntries = MAX_MEMORY_ENTRIES;
 }
 
 // ── Upstash-backed limiter (lazy, only when configured) ───────────────────────
