@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
  */
 export default function VendorAnalyticsSkeleton() {
   return (
-    <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
+    <div className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full" />
@@ -44,6 +44,6 @@ export default function VendorAnalyticsSkeleton() {
           <Skeleton className="mt-6 h-72 w-full rounded-[1.75rem]" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

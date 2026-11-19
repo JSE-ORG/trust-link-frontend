@@ -242,4 +242,58 @@ describe("TrackingTimeline", () => {
     expect(screen.getByText("We couldn't load tracking status")).toBeInTheDocument();
     expect(screen.getByText("Failed to fetch escrow")).toBeInTheDocument();
   });
+
+  it("renders stages inside an owning ordered list", async () => {
+    await act(async () => {
+      render(
+        <TrackingTimeline escrowId="esc_123" initialEscrow={mockEscrow} />
+      );
+    });
+
+    const list = screen.getByRole("list");
+    expect(list).toBeInTheDocument();
+    const items = screen.getAllByRole("listitem");
+    expect(items.length).toBe(4);
+    for (const item of items) {
+      expect(list).toContainElement(item);
+    }
+  });
+
+  it("restricts tab focus to the visible slide on mobile viewport", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("767px"),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      await act(async () => {
+        render(
+          <TrackingTimeline escrowId="esc_123" initialEscrow={mockEscrow} />
+        );
+      });
+
+      const items = screen.getAllByRole("listitem");
+      expect(items[0]).toHaveAttribute("tabindex", "0");
+      expect(items[0]).toHaveAttribute("aria-hidden", "false");
+
+      for (let i = 1; i < items.length; i++) {
+        expect(items[i]).toHaveAttribute("tabindex", "-1");
+        expect(items[i]).toHaveAttribute("aria-hidden", "true");
+      }
+
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs.length).toBe(4);
+      expect(tabs[0]).toHaveClass("h-11", "w-11");
+      expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
 });

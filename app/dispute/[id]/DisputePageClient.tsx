@@ -17,7 +17,7 @@ function shortEscrowId(id: string): string {
 
 function DisputePageSkeleton() {
   return (
-    <main
+    <div
       className="min-h-screen bg-zinc-50 px-4 py-12 dark:bg-black sm:px-6"
       role="status"
       aria-live="polite"
@@ -50,7 +50,7 @@ function DisputePageSkeleton() {
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -87,7 +87,7 @@ export default function DisputePageClient({ id }: { id: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-black py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-zinc-50 dark:bg-black py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         <Breadcrumb
           className="mb-8"
@@ -139,6 +139,6 @@ export default function DisputePageClient({ id }: { id: string }) {
           </p>
         </footer>
       </div>
-    </main>
+    </div>
   );
 }

@@ -123,7 +123,11 @@
       "tooltipTransactionVolume": "Transaction volume: {{amount}}",
       "tooltipAverageOrder": "Average order: {{amount}}",
       "tooltipCompletionRate": "Completion rate: {{rate}}",
-      "tooltipDisputeRate": "Dispute rate: {{rate}}"
+      "tooltipDisputeRate": "Dispute rate: {{rate}}",
+      "viewDataTable": "View as data table",
+      "viewChart": "View as chart",
+      "dataTableCaption": "Daily vendor analytics data table showing transaction volume, average order value, completion rate, and dispute rate",
+      "date": "Date"
     }
   },
   "payment": {

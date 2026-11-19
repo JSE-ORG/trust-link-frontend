@@ -91,7 +91,7 @@ export default function PricingClient() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-12 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 px-6 py-12 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -287,6 +287,6 @@ export default function PricingClient() {
           </p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

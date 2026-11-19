@@ -244,5 +244,31 @@ describe("Production DisputeForm - app/dispute/[id]/DisputeForm", () => {
       expect(screen.getByText("a.pdf")).toBeInTheDocument();
       expect(screen.getByText("b.png")).toBeInTheDocument();
     });
+
+    it("makes the evidence picker keyboard focusable with sr-only class and associated hints", () => {
+      render(<DisputeForm escrowId="123" />);
+      const input = fileInput();
+
+      expect(input).not.toHaveClass("hidden");
+      expect(input).toHaveClass("sr-only");
+      expect(input).toHaveAttribute("aria-describedby", "evidence-hint");
+      expect(screen.getByText(/accepted formats/i)).toHaveAttribute("id", "evidence-hint");
+
+      input.focus();
+      expect(document.activeElement).toBe(input);
+    });
+
+    it("associates error message with the input via aria-describedby and aria-invalid when invalid", () => {
+      render(<DisputeForm escrowId="123" />);
+      const input = fileInput();
+      const invalidFile = new File(["bad"], "bad.exe", { type: "application/x-msdownload" });
+
+      setFiles(input, [invalidFile]);
+
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", "evidence-hint dispute-error");
+      const errorMsg = screen.getByRole("alert");
+      expect(errorMsg).toHaveAttribute("id", "dispute-error");
+    });
   });
 });

@@ -90,7 +90,11 @@
       "tooltipTransactionVolume": "Transaction amount: {{amount}}",
       "tooltipAverageOrder": "Average order amount: {{amount}}",
       "tooltipCompletionRate": "Percentage wey don complete: {{rate}}",
-      "tooltipDisputeRate": "Percentage wey get dispute: {{rate}}"
+      "tooltipDisputeRate": "Percentage wey get dispute: {{rate}}",
+      "viewDataTable": "View as data table",
+      "viewChart": "View as chart",
+      "dataTableCaption": "Daily vendor analytics data table wey show transaction amount, average order amount, completion rate, and dispute rate",
+      "date": "Date"
     }
   },
   "payment": {

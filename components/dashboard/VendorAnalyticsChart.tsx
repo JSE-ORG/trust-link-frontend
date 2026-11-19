@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Area,
@@ -131,51 +132,123 @@ export default function VendorAnalyticsChart({
   dataPoints,
   isMobile,
 }: VendorAnalyticsChartProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const { formatAmount } = useCurrency();
+  const [showTable, setShowTable] = useState(false);
+  const hasData = dataPoints.length > 0;
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={dataPoints} margin={{ top: 10, right: 10, left: -8, bottom: 0 }}>
-        <defs>
-          <linearGradient id="volumeStroke" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.95} />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.8} />
-          </linearGradient>
-          <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.18} />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(120,120,120,0.18)" />
-        <XAxis
-          dataKey="date"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={12}
-          interval={isMobile ? 5 : 2}
-          minTickGap={isMobile ? 24 : 16}
-          tickFormatter={(value: string | number) => formatAxisLabel(String(value), isMobile, i18n.language)}
-          tick={{ fill: "#71717a", fontSize: isMobile ? 11 : 12 }}
-        />
-        <YAxis
-          tickLine={false}
-          axisLine={false}
-          tickMargin={10}
-          width={isMobile ? 44 : 64}
-          tickFormatter={(value: string | number) => formatCompactVolume(Number(value), i18n.language)}
-          tick={{ fill: "#71717a", fontSize: isMobile ? 11 : 12 }}
-        />
-        <Tooltip content={<AnalyticsTooltip />} />
-        <Area
-          type="monotone"
-          dataKey="transactionVolume"
-          stroke="url(#volumeStroke)"
-          strokeWidth={3}
-          fill="url(#volumeFill)"
-          fillOpacity={1}
-          dot={false}
-          activeDot={{ r: 5, strokeWidth: 0 }}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="flex h-full w-full flex-col">
+      {hasData && (
+        <div className="mb-2 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => setShowTable((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            aria-expanded={showTable}
+          >
+            {showTable ? t("dashboard.analyticsPage.viewChart") : t("dashboard.analyticsPage.viewDataTable")}
+          </button>
+        </div>
+      )}
+
+      <div className="relative min-h-0 flex-1">
+        {(!showTable || !hasData) && (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={dataPoints} margin={{ top: 10, right: 10, left: -8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="volumeStroke" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.8} />
+                </linearGradient>
+                <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(120,120,120,0.18)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={12}
+                interval={isMobile ? 5 : 2}
+                minTickGap={isMobile ? 24 : 16}
+                tickFormatter={(value: string | number) => formatAxisLabel(String(value), isMobile, i18n.language)}
+                tick={{ fill: "#71717a", fontSize: isMobile ? 11 : 12 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                width={isMobile ? 44 : 64}
+                tickFormatter={(value: string | number) => formatCompactVolume(Number(value), i18n.language)}
+                tick={{ fill: "#71717a", fontSize: isMobile ? 11 : 12 }}
+              />
+              <Tooltip content={<AnalyticsTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="transactionVolume"
+                stroke="url(#volumeStroke)"
+                strokeWidth={3}
+                fill="url(#volumeFill)"
+                fillOpacity={1}
+                dot={false}
+                activeDot={{ r: 5, strokeWidth: 0 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+
+        {hasData && (
+          <div
+            className={
+              showTable
+                ? "h-full w-full overflow-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+                : "sr-only focus-within:not-sr-only focus-within:absolute focus-within:inset-0 focus-within:z-10 focus-within:overflow-auto focus-within:rounded-2xl focus-within:border focus-within:border-zinc-200 focus-within:bg-white focus-within:p-4 dark:focus-within:border-zinc-800 dark:focus-within:bg-zinc-950"
+            }
+            tabIndex={showTable ? 0 : undefined}
+            role={showTable ? "region" : undefined}
+            aria-label={showTable ? t("dashboard.analyticsPage.dataTableCaption") : undefined}
+          >
+            <table className="w-full border-collapse text-left text-xs sm:text-sm">
+              <caption className="sr-only">
+                {t("dashboard.analyticsPage.dataTableCaption")}
+              </caption>
+              <thead className="sticky top-0 border-b border-zinc-200 bg-zinc-50 font-semibold text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                <tr>
+                  <th scope="col" className="px-3 py-2 sm:px-4">{t("dashboard.analyticsPage.date")}</th>
+                  <th scope="col" className="px-3 py-2 sm:px-4">{t("dashboard.analyticsPage.totalTransactionVolume")} (USDC)</th>
+                  <th scope="col" className="px-3 py-2 sm:px-4">{t("dashboard.analyticsPage.averageOrderValue")} (USDC)</th>
+                  <th scope="col" className="px-3 py-2 sm:px-4">{t("dashboard.analyticsPage.completionRate")} (%)</th>
+                  <th scope="col" className="px-3 py-2 sm:px-4">{t("dashboard.analyticsPage.disputeRate")} (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {dataPoints.map((point) => (
+                  <tr key={point.date} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                    <td className="whitespace-nowrap px-3 py-2 font-medium text-zinc-950 dark:text-zinc-100 sm:px-4">
+                      {formatAxisLabel(point.date, false, i18n.language)}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-300 sm:px-4">
+                      {formatAmount(point.transactionVolume)}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-300 sm:px-4">
+                      {formatAmount(point.averageOrderValue)}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-300 sm:px-4">
+                      {formatRate(normalizeRate(point.completionRate))}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-zinc-600 dark:text-zinc-300 sm:px-4">
+                      {formatRate(normalizeRate(point.disputeRate))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

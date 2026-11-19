@@ -46,7 +46,7 @@ export default async function TrackPage({ params }: TrackPageProps) {
     }
 
     return (
-      <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+      <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
         <div className="mx-auto max-w-4xl">
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-900 dark:bg-red-950">
             <h1 className="mb-2 text-2xl font-semibold text-red-900 dark:text-red-100">
@@ -57,12 +57,12 @@ export default async function TrackPage({ params }: TrackPageProps) {
             </p>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         <Breadcrumb
           className="mb-6"
@@ -126,6 +126,6 @@ export default async function TrackPage({ params }: TrackPageProps) {
           </Suspense>
         </ErrorBoundary>
       </div>
-    </main>
+    </div>
   );
 }

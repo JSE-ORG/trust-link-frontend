@@ -11,7 +11,7 @@ import { SkeletonTable } from "@/components/ui/SkeletonTable";
  */
 export default function AdminDisputesLoading() {
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Heading + sort control */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -27,6 +27,6 @@ export default function AdminDisputesLoading() {
           <SkeletonTable rows={4} columns={3} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

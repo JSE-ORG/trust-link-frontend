@@ -47,14 +47,14 @@ export default function DashboardClient() {
     window.history.replaceState({}, "", url.toString());
   }, [searchParams]);
 
-  if (isChecking) return <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black"><div className="mx-auto max-w-4xl"><Skeleton className="mb-6 h-10 w-48" /><Skeleton className="h-64 w-full rounded-3xl" /></div></main>;
+  if (isChecking) return <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black"><div className="mx-auto max-w-4xl"><Skeleton className="mb-6 h-10 w-48" /><Skeleton className="h-64 w-full rounded-3xl" /></div></div>;
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black"><div className="mx-auto max-w-4xl">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black"><div className="mx-auto max-w-4xl">
       {showUpgradeBanner ? <UpgradeBanner onDismiss={() => setShowUpgradeBanner(false)} /> : null}
       <UpgradeCTA />
       <div className="mb-6 flex items-center justify-between"><div className="flex items-center gap-3"><h1 className="text-3xl font-semibold text-zinc-950 dark:text-white">{t("dashboard.title")}</h1><Link href="/dashboard/analytics" className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium sm:inline-flex"><BarChart3 className="h-4 w-4" />{t("dashboard.analytics")}</Link></div><div className="flex items-center gap-4"><CurrencyDropdown /><NotificationBell /></div></div>
       <ErrorBoundary><DashboardSection /></ErrorBoundary>
-    </div></main>
+    </div></div>
   );
 }

@@ -72,7 +72,7 @@ const breadcrumbItems = [
 
 export default function PaymentPage() {
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         <Breadcrumb items={breadcrumbItems} className="mb-4" />
         <h1 className="mb-6 text-3xl font-semibold text-zinc-950 dark:text-white">Payment</h1>
@@ -101,6 +101,6 @@ export default function PaymentPage() {
           <Accordion items={faqItems} />
         </section>
       </div>
-    </main>
+    </div>
   );
 }

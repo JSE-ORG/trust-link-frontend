@@ -78,7 +78,7 @@ export default async function PayPage({ params }: PayPageProps) {
 		if (!(error instanceof ApiError) || error.status !== 404) throw error
 
 		return (
-			<main className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
+			<div className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
 				<div className="mx-auto max-w-4xl">
 					<Breadcrumb
 						items={[
@@ -95,7 +95,7 @@ export default async function PayPage({ params }: PayPageProps) {
 						</p>
 					</section>
 				</div>
-			</main>
+			</div>
 		)
 	}
 
@@ -106,7 +106,7 @@ export default async function PayPage({ params }: PayPageProps) {
 	]
 
 	return (
-		<main className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
+		<div className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
 			<div className="mx-auto max-w-4xl">
 				<Breadcrumb items={breadcrumbItems} className="mb-4" />
 				<PaymentEscrowClient escrow={escrow} escrowId={escrowId} />
@@ -118,6 +118,6 @@ export default async function PayPage({ params }: PayPageProps) {
 					<Accordion items={faqItems} />
 				</section>
 			</div>
-		</main>
+		</div>
 	)
 }
