@@ -253,6 +253,7 @@ Desired Consolidation (Backlog Issue #106):
     - `app/escrow/route.ts`: Server-side proxy with rate limiting (`lib/rateLimit.ts`) and Zod validation, delegating to `lib/api`.
     - `app/escrow/[id]/ship/route.ts`: Local mock endpoint updating in-memory store `lib/escrowStore.ts`.
 - **Consolidation Target**: Migrate `lib/stellar.ts` and direct page fetches onto `lib/api/client.ts` to share transport, retry, and auth refresh logic.
+- **Detailed Matrix Reference**: For a comprehensive map of all 19 canonical client endpoints, auth helper functions, local route handlers, request/response payload types, and singular/plural fallback conventions, see [Frontend API Endpoint & Authentication Matrix](docs/API_MATRIX.md).
 
 ### 3. Server Components vs Client Pages
 
