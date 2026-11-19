@@ -170,4 +170,38 @@ describe("PricingClient upgrade journeys", () => {
     expect(screen.queryByRole("button", { name: "Upgrade to Pro" })).not.toBeInTheDocument();
     expect(upgradeSubscription).not.toHaveBeenCalled();
   });
+
+  describe("comparison table accessibility", () => {
+    it("renders table with proper headers and row scopes", () => {
+      render(<PricingClient />);
+
+      const table = screen.getByRole("table", {
+        name: /Full feature comparison|Comparison of features/i,
+      });
+      expect(table).toBeInTheDocument();
+
+      const colHeaders = screen.getAllByRole("columnheader");
+      expect(colHeaders).toHaveLength(3);
+      expect(colHeaders[0]).toHaveTextContent("Feature");
+      expect(colHeaders[1]).toHaveTextContent("Free");
+      expect(colHeaders[2]).toHaveTextContent("Pro");
+
+      const rowHeaders = screen.getAllByRole("rowheader");
+      expect(rowHeaders.length).toBeGreaterThan(0);
+      expect(rowHeaders[0]).toHaveTextContent("Escrow creation");
+    });
+
+    it("announces inclusion states for boolean comparison cells", () => {
+      render(<PricingClient />);
+
+      const freeIncluded = screen.getAllByText("Included in Free");
+      expect(freeIncluded.length).toBeGreaterThan(0);
+
+      const freeNotIncluded = screen.getAllByText("Not included in Free");
+      expect(freeNotIncluded.length).toBeGreaterThan(0);
+
+      const proIncluded = screen.getAllByText("Included in Pro");
+      expect(proIncluded.length).toBeGreaterThan(0);
+    });
+  });
 });

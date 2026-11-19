@@ -79,10 +79,30 @@ This repository is part of the **[Stellar Wave Program](https://www.drips.networ
 
 | Tool | Version | Notes |
 |---|---|---|
-| Node.js | `18.17+` | Use [nvm](https://github.com/nvm-sh/nvm) to manage versions |
-| npm / pnpm | latest | pnpm preferred for speed |
-| Freighter Wallet | latest | [freighter.app](https://freighter.app) — install the browser extension |
+| Node.js | `22` | Matches `.nvmrc` and CI. Use [nvm](https://github.com/nvm-sh/nvm) (`nvm use` / `nvm install`) |
+| npm | `10+` | Uses checked-in `package-lock.json`. Prefer `npm ci` for clean installs |
+| Freighter Wallet | latest | [freighter.app](https://freighter.app) — only required for wallet and contract flows |
 | Git | latest | |
+
+### Clean-Clone Checklist
+
+Follow this checklist when verifying a fresh repository checkout:
+
+#### 1. Frontend-Only Verification (No Wallet or Backend Required)
+- [ ] Run `nvm use` to activate Node.js 22 as specified in `.nvmrc`.
+- [ ] Run `npm ci` for an exact, clean installation from `package-lock.json`.
+- [ ] Run `npm run type-check` to verify TypeScript types across the codebase.
+- [ ] Run `npm run lint` to execute ESLint rules.
+- [ ] Run `npm run test` to execute Vitest unit tests.
+- [ ] Run `npm run dev` and navigate to [http://localhost:3000](http://localhost:3000) to test UI components, responsive layouts, and static pages with fallback data.
+
+#### 2. Wallet & Backend Integration (Testnet & Full Flows)
+- [ ] Copy `.env.example` to `.env.local`: `cp .env.example .env.local`.
+- [ ] Populate required contract and network settings in `.env.local`:
+  - `NEXT_PUBLIC_CONTRACT_ID`: Soroban contract ID deployed to Testnet (left blank in `.env.example`).
+  - `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`: `"Test SDF Network ; September 2015"` for Testnet (left blank in `.env.example`).
+- [ ] Have the TrustLink backend running or point `NEXT_PUBLIC_API_URL` to an accessible dev instance.
+- [ ] Install the Freighter browser extension, switch network to **Testnet**, and fund your address with [Friendbot](https://friendbot.stellar.org/).
 
 ### First-Time Setup
 
@@ -94,16 +114,18 @@ cd trustlink-frontend
 # 2. Add upstream remote
 git remote add upstream https://github.com/your-org/trustlink-frontend
 
-# 3. Install dependencies
-npm install
-# or
-pnpm install
+# 3. Use the checked-in Node runtime
+nvm use
 
-# 4. Set up environment variables
+# 4. Install dependencies using lockfile
+npm ci
+
+# 5. Set up environment variables
 cp .env.example .env.local
-# Edit .env.local — the testnet values are pre-filled for local dev
+# Note: NEXT_PUBLIC_CONTRACT_ID and NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE are blank in .env.example.
+# Fill them in if testing live smart contract or testnet escrow flows.
 
-# 5. Start the dev server
+# 6. Start the dev server
 npm run dev
 ```
 

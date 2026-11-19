@@ -36,11 +36,13 @@ function FeatureRow({ label, included }: { label: string; included: boolean }) {
     <li className="flex items-center gap-3">
       {included ? (
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-          <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+          <Check aria-hidden="true" className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+          <span className="sr-only">Included: </span>
         </span>
       ) : (
         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-          <X className="h-3 w-3 text-zinc-400" />
+          <X aria-hidden="true" className="h-3 w-3 text-zinc-400" />
+          <span className="sr-only">Not included: </span>
         </span>
       )}
       <span
@@ -208,20 +210,23 @@ export default function PricingClient() {
 
         {/* Feature comparison table */}
         <div className="mt-16">
-          <h2 className="mb-6 text-center text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 id="pricing-comparison-heading" className="mb-6 text-center text-xl font-semibold text-zinc-900 dark:text-zinc-100">
             Full feature comparison
           </h2>
-          <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            <table className="w-full min-w-[500px] text-sm" aria-labelledby="pricing-comparison-heading">
+              <caption className="sr-only">
+                Comparison of features available across Free and Pro plans
+              </caption>
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                  <th className="px-6 py-4 text-left font-semibold text-zinc-700 dark:text-zinc-300">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold text-zinc-700 dark:text-zinc-300">
                     Feature
                   </th>
-                  <th className="px-6 py-4 text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                  <th scope="col" className="px-6 py-4 text-center font-semibold text-zinc-700 dark:text-zinc-300">
                     Free
                   </th>
-                  <th className="px-6 py-4 text-center font-semibold text-amber-500">
+                  <th scope="col" className="px-6 py-4 text-center font-semibold text-amber-500">
                     Pro
                   </th>
                 </tr>
@@ -242,27 +247,37 @@ export default function PricingClient() {
                   ["Early access features", false, true],
                 ].map(([feature, free, pro]) => (
                   <tr key={String(feature)} className="transition hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                    <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">
+                    <th scope="row" className="px-6 py-4 text-left font-normal text-zinc-700 dark:text-zinc-300">
                       {feature}
-                    </td>
+                    </th>
                     <td className="px-6 py-4 text-center">
                       {typeof free === "boolean" ? (
-                        free ? (
-                          <Check className="mx-auto h-4 w-4 text-emerald-500" />
-                        ) : (
-                          <X className="mx-auto h-4 w-4 text-zinc-300 dark:text-zinc-600" />
-                        )
+                        <>
+                          <span className="sr-only">
+                            {free ? `Included in Free` : `Not included in Free`}
+                          </span>
+                          {free ? (
+                            <Check aria-hidden="true" className="mx-auto h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <X aria-hidden="true" className="mx-auto h-4 w-4 text-zinc-300 dark:text-zinc-600" />
+                          )}
+                        </>
                       ) : (
                         <span className="text-zinc-500">{free}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       {typeof pro === "boolean" ? (
-                        pro ? (
-                          <Check className="mx-auto h-4 w-4 text-amber-500" />
-                        ) : (
-                          <X className="mx-auto h-4 w-4 text-zinc-300 dark:text-zinc-600" />
-                        )
+                        <>
+                          <span className="sr-only">
+                            {pro ? `Included in Pro` : `Not included in Pro`}
+                          </span>
+                          {pro ? (
+                            <Check aria-hidden="true" className="mx-auto h-4 w-4 text-amber-500" />
+                          ) : (
+                            <X aria-hidden="true" className="mx-auto h-4 w-4 text-zinc-300 dark:text-zinc-600" />
+                          )}
+                        </>
                       ) : (
                         <span className="font-medium text-amber-500">{pro}</span>
                       )}

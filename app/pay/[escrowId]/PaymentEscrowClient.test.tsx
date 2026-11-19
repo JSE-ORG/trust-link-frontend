@@ -273,4 +273,48 @@ describe("PaymentEscrowClient contract address", () => {
       expect(screen.queryByTitle(baseEscrow.id)).not.toBeInTheDocument();
     }
   });
+
+  describe("contact validation accessibility", () => {
+    it("explains contact alternatives without labeling both fields required", () => {
+      render(<PaymentEscrowClient escrow={baseEscrow} escrowId="escrow-1" />);
+
+      const emailInput = screen.getByLabelText(/Email address/);
+      const phoneInput = screen.getByLabelText(/Phone number/);
+
+      expect(emailInput).toHaveAttribute("aria-required", "false");
+      expect(phoneInput).toHaveAttribute("aria-required", "false");
+      expect(screen.getByText("Provide at least one contact method to receive shipping and delivery notifications.")).toBeInTheDocument();
+    });
+
+    it("announces base error and focuses email when both contact fields are blank on submit", async () => {
+      render(<PaymentEscrowClient escrow={baseEscrow} escrowId="escrow-1" />);
+
+      const payButton = screen.getByRole("button", { name: "Pay Now" });
+      fireEvent.click(payButton);
+
+      const emailInput = screen.getByLabelText(/Email address/);
+      expect(emailInput).toHaveFocus();
+      expect(emailInput).toHaveAttribute("aria-invalid", "true");
+
+      const baseError = screen.getByText("Please provide at least one contact method.");
+      expect(baseError).toHaveAttribute("role", "alert");
+    });
+
+    it("focuses phone input when invalid phone format is provided with valid email", async () => {
+      render(<PaymentEscrowClient escrow={baseEscrow} escrowId="escrow-1" />);
+
+      const emailInput = screen.getByLabelText(/Email address/);
+      const phoneInput = screen.getByLabelText(/Phone number/);
+
+      fireEvent.change(emailInput, { target: { value: "buyer@example.com" } });
+      fireEvent.change(phoneInput, { target: { value: "invalid-phone" } });
+
+      const payButton = screen.getByRole("button", { name: "Pay Now" });
+      fireEvent.click(payButton);
+
+      expect(phoneInput).toHaveFocus();
+      expect(phoneInput).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByText("Enter a valid phone number in E.164 format (e.g. +12125551234).")).toHaveAttribute("role", "alert");
+    });
+  });
 });
