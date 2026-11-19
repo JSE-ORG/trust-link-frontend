@@ -2,15 +2,25 @@
 
 import { startTransition, useEffect, useMemo, useState } from "react";
 
+import { filterEscrows, getTotalPages, paginate } from "@/lib/vendorDashboard";
 import type { Escrow } from "@/types";
 
 import { ITEMS_PER_PAGE } from "./vendorListShared";
 
 /**
  * Owns the search / status / date-range filter state, derives the filtered
- * list, and paginates it. Changing any filter resets back to page one, and
- * the exposed page is always clamped to the current filtered total so a
- * shrinking list (cancellation, reload) never leaves an empty trailing page.
+ * list, and paginates it by composing the canonical pure helpers from
+ * `lib/vendorDashboard.ts`.
+ *
+ * Search/date semantics:
+ * - Search query is trimmed and matched case-insensitively across `id`,
+ *   `vendorId`, `buyerId`, and `item`.
+ * - Status matches exact status or matches all statuses when set to "ALL" (or empty).
+ * - `fromDate` and `toDate` (YYYY-MM-DD) are inclusive boundaries against `createdAt`
+ *   (from 00:00:00 to 23:59:59.999 local time).
+ * - Changing any filter resets `currentPage` back to 1.
+ * - Current page is clamped between 1 and `totalPages` (minimum 1) so shrinking
+ *   lists never leave an out-of-bounds trailing page.
  */
 export function useEscrowFilters(escrows: Escrow[] | null) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,31 +35,16 @@ export function useEscrowFilters(escrows: Escrow[] | null) {
 
   const filteredEscrows = useMemo(() => {
     if (!escrows) return null;
-
-    const start = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null;
-    const end = toDate ? new Date(`${toDate}T23:59:59.999`).getTime() : null;
-
-    return escrows.filter((escrow) => {
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        escrow.id.toLowerCase().includes(query) ||
-        (escrow.vendorId && escrow.vendorId.toLowerCase().includes(query)) ||
-        (escrow.buyerId && escrow.buyerId.toLowerCase().includes(query)) ||
-        (escrow.item && escrow.item.toLowerCase().includes(query));
-
-      const matchesStatus =
-        statusFilter === "ALL" || escrow.status === statusFilter;
-
-      const created = new Date(escrow.createdAt).getTime();
-      const matchesDate =
-        (start === null || created >= start) && (end === null || created <= end);
-
-      return matchesSearch && matchesStatus && matchesDate;
+    return filterEscrows(escrows, {
+      searchQuery,
+      statusFilter,
+      fromDate,
+      toDate,
     });
   }, [escrows, searchQuery, statusFilter, fromDate, toDate]);
 
   const totalPages = filteredEscrows
-    ? Math.ceil(filteredEscrows.length / ITEMS_PER_PAGE)
+    ? getTotalPages(filteredEscrows.length, ITEMS_PER_PAGE)
     : 0;
 
   // Derived rather than synced via an effect so the first render after the
@@ -59,8 +54,7 @@ export function useEscrowFilters(escrows: Escrow[] | null) {
 
   const paginatedEscrows = useMemo(() => {
     if (!filteredEscrows) return [];
-    const startIndex = (effectivePage - 1) * ITEMS_PER_PAGE;
-    return filteredEscrows.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    return paginate(filteredEscrows, effectivePage, ITEMS_PER_PAGE);
   }, [filteredEscrows, effectivePage]);
 
   const clearDateFilter = () => {

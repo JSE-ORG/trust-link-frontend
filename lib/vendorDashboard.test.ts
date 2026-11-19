@@ -51,6 +51,11 @@ describe("filterEscrows", () => {
     expect(filterEscrows(ESCROWS, { searchQuery: "gbuyer" }).map((e) => e.id)).toEqual(["b2"]);
   });
 
+  it("trims whitespace from searchQuery", () => {
+    expect(filterEscrows(ESCROWS, { searchQuery: "   lap   " }).map((e) => e.id)).toEqual(["a1"]);
+    expect(filterEscrows(ESCROWS, { searchQuery: "   " }).map((e) => e.id)).toEqual(["a1", "b2", "c3"]);
+  });
+
   it("filters by an inclusive date range", () => {
     const result = filterEscrows(ESCROWS, { fromDate: "2024-02-01", toDate: "2024-02-28" });
     expect(result.map((e) => e.id)).toEqual(["b2"]);
