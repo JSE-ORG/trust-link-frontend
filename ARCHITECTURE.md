@@ -269,7 +269,7 @@ Desired Consolidation (Backlog Issue #106):
 1. **Escrow Creation**: A vendor connects their wallet via `WalletProvider` (`useWallet`), inputs terms in `EscrowCreateForm`, and submits via `createEscrow()` (`POST /escrow`).
 2. **Buyer Payment**:
    - The buyer accesses `app/pay/[escrowId]/page.tsx`. Server metadata loads the item title and amount.
-   - `PaymentForm` checks mock flags (`NEXT_PUBLIC_USE_MOCKS` and `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS`).
+   - `PaymentForm` checks mock flags (`NEXT_PUBLIC_USE_MOCKS` and `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS`). For full documentation of flags, stages, and boundaries, see [Payment Mock Flags & Production Funding Boundaries](docs/PAYMENT_BOUNDARIES.md).
    - In production/testnet, `buildFundingTransactionXdr()` constructs the Soroban `fund_escrow` invocation, the buyer signs via Freighter (`signTransaction`), and `submitTransaction()` submits the signed XDR to the Soroban RPC, polling until ledger inclusion.
 3. **Fulfillment & Shipping**:
    - The vendor opens `ShipTrackingModal` on the dashboard and submits tracking details via `shipEscrow()` (`POST /escrows/:id/ship`).

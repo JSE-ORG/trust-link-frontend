@@ -133,6 +133,28 @@ These variables must be set for the application to start (validated at build and
 - **Example**: `true` or `false`
 - **Used in**: Disabling analytics in development or for privacy compliance
 
+### Development & Testing Mock Flags
+
+#### `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS`
+
+- **Required**: No (defaults to `false`)
+- **Exposure**: Public — `NEXT_PUBLIC_`
+- **Purpose**: Enables synthetic payment hash generation in `submitPayment()` without hitting Soroban RPC
+- **Default**: `false`
+- **Example**: `true` or `false`
+- **Used in**: `lib/stellar/contract.ts` (`isMockPaymentsEnabled()`)
+- **Safety**: Development and testing only. Must remain unset or `false` in all deployed environments. See [Payment Mock Flags & Production Funding Boundaries](PAYMENT_BOUNDARIES.md).
+
+#### `NEXT_PUBLIC_USE_MOCKS`
+
+- **Required**: No (defaults to `false`)
+- **Exposure**: Public — `NEXT_PUBLIC_`
+- **Purpose**: Switches `PaymentForm` from real Soroban contract invocation to simulated XDR and mock transaction hash submission
+- **Default**: `false`
+- **Example**: `true` or `false`
+- **Used in**: `components/payment/PaymentForm.tsx` (`handlePaymentSubmit()`)
+- **Safety**: Development only. Mock hashes generated (`3f7a...91bc`) provide zero proof of token settlement. See [Payment Mock Flags & Production Funding Boundaries](PAYMENT_BOUNDARIES.md).
+
 ### Rate Limiting (Upstash Redis)
 
 #### `UPSTASH_REDIS_REST_URL`
