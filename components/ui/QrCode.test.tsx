@@ -42,4 +42,13 @@ describe("QrCode", () => {
     expect(Number(svg.getAttribute("viewBox")?.split(" ")[2])).toBeGreaterThan(firstSize);
     expect(modules(svg)).toBeTruthy();
   });
+
+  it("renders with explicit custom size and custom label", () => {
+    const value = "https://trustlink.test/pay/custom";
+    render(<QrCode value={value} size={160} label="Custom Payment QR" />);
+    const svg = screen.getByRole("img", { name: "Custom Payment QR" });
+    expect(svg).toHaveAttribute("width", "160");
+    expect(svg).toHaveAttribute("height", "160");
+    expect(screen.getByTestId("qr-code")).toBe(svg);
+  });
 });
