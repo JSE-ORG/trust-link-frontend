@@ -1,10 +1,10 @@
 "use client";
 
-import { AlertCircle,Banknote, Bell, CheckCheck, CircleCheck, Clock, Package, RotateCcw, ShieldAlert, Truck } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import Link from "next/link";
-import type { JSX } from "react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { getEscrowStatusPresentation, STATUS_COLORS } from "@/components/escrow/escrow-status";
 import { useNotifications } from "@/components/providers/NotificationProvider";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { relativeTime, statusLabel } from "@/lib/notifications";
@@ -15,30 +15,9 @@ import { NotificationFetchFeedback } from "./NotificationFetchFeedback";
 /** Renders an icon that visually represents the given escrow status. */
 function StatusIcon({ type }: { type: EscrowStatus }) {
   const cls = "h-4 w-4 shrink-0";
-  const icons: Record<EscrowStatus, JSX.Element> = {
-    PENDING:   <Clock className={cls} />,
-    FUNDED:    <Banknote className={cls} />,
-    SHIPPED:   <Truck className={cls} />,
-    COMPLETED: <CircleCheck className={cls} />,
-    DISPUTED:  <ShieldAlert className={cls} />,
-    RELEASED:  <CheckCheck className={cls} />,
-    REFUNDED:  <RotateCcw className={cls} />,
-    EXPIRED:   <AlertCircle className={cls} />,
-  };
-  return <>{icons[type] ?? <Package className={cls} />}</>;
+  const { icon: Icon } = getEscrowStatusPresentation(type);
+  return <Icon className={cls} />;
 }
-
-/** Tailwind text-color class mapped to each escrow status. */
-const STATUS_COLORS: Record<EscrowStatus, string> = {
-  PENDING:   "text-zinc-500",
-  FUNDED:    "text-blue-500",
-  SHIPPED:   "text-indigo-500",
-  COMPLETED: "text-green-500",
-  DISPUTED:  "text-red-500",
-  RELEASED:  "text-emerald-500",
-  REFUNDED:  "text-orange-500",
-  EXPIRED:   "text-zinc-400",
-};
 
 /**
  * Floating bell icon that toggles a notification dropdown.

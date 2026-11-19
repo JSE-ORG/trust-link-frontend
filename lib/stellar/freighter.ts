@@ -118,12 +118,14 @@ export async function signTransaction(
       throw new Error("Freighter not installed");
     }
 
-    const response = (await freighterSignTransaction(xdr, {
+    const response = await freighterSignTransaction(xdr, {
       networkPassphrase,
-    })) as {
-      signedTxXdr?: string;
-      signerAddress?: string;
-    };
+    });
+
+    if (response && "error" in response && response.error) {
+      const msg = typeof response.error === "string" ? response.error : response.error.message;
+      throw new Error(msg || "Failed to sign transaction");
+    }
 
     const signedTxXdr = response?.signedTxXdr;
 

@@ -1,3 +1,4 @@
+import { ESCROW_STATUS_PRESENTATION } from "@/components/escrow/escrow-status";
 import type { AppNotification, Escrow } from "@/types";
 
 const STORAGE_KEY = "notifications.read";
@@ -56,16 +57,9 @@ export function saveReadIds(ids: Set<string>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Escrow created",
-  FUNDED: "Payment received",
-  SHIPPED: "Order shipped",
-  COMPLETED: "Order completed",
-  DISPUTED: "Dispute raised",
-  RELEASED: "Funds released",
-  REFUNDED: "Refund processed",
-  EXPIRED: "Escrow expired",
-};
+const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(ESCROW_STATUS_PRESENTATION).map(([status, pres]) => [status, pres.notificationLabel])
+);
 
 /**
  * Returns a human-friendly label corresponding to an escrow status code.

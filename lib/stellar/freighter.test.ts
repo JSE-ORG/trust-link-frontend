@@ -279,6 +279,26 @@ describe("lib/stellar/freighter.ts", () => {
       );
     });
 
+    it("throws error when Freighter returns an error string", async () => {
+      mockFreighterSignTransaction.mockResolvedValue({
+        error: "User rejected transaction",
+      });
+
+      await expect(signTransaction("xdr", "PUBLIC")).rejects.toThrow(
+        "User rejected transaction"
+      );
+    });
+
+    it("throws error when Freighter returns an error object with message", async () => {
+      mockFreighterSignTransaction.mockResolvedValue({
+        error: { code: 1, message: "Declined by user" },
+      });
+
+      await expect(signTransaction("xdr", "PUBLIC")).rejects.toThrow(
+        "Declined by user"
+      );
+    });
+
     it("throws error when Freighter returns an error", async () => {
       mockFreighterSignTransaction.mockResolvedValue({
         signedTxXdr: null,

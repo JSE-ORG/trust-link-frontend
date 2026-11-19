@@ -15,6 +15,8 @@ import {
 import { useCurrency } from "@/components/providers/CurrencyProvider";
 import type { VendorAnalyticsPoint } from "@/lib/api";
 
+import { normalizeRate } from "./analytics";
+
 /**
  * Formats a numeric value as a percentage string.
  * @param value - The numeric value to format (e.g., 95.5).
@@ -54,16 +56,6 @@ function formatCompactVolume(value: number, locale: string): string {
   }).format(value);
 }
 
-/**
- * Normalizes a rate value, ensuring it falls within a percentage range.
- * Converts fraction representation (e.g., 0.95) to percentage representation (95).
- * @param value - The rate value to normalize.
- * @returns The normalized percentage.
- */
-function normalizeRate(value: number | undefined): number {
-  if (typeof value !== "number" || Number.isNaN(value)) return 0;
-  return value <= 1 ? value * 100 : value;
-}
 
 /**
  * Props for the custom AnalyticsTooltip component.

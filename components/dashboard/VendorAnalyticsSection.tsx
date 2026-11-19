@@ -9,21 +9,11 @@ import { useTranslation } from "react-i18next";
 import { getVendorAnalytics, type VendorAnalyticsPoint, type VendorAnalyticsResponse } from "@/lib/api";
 import { SESSION_KEY } from "@/lib/session";
 
+import { normalizeRate } from "./analytics";
 import { VendorAnalyticsHeader } from "./VendorAnalyticsHeader";
 import { VendorAnalyticsMetricsGrid } from "./VendorAnalyticsMetricsGrid";
 import VendorAnalyticsSkeleton from "./VendorAnalyticsSkeleton";
 import { VendorAnalyticsTrendSection } from "./VendorAnalyticsTrendSection";
-
-/**
- * Normalizes a given rate to a percentage value between 0 and 100.
- * Useful when the backend might return either a decimal fraction (0.9) or a percentage (90).
- * @param value - The rate value to normalize.
- * @returns The normalized percentage value.
- */
-function normalizeRate(value: number | undefined): number {
-  if (typeof value !== "number" || Number.isNaN(value)) return 0;
-  return value <= 1 ? value * 100 : value;
-}
 
 /**
  * Extracts and calculates summary metrics from a VendorAnalyticsResponse and its data points.
