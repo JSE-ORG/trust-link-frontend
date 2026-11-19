@@ -10,6 +10,7 @@ import React, {
 } from "react";
 
 import { getSubscription } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 import type { Plan, Subscription } from "@/types";
 
 interface SubscriptionContextType {
@@ -65,7 +66,7 @@ export function SubscriptionProvider({
   const fetch_ = useCallback(async (bustCache = false) => {
     const token =
       typeof window !== "undefined"
-        ? (localStorage.getItem("wallet.jwt") ?? undefined)
+        ? (localStorage.getItem(SESSION_KEY) ?? undefined)
         : undefined;
 
     if (!token) {

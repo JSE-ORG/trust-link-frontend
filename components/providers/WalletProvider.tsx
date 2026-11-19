@@ -6,7 +6,16 @@ import { toast } from "sonner";
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
 import { captureError, setLoggerUser } from "@/lib/logger";
-import { getSessionRefreshSchedule, handleSessionExpired, PUBLIC_KEY_STORAGE_KEY, SESSION_EXPIRED_EVENT, SESSION_KEY, type SessionRefreshSchedule } from "@/lib/session";
+import {
+  getSessionRefreshSchedule,
+  handleSessionExpired,
+  LEGACY_SESSION_EXPIRED_EVENTS,
+  LEGACY_STORAGE_KEYS,
+  PUBLIC_KEY_STORAGE_KEY,
+  SESSION_EXPIRED_EVENT,
+  SESSION_KEY,
+  type SessionRefreshSchedule,
+} from "@/lib/session";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import { connectFreighter, isConnected as freighterIsConnected, isFreighterInstalled, signTransaction as freighterSignTransaction } from "@/lib/stellar/freighter";
 
@@ -67,6 +76,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setLoggerUser(null);
     localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
     localStorage.removeItem(SESSION_KEY);
+    for (const key of LEGACY_STORAGE_KEYS) {
+      try {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      } catch {
+        // ignore storage errors in restricted contexts
+      }
+    }
   }, []);
 
   const clearWallet = useCallback(() => {
@@ -102,10 +119,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [authenticate, clearIdentity]);
 
   useEffect(() => {
-    const onUnauthorized = () => { if (tokenRef.current) clearWallet(); };
+    const onUnauthorized = () => {
+      if (tokenRef.current || publicKey) {
+        clearIdentity();
+      }
+    };
     window.addEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
-  }, [clearWallet]);
+    for (const legacyEvent of LEGACY_SESSION_EXPIRED_EVENTS) {
+      window.addEventListener(legacyEvent, onUnauthorized);
+    }
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
+      for (const legacyEvent of LEGACY_SESSION_EXPIRED_EVENTS) {
+        window.removeEventListener(legacyEvent, onUnauthorized);
+      }
+    };
+  }, [clearIdentity, publicKey]);
 
   useEffect(() => {
     if (!token || !publicKey) return;
@@ -135,6 +164,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           action: "scheduleSessionRefresh",
         });
         clearWallet();
+        setError(new Error("Session expired. Reconnect your wallet."));
       }, 0);
 
       return () => window.clearTimeout(expiry);
@@ -148,6 +178,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       void authenticate(publicKey).catch((caught: unknown) => {
         captureError(caught, { scope: "auth", action: "refreshSession" });
         clearWallet();
+        setError(new Error("Session expired. Reconnect your wallet."));
       });
     }, schedule.delayMs);
 
@@ -183,13 +214,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [authenticate, clearIdentity]);
 
   const disconnect = useCallback(() => {
-    setPublicKey(null);
-    setToken(null);
-    setLoggerUser(null);
-    localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-    localStorage.removeItem(SESSION_KEY);
+    clearIdentity();
     toast.success("Wallet disconnected");
-  }, []);
+  }, [clearIdentity]);
 
   const signTransaction = useCallback((xdr: string, networkOverride?: string) => freighterSignTransaction(xdr, networkOverride || stellarNetwork), [stellarNetwork]);
   const status = isLoading ? "loading" : publicKey ? "connected" : !isInstalled ? "not-installed" : error ? "error" : "disconnected";

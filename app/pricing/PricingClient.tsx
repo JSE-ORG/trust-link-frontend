@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { clearSubscriptionCache, useSubscription } from "@/components/providers/SubscriptionProvider";
 import { upgradeSubscription } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 
 const FREE_FEATURES = [
   { label: "Up to 10 escrows per month", included: true },
@@ -67,7 +68,7 @@ export default function PricingClient() {
   async function handleUpgrade() {
     const token =
       typeof window !== "undefined"
-        ? (localStorage.getItem("wallet.jwt") ?? undefined)
+        ? (localStorage.getItem(SESSION_KEY) ?? undefined)
         : undefined;
 
     if (!token) {

@@ -3,9 +3,12 @@ import { jwtDecode } from "jwt-decode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 import { setLoggerUser } from "@/lib/logger";
 import {
   MIN_SESSION_REFRESH_DELAY_MS,
+  PUBLIC_KEY_STORAGE_KEY,
+  SESSION_KEY,
   SESSION_REFRESH_LEAD_MS,
 } from "@/lib/session";
 import * as stellar from "@/lib/stellar";
@@ -36,9 +39,7 @@ vi.mock("@/lib/logger", async (importOriginal) => {
   return { ...actual, setLoggerUser: vi.fn(), captureError: vi.fn() };
 });
 
-// The hook keeps its own storage keys, deliberately left alone by this fix.
-const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
-const TOKEN_STORAGE_KEY = "wallet.token";
+const TOKEN_STORAGE_KEY = SESSION_KEY;
 const PUBLIC_KEY = "GABC123";
 
 /** Wires up the happy path: installed, allowed, and a verifiable challenge. */
@@ -52,7 +53,13 @@ function mockWorkingWallet(jwt = "jwt-token") {
 }
 
 function renderWallet() {
-  return renderHook(() => useStellarWallet(), { wrapper: NetworkProvider });
+  return renderHook(() => useStellarWallet(), {
+    wrapper: ({ children }) => (
+      <NetworkProvider>
+        <WalletProvider>{children}</WalletProvider>
+      </NetworkProvider>
+    ),
+  });
 }
 
 beforeEach(() => {

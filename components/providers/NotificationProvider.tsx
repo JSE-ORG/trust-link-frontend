@@ -16,6 +16,7 @@ import {
   getReadIds,
   saveReadIds,
 } from "@/lib/notifications";
+import { SESSION_KEY } from "@/lib/session";
 import type { AppNotification } from "@/types";
 
 interface NotificationContextType {
@@ -55,7 +56,7 @@ export function NotificationProvider({
     fetchingRef.current = true;
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("wallet.jwt");
+      const token = localStorage.getItem(SESSION_KEY);
       if (!token) return;
       const escrows = await getVendorEscrows(token);
       if (!activeRef.current || generation !== generationRef.current) return;

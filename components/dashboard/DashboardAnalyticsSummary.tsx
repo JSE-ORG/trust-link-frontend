@@ -5,9 +5,10 @@ import { type JSX, useEffect, useMemo,useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getVendorAnalytics, type VendorAnalyticsPoint, type VendorAnalyticsResponse } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 
 /** `localStorage` key under which the wallet session JWT is stored. */
-const AUTH_TOKEN_STORAGE_KEY = "wallet.jwt";
+const AUTH_TOKEN_STORAGE_KEY = SESSION_KEY;
 
 /** Media query below which the chart switches to its compact mobile layout. */
 const MOBILE_MEDIA_QUERY = "(max-width: 640px)";
