@@ -1,12 +1,16 @@
-import { afterEach, beforeEach,describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  __getRateLimitMemorySize,
   __resetRateLimitMemory,
+  __setMaxMemoryEntries,
   checkRateLimit,
   enforceRateLimit,
   getClientId,
   getRateLimitKey,
   isValidIp,
+  MAX_MEMORY_ENTRIES,
+  pruneExpiredEntries,
   RATE_LIMITS,
 } from "@/lib/rateLimit";
 
@@ -287,5 +291,118 @@ describe("enforceRateLimit", () => {
     // Default limit is 20, so first request should pass
     const res = await enforceRateLimit(req("9.9.9.9"));
     expect(res).toBeNull();
+  });
+});
+
+describe("bounded in-memory rate-limit fallback map", () => {
+  it("removes expired one-time identifiers without requiring identical key access", async () => {
+    vi.useFakeTimers();
+    const count = 2_000;
+    for (let i = 0; i < count; i++) {
+      await checkRateLimit(`one-time-${i}`, 5, 10_000);
+    }
+    expect(__getRateLimitMemorySize()).toBe(count);
+
+    // Advance time past the 10-second window
+    vi.advanceTimersByTime(11_000);
+
+    // A subsequent request for a different key triggers opportunistic bounded cleanup
+    const result = await checkRateLimit("new-key", 5, 10_000);
+    expect(result.success).toBe(true);
+
+    // All expired one-time keys are removed; only the new key remains
+    expect(__getRateLimitMemorySize()).toBe(1);
+  });
+
+  it("cleanup does not reset valid active quotas", async () => {
+    vi.useFakeTimers();
+    // Insert 500 one-time keys with a 5s window
+    for (let i = 0; i < 500; i++) {
+      await checkRateLimit(`short-lived-${i}`, 1, 5_000);
+    }
+
+    // Insert an active client with limit 4 and a longer 20s window
+    const first = await checkRateLimit("active-user", 4, 20_000);
+    expect(first.success).toBe(true);
+    expect(first.remaining).toBe(3);
+
+    const second = await checkRateLimit("active-user", 4, 20_000);
+    expect(second.success).toBe(true);
+    expect(second.remaining).toBe(2);
+
+    // Advance 6 seconds: the one-time keys expire, but active-user is still within its 20s window
+    vi.advanceTimersByTime(6_000);
+
+    // Trigger cleanup via a separate request
+    await checkRateLimit("unrelated-key", 10, 10_000);
+
+    // Verify active-user quota was preserved and not reset
+    const third = await checkRateLimit("active-user", 4, 20_000);
+    expect(third.success).toBe(true);
+    expect(third.remaining).toBe(1);
+
+    const fourth = await checkRateLimit("active-user", 4, 20_000);
+    expect(fourth.success).toBe(true);
+    expect(fourth.remaining).toBe(0);
+
+    // 5th request breaches quota
+    const fifth = await checkRateLimit("active-user", 4, 20_000);
+    expect(fifth.success).toBe(false);
+    expect(fifth.remaining).toBe(0);
+  });
+
+  it("bounds memory behavior under large unique-key sequences", async () => {
+    vi.useFakeTimers();
+    __setMaxMemoryEntries(150);
+
+    // Send 300 unique keys within the same active window
+    for (let i = 0; i < 300; i++) {
+      await checkRateLimit(`flood-${i}`, 10, 60_000);
+    }
+
+    // Map size must never exceed the configured ceiling
+    expect(__getRateLimitMemorySize()).toBeLessThanOrEqual(150);
+  });
+
+  it("preserves active keys over stale keys during capacity eviction (LRU policy)", async () => {
+    vi.useFakeTimers();
+    __setMaxMemoryEntries(20);
+
+    // Initialise active client
+    await checkRateLimit("frequent-client", 5, 60_000);
+
+    // Flood with unique one-time keys, periodically refreshing frequent-client
+    for (let i = 0; i < 40; i++) {
+      await checkRateLimit(`transient-${i}`, 10, 60_000);
+      if (i === 20) {
+        // Refresh frequent client position
+        await checkRateLimit("frequent-client", 5, 60_000);
+      }
+    }
+
+    // Frequent client should still be present with updated count (not evicted and not reset)
+    const res = await checkRateLimit("frequent-client", 5, 60_000);
+    expect(res.success).toBe(true);
+    // Count should be 3 (first + refresh + current), so remaining is 5 - 3 = 2
+    expect(res.remaining).toBe(2);
+  });
+
+  it("pruneExpiredEntries directly prunes expired keys with bounded work", () => {
+    vi.useFakeTimers();
+    const now = Date.now();
+
+    // Populate keys directly via checkRateLimit
+    for (let i = 0; i < 50; i++) {
+      void checkRateLimit(`prune-test-${i}`, 1, 5_000);
+    }
+    expect(__getRateLimitMemorySize()).toBe(50);
+
+    // Before expiry, pruning removes 0
+    expect(pruneExpiredEntries(now)).toBe(0);
+
+    // After expiry, pruning removes all 50
+    const pruned = pruneExpiredEntries(now + 6_000);
+    expect(pruned).toBe(50);
+    expect(__getRateLimitMemorySize()).toBe(0);
   });
 });

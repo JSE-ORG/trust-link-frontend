@@ -36,6 +36,20 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 
 const POLL_MS = 30_000;
 
+function canUseUpdates(): boolean {
+  if (typeof document !== "undefined") {
+    if (document.hidden || document.visibilityState === "hidden") {
+      return false;
+    }
+  }
+  if (typeof navigator !== "undefined") {
+    if (navigator.onLine === false) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function NotificationProvider({
   children,
 }: {
@@ -49,9 +63,11 @@ export function NotificationProvider({
   const generationRef = useRef(0);
   const activeRef = useRef(false);
   const fetchingRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isPausedRef = useRef(false);
 
   const fetchNotifications = useCallback(async () => {
-    if (!activeRef.current || fetchingRef.current) return;
+    if (!activeRef.current || fetchingRef.current || !canUseUpdates()) return;
     const generation = generationRef.current;
     fetchingRef.current = true;
     setIsLoading(true);
@@ -65,7 +81,11 @@ export function NotificationProvider({
       setError(null);
     } catch (err) {
       if (activeRef.current && generation === generationRef.current) {
-        setError(err instanceof Error ? err : new Error("Unable to load notifications."));
+        setError(
+          err instanceof Error
+            ? err
+            : new Error("Unable to load notifications.")
+        );
       }
     } finally {
       if (activeRef.current && generation === generationRef.current) {
@@ -79,14 +99,71 @@ export function NotificationProvider({
     activeRef.current = true;
     startTransition(() => {
       setReadIds(getReadIds());
-      void fetchNotifications();
     });
-    const interval = setInterval(() => void fetchNotifications(), POLL_MS);
+
+    const startPolling = () => {
+      if (intervalRef.current !== null) return;
+      intervalRef.current = setInterval(() => {
+        if (canUseUpdates()) {
+          void fetchNotifications();
+        }
+      }, POLL_MS);
+    };
+
+    const stopPolling = () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    const initialCanUpdate = canUseUpdates();
+    isPausedRef.current = !initialCanUpdate;
+
+    if (initialCanUpdate) {
+      void fetchNotifications();
+      startPolling();
+    } else {
+      setIsLoading(false);
+    }
+
+    const handleSync = () => {
+      if (!activeRef.current) return;
+      const canUpdate = canUseUpdates();
+      if (!canUpdate) {
+        if (!isPausedRef.current) {
+          isPausedRef.current = true;
+          stopPolling();
+        }
+      } else {
+        if (isPausedRef.current) {
+          isPausedRef.current = false;
+          void fetchNotifications();
+          startPolling();
+        }
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleSync);
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", handleSync);
+      window.addEventListener("offline", handleSync);
+    }
+
     return () => {
-      clearInterval(interval);
       activeRef.current = false;
       generationRef.current += 1;
       fetchingRef.current = false;
+      stopPolling();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleSync);
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", handleSync);
+        window.removeEventListener("offline", handleSync);
+      }
     };
   }, [fetchNotifications]);
 
@@ -120,7 +197,16 @@ export function NotificationProvider({
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, markAsRead, markAllAsRead, isLoading, error, hasLoaded, refetch: fetchNotifications }}
+      value={{
+        notifications,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        isLoading,
+        error,
+        hasLoaded,
+        refetch: fetchNotifications,
+      }}
     >
       {children}
     </NotificationContext.Provider>

@@ -4,7 +4,38 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rateLimit';
 
+/**
+ * Safe upper bounds for query parameters passed to OG image rendering.
+ * Enforcing deterministic bounds prevents expensive text measurement and layout
+ * memory spikes during ImageResponse / Satori rasterisation on a 1200x630 canvas.
+ */
+export const OG_BOUNDS = {
+  /** Maximum code points for title rendered at 60px. */
+  MAX_TITLE_LENGTH: 100,
+  /** Maximum code points for amount string rendered at 40px. */
+  MAX_AMOUNT_LENGTH: 32,
+  /** Maximum code points for status badge rendered at 32px. */
+  MAX_STATUS_LENGTH: 30,
+} as const;
 
+/**
+ * Bounds text length safely using Unicode code points.
+ * Returns null if the value is empty or contains only whitespace.
+ */
+export function boundOgText(
+  value: string | null | undefined,
+  maxLength: number
+): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const codePoints = Array.from(trimmed);
+  if (codePoints.length <= maxLength) {
+    return trimmed;
+  }
+  return codePoints.slice(0, maxLength).join('');
+}
 
 export async function GET(request: NextRequest) {
   // Rasterising an ImageResponse is CPU-bound, so it is rate-limited and
@@ -22,9 +53,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const title = searchParams.get('title');
-    const amount = searchParams.get('amount');
-    const status = searchParams.get('status');
+    const rawTitle = searchParams.get('title');
+    const rawAmount = searchParams.get('amount');
+    const rawStatus = searchParams.get('status');
+
+    // Validate and bound inputs before passing to expensive ImageResponse layout
+    const title =
+      boundOgText(rawTitle, OG_BOUNDS.MAX_TITLE_LENGTH) || 'TrustLink Escrow';
+    const amount = boundOgText(rawAmount, OG_BOUNDS.MAX_AMOUNT_LENGTH);
+    const status = boundOgText(rawStatus, OG_BOUNDS.MAX_STATUS_LENGTH);
 
     return new ImageResponse(
       (
@@ -57,7 +94,7 @@ export async function GET(request: NextRequest) {
                 marginBottom: 20,
               }}
             >
-              {title || 'TrustLink Escrow'}
+              {title}
             </h1>
 
             {amount && (

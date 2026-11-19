@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetRateLimitMemory, RATE_LIMITS } from "@/lib/rateLimit";
 import { authHeader, MALFORMED_TOKEN } from "@/tests/support/jwt";
 
-import { GET } from "./route";
+import { boundOgText, GET, OG_BOUNDS } from "./route";
 
 function authedRequest(url = "http://localhost/api/og", headers: Record<string, string> = {}) {
   return new Request(url, { headers: { ...authHeader(), ...headers } });
@@ -92,6 +92,106 @@ describe("GET /api/og", () => {
     expect(statusMatches).toHaveLength(1);
   });
 
+  it("bounds oversized title, amount, and status inputs before rendering", async () => {
+    const url = new URL("http://localhost/api/og");
+    const longTitle = "A".repeat(200);
+    const longAmount = "9".repeat(100);
+    const longStatus = "S".repeat(80);
+
+    url.searchParams.set("title", longTitle);
+    url.searchParams.set("amount", longAmount);
+    url.searchParams.set("status", longStatus);
+
+    const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
+    expect(response.status).toBe(200);
+
+    const imageResp = response as unknown as {
+      element: React.ReactElement<{
+        style: Record<string, unknown>;
+        children: React.ReactNode[];
+      }>;
+    };
+
+    const elementStr = JSON.stringify(imageResp.element);
+
+    // Title should be truncated to MAX_TITLE_LENGTH (100)
+    expect(elementStr).toContain("A".repeat(OG_BOUNDS.MAX_TITLE_LENGTH));
+    expect(elementStr).not.toContain("A".repeat(OG_BOUNDS.MAX_TITLE_LENGTH + 1));
+
+    // Amount should be truncated to MAX_AMOUNT_LENGTH (32)
+    expect(elementStr).toContain(`Amount: ${"9".repeat(OG_BOUNDS.MAX_AMOUNT_LENGTH)} USDC`);
+    expect(elementStr).not.toContain("9".repeat(OG_BOUNDS.MAX_AMOUNT_LENGTH + 1));
+
+    // Status should be truncated to MAX_STATUS_LENGTH (30)
+    expect(elementStr).toContain(`Status: ${"S".repeat(OG_BOUNDS.MAX_STATUS_LENGTH)}`);
+    expect(elementStr).not.toContain("S".repeat(OG_BOUNDS.MAX_STATUS_LENGTH + 1));
+  });
+
+  it("preserves inputs at exact maximum boundaries", async () => {
+    const exactTitle = "T".repeat(OG_BOUNDS.MAX_TITLE_LENGTH);
+    const exactAmount = "1".repeat(OG_BOUNDS.MAX_AMOUNT_LENGTH);
+    const exactStatus = "F".repeat(OG_BOUNDS.MAX_STATUS_LENGTH);
+
+    const url = new URL("http://localhost/api/og");
+    url.searchParams.set("title", exactTitle);
+    url.searchParams.set("amount", exactAmount);
+    url.searchParams.set("status", exactStatus);
+
+    const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
+    expect(response.status).toBe(200);
+
+    const imageResp = response as unknown as {
+      element: React.ReactElement<{
+        style: Record<string, unknown>;
+        children: React.ReactNode[];
+      }>;
+    };
+    const elementStr = JSON.stringify(imageResp.element);
+    expect(elementStr).toContain(exactTitle);
+    expect(elementStr).toContain(`Amount: ${exactAmount} USDC`);
+    expect(elementStr).toContain(`Status: ${exactStatus}`);
+  });
+
+  it("handles Unicode text and multi-byte emojis correctly without splitting surrogate pairs", async () => {
+    const url = new URL("http://localhost/api/og");
+    const emojiTitle = "🛡️".repeat(120);
+    url.searchParams.set("title", emojiTitle);
+
+    const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
+    expect(response.status).toBe(200);
+
+    const imageResp = response as unknown as {
+      element: React.ReactElement<{
+        style: Record<string, unknown>;
+        children: React.ReactNode[];
+      }>;
+    };
+    const elementStr = JSON.stringify(imageResp.element);
+    const expectedEmojiTitle = "🛡️".repeat(OG_BOUNDS.MAX_TITLE_LENGTH);
+    expect(elementStr).toContain(expectedEmojiTitle);
+  });
+
+  it("falls back to default title and omits empty sections on whitespace inputs", async () => {
+    const url = new URL("http://localhost/api/og");
+    url.searchParams.set("title", "   ");
+    url.searchParams.set("amount", "   ");
+    url.searchParams.set("status", "   ");
+
+    const response = await GET(authedRequest(url.toString()) as Parameters<typeof GET>[0]);
+    expect(response.status).toBe(200);
+
+    const imageResp = response as unknown as {
+      element: React.ReactElement<{
+        style: Record<string, unknown>;
+        children: React.ReactNode[];
+      }>;
+    };
+    const elementStr = JSON.stringify(imageResp.element);
+    expect(elementStr).toContain("TrustLink Escrow");
+    expect(elementStr).not.toContain("Amount:");
+    expect(elementStr).not.toContain("Status:");
+  });
+
   it("returns 401 for an unauthenticated request", async () => {
     const response = await GET(
       new Request("http://localhost/api/og") as Parameters<typeof GET>[0]
@@ -123,5 +223,23 @@ describe("GET /api/og", () => {
     const blocked = await GET(authedRequest(undefined, headers) as Parameters<typeof GET>[0]);
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("Retry-After")).toBeDefined();
+  });
+});
+
+describe("boundOgText helper", () => {
+  it("returns null for null, undefined or whitespace", () => {
+    expect(boundOgText(null, 10)).toBeNull();
+    expect(boundOgText(undefined, 10)).toBeNull();
+    expect(boundOgText("", 10)).toBeNull();
+    expect(boundOgText("   ", 10)).toBeNull();
+  });
+
+  it("preserves strings within limit and trims surrounding whitespace", () => {
+    expect(boundOgText("  hello  ", 10)).toBe("hello");
+    expect(boundOgText("exact10ch!", 10)).toBe("exact10ch!");
+  });
+
+  it("truncates strings exceeding limit", () => {
+    expect(boundOgText("longerthanlimit", 5)).toBe("longe");
   });
 });
