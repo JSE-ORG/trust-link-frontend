@@ -9,7 +9,7 @@ Use this checklist after every production or preview deployment before marking i
 - [ ] Verify the home page loads without console errors.
 - [ ] Confirm the app uses the expected release branch and commit SHA.
 - [ ] Check `/robots.txt`, `/sitemap.xml`, and `/manifest.webmanifest` return successful responses.
-- [ ] Confirm the fallback error page and `/offline` page render if their routes are opened directly.
+- [ ] Confirm the fallback error page and `/offline` page render if their routes are opened directly, and verify service worker precaching and update behavior (see [docs/SERVICE_WORKER.md](docs/SERVICE_WORKER.md)).
 
 ## 2. Environment Configuration
 
