@@ -50,24 +50,47 @@ export default function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading, error, hasLoaded, refetch } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const preview = notifications.slice(0, 5);
 
-  // Close on outside click
+  const closeNotifications = useCallback(() => {
+    setOpen(false);
+    toggleRef.current?.focus();
+  }, []);
+
+  // Close on outside click and restore focus if trapped inside removed dropdown
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
+        const wasInside = ref.current.contains(document.activeElement);
         setOpen(false);
+        if (wasInside) {
+          toggleRef.current?.focus();
+        }
       }
     }
     if (open) document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  const closeNotifications = useCallback(() => setOpen(false), []);
-  useFocusTrap(ref, open, { onEscape: closeNotifications });
+  useFocusTrap(dialogRef, open, { onEscape: closeNotifications, autoFocus: true });
+
+  // Move focus into a meaningful control on open
+  useEffect(() => {
+    if (open) {
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable && focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        dialogRef.current?.focus();
+      }
+    }
+  }, [open]);
 
   // Restore focus to toggle button when closing
-  const toggleRef = useRef<HTMLButtonElement>(null);
   const prevOpen = useRef(open);
   useEffect(() => {
     if (prevOpen.current && !open) {
@@ -79,6 +102,7 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={toggleRef}
         type="button"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-haspopup="true"
@@ -96,9 +120,11 @@ export default function NotificationBell() {
 
       {open && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+          tabIndex={-1}
+          className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950 focus:outline-none"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">

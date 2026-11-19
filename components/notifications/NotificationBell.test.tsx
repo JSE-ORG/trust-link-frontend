@@ -104,4 +104,49 @@ describe("NotificationBell", () => {
     expect(mockMarkAllAsRead).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  describe("focus management and trigger ref", () => {
+    it("moves focus to a meaningful dropdown control on open", () => {
+      mockNotifications.push(makeNotification("notif-1", 0));
+      render(<NotificationBell />);
+      const toggle = screen.getByRole("button", { name: /notifications/i });
+      fireEvent.click(toggle);
+
+      const markAllBtn = screen.getByRole("button", { name: /mark all read/i });
+      expect(markAllBtn).toHaveFocus();
+    });
+
+    it("restores focus to actual bell trigger button on Escape", () => {
+      mockNotifications.push(makeNotification("notif-1", 0));
+      render(<NotificationBell />);
+      const toggle = screen.getByRole("button", { name: /notifications/i });
+      fireEvent.click(toggle);
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(toggle).toHaveFocus();
+    });
+
+    it("restores focus to trigger button when dismissed by outside click with focus inside dropdown", () => {
+      mockNotifications.push(makeNotification("notif-1", 0));
+      render(
+        <div>
+          <button data-testid="outside-button">Outside</button>
+          <NotificationBell />
+        </div>
+      );
+      const toggle = screen.getByRole("button", { name: /notifications/i });
+      fireEvent.click(toggle);
+
+      const markAllBtn = screen.getByRole("button", { name: /mark all read/i });
+      markAllBtn.focus();
+      expect(markAllBtn).toHaveFocus();
+
+      fireEvent.mouseDown(screen.getByTestId("outside-button"));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(toggle).toHaveFocus();
+    });
+  });
 });
