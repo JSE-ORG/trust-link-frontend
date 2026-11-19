@@ -16,6 +16,12 @@ export function ensureCsvExtension(filename: string): string {
     : `${filename}${CSV_EXTENSION}`;
 }
 
+/** Ordered field specification for CSV generation. */
+export interface CsvColumn<T> {
+  readonly key: keyof T;
+  readonly header: string;
+}
+
 /**
  * Convert an array of objects to a CSV string and trigger a browser download.
  *
@@ -30,10 +36,9 @@ export function ensureCsvExtension(filename: string): string {
  * @returns Nothing. No-op (rather than throwing) when called during SSR, where
  *          there is no DOM to attach the download to.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function downloadCsv<T extends Record<string, any>>(
-  rows: T[],
-  columns: { key: keyof T; header: string }[],
+export function downloadCsv<T extends object>(
+  rows: readonly T[],
+  columns: readonly CsvColumn<T>[],
   filename: string
 ): void {
   if (rows.length === 0) return;

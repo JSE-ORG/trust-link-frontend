@@ -5,7 +5,7 @@ import React, { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-interface AccordionItem {
+export interface AccordionItem {
   question: string;
   answer: string;
   /** Optional icon rendered before the question text. */
@@ -14,7 +14,7 @@ interface AccordionItem {
   disabled?: boolean;
 }
 
-interface AccordionProps {
+export interface AccordionProps {
   items: AccordionItem[];
   className?: string;
 }
