@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import FetchErrorState from "@/components/ui/FetchErrorState";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import useWallet from "@/hooks/useWallet";
 import { ApiError, getDispute, resolveDispute } from "@/lib/api";
@@ -141,6 +142,8 @@ export function DisputeDetailsClient({ disputeId }: DisputeDetailsClientProps) {
   if (!dispute || loadedToken !== token) return null;
 
   const handleResolve = async (resolution: Resolution) => {
+    if (isResolving) return;
+
     const previousDisputeStatus = disputeStatus;
     const previousEscrowStatus = escrowStatus;
 
@@ -337,37 +340,30 @@ export function DisputeDetailsClient({ disputeId }: DisputeDetailsClientProps) {
       </div>
 
       {/* Confirmation Dialog */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-8 max-w-md w-full shadow-2xl">
-            <h4 className="text-xl font-bold mb-4">
-              {showConfirm === 'RELEASE_TO_VENDOR' ? 'Confirm Release' : 'Confirm Refund'}
-            </h4>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-8">
-              {showConfirm === 'RELEASE_TO_VENDOR' 
-                ? 'Are you sure you want to release the funds to the vendor? This will close the dispute and complete the escrow.'
-                : 'Are you sure you want to refund the buyer? This will return the funds to the buyer and cancel the escrow.'}
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowConfirm(null)}
-                className="flex-1 py-3 px-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleResolve(showConfirm)}
-                disabled={isResolving}
-                className={`flex-1 py-3 px-4 text-white rounded-xl font-medium transition-colors ${
-                  showConfirm === 'RELEASE_TO_VENDOR' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-destructive hover:bg-destructive/90'
-                }`}
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        open={showConfirm !== null}
+        title={showConfirm === 'RELEASE_TO_VENDOR' ? 'Confirm Release' : 'Confirm Refund'}
+        description={
+          showConfirm === 'RELEASE_TO_VENDOR'
+            ? 'Are you sure you want to release the funds to the vendor? This will close the dispute and complete the escrow.'
+            : 'Are you sure you want to refund the buyer? This will return the funds to the buyer and cancel the escrow.'
+        }
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+        variant={showConfirm === 'RELEASE_TO_VENDOR' ? 'default' : 'danger'}
+        loading={isResolving}
+        initialFocus="cancel"
+        onConfirm={() => {
+          if (showConfirm && !isResolving) {
+            void handleResolve(showConfirm);
+          }
+        }}
+        onCancel={() => {
+          if (!isResolving) {
+            setShowConfirm(null);
+          }
+        }}
+      />
     </div>
   );
 }

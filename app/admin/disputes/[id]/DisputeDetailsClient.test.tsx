@@ -217,4 +217,65 @@ describe("DisputeDetailsClient", () => {
     // Rolled back state re-enables the resolution actions.
     expect(screen.getByRole("button", { name: /release to vendor/i })).toBeEnabled();
   });
+
+  it("announces named confirmation dialog and action description with safe initial focus on Cancel", async () => {
+    await renderDetails();
+
+    const releaseButton = screen.getByRole("button", { name: "Release to Vendor" });
+    releaseButton.focus();
+    fireEvent.click(releaseButton);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+
+    const heading = screen.getByRole("heading", { name: "Confirm Release" });
+    expect(dialog).toHaveAttribute("aria-labelledby", heading.id);
+
+    const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    expect(cancelButton).toBeInTheDocument();
+  });
+
+  it("Escape key closes confirmation dialog and restores focus to the triggering action button", async () => {
+    await renderDetails();
+
+    const refundButton = screen.getByRole("button", { name: "Refund Buyer" });
+    refundButton.focus();
+    expect(document.activeElement).toBe(refundButton);
+
+    fireEvent.click(refundButton);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(refundButton);
+    });
+  });
+
+  it("prevents repeated submission while pending", async () => {
+    let settleRequest!: () => void;
+    vi.mocked(resolveDispute).mockReturnValue(
+      new Promise((resolve) => {
+        settleRequest = () => resolve({ ...mockDispute, status: "RESOLVED" });
+      })
+    );
+
+    await renderDetails();
+
+    fireEvent.click(screen.getByText("Release to Vendor"));
+    const confirmButton = screen.getByRole("button", { name: "Confirm" });
+    fireEvent.click(confirmButton);
+
+    // Dialog closes and submission is in-flight
+    expect(resolveDispute).toHaveBeenCalledTimes(1);
+
+    // Attempting resolution while already resolving must be ignored
+    expect(screen.getByRole("button", { name: /release to vendor/i })).toBeDisabled();
+
+    await act(async () => {
+      settleRequest();
+    });
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useId, useRef } from "react";
 
 import FocusTrap from "./FocusTrap";
 
@@ -23,6 +23,12 @@ export interface ConfirmationDialogProps {
   variant?: "default" | "danger";
   /** Disables the confirm button and shows a pending label. */
   loading?: boolean;
+  /**
+   * Which button receives initial focus when opened.
+   * Defaults to "confirm". Use "cancel" for high-risk or irreversible actions
+   * so focus starts on a safe control.
+   */
+  initialFocus?: "confirm" | "cancel";
 }
 
 const confirmVariantClasses: Record<string, string> = {
@@ -51,8 +57,13 @@ export default function ConfirmationDialog({
   onCancel,
   variant = "default",
   loading = false,
+  initialFocus = "confirm",
 }: ConfirmationDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  const titleId = `confirmation-dialog-title-${id}`;
+  const bodyId = `confirmation-dialog-body-${id}`;
 
   if (!open) return null;
 
@@ -61,17 +72,21 @@ export default function ConfirmationDialog({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
       onClick={onCancel}
     >
-      <FocusTrap active={open} onEscape={onCancel} initialFocusRef={confirmRef}>
+      <FocusTrap
+        active={open}
+        onEscape={onCancel}
+        initialFocusRef={initialFocus === "cancel" ? cancelRef : confirmRef}
+      >
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="confirmation-dialog-title"
-          aria-describedby={description ? "confirmation-dialog-body" : undefined}
+          aria-labelledby={titleId}
+          aria-describedby={description ? bodyId : undefined}
           className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white p-6 shadow-2xl dark:bg-zinc-950 dark:text-white"
           onClick={(event) => event.stopPropagation()}
         >
           <h2
-            id="confirmation-dialog-title"
+            id={titleId}
             className="text-xl font-semibold text-zinc-950 dark:text-zinc-100"
           >
             {title}
@@ -79,7 +94,7 @@ export default function ConfirmationDialog({
 
           {description ? (
             <div
-              id="confirmation-dialog-body"
+              id={bodyId}
               className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
             >
               {description}
@@ -88,6 +103,7 @@ export default function ConfirmationDialog({
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
+              ref={cancelRef}
               type="button"
               onClick={onCancel}
               disabled={loading}
