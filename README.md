@@ -119,14 +119,43 @@ stateDiagram-v2
 
 ### Prerequisites
 
-- Node.js `18.17+`
-- npm / yarn / pnpm
-- [Freighter Wallet](https://freighter.app/) browser extension (for testing wallet flows)
-- A running instance of the [TrustLink Backend](https://github.com/your-org/trustlink-backend)
+- Node.js `22` (see `.nvmrc` and CI workflows; run `nvm use` or `nvm install` to match)
+- npm (lockfile installation via `package-lock.json`; run `npm ci`)
+- [Freighter Wallet](https://freighter.app/) browser extension (only required for wallet/escrow contract flows)
+- A running instance of the [TrustLink Backend](https://github.com/your-org/trustlink-backend) (only required for live backend API flows)
+
+### Clean-Clone Checklist
+
+Follow this checklist to verify your setup depending on your focus:
+
+#### 1. Frontend-Only Verification (No Wallet or Backend Required)
+- [ ] Run `nvm use` (or ensure Node.js 22 is active via `node -v`).
+- [ ] Run `npm ci` to install dependencies matching `package-lock.json`.
+- [ ] Run `npm run type-check` to verify TypeScript types.
+- [ ] Run `npm run lint` to execute ESLint.
+- [ ] Run `npm run test` to execute Vitest unit tests.
+- [ ] Run `npm run dev` and open [http://localhost:3000](http://localhost:3000) to browse UI components and static flows.
+
+#### 2. Wallet & Backend Integration (Testnet & Live Flows)
+- [ ] Copy `.env.example` to `.env.local`: `cp .env.example .env.local`.
+- [ ] Provide required blank variables in `.env.local`:
+  - `NEXT_PUBLIC_CONTRACT_ID`: Soroban contract ID deployed on Stellar Testnet.
+  - `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`: `"Test SDF Network ; September 2015"` for Testnet.
+- [ ] Ensure TrustLink backend is running at `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
+- [ ] Install Freighter wallet extension in Chrome/Firefox/Brave, switch network to **Testnet**, and fund your address using [Stellar Friendbot](https://friendbot.stellar.org/).
 
 ### Environment Variables
 
 Create a `.env.local` file at the project root:
+
+```bash
+cp .env.example .env.local
+```
+
+> **Note on Blank Values in `.env.example`:**
+> While basic frontend pages load with defaults, `NEXT_PUBLIC_CONTRACT_ID` and `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE` are intentionally blank in `.env.example`.
+> - For frontend-only testing or unit tests, these blank values are safe and will either fallback gracefully or use mocks.
+> - For executing actual contract transactions on Stellar Testnet, set `NEXT_PUBLIC_CONTRACT_ID` to your deployed escrow contract ID and `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"`.
 
 ```env
 # Backend API
@@ -134,7 +163,8 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # Stellar Network
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
-NEXT_PUBLIC_CONTRACT_ID=C...              # Your deployed Soroban contract ID
+NEXT_PUBLIC_CONTRACT_ID=C...              # Your deployed Soroban contract ID (required for contract transactions)
+NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE=Test SDF Network ; September 2015 # Required for transaction signing
 NEXT_PUBLIC_USDC_CONTRACT=C...            # USDC token contract address (testnet)
 
 # Horizon RPC
@@ -152,8 +182,11 @@ NEXT_PUBLIC_POSTHOG_KEY=phc_...
 git clone https://github.com/your-org/trustlink-frontend
 cd trustlink-frontend
 
-# Install dependencies
-npm install
+# Align Node version with checked-in .nvmrc
+nvm use
+
+# Install dependencies using clean install from lockfile
+npm ci
 
 # Start the development server
 npm run dev
@@ -178,7 +211,7 @@ npm start
 
 **Solution**:
 
-1. Check the required Node.js version in `.nvmrc` (requires Node.js 18.17+)
+1. Check the required Node.js version in `.nvmrc` (requires Node.js 22)
 2. Install and use the correct version:
 
    ```bash
@@ -187,13 +220,13 @@ npm start
    nvm use
 
    # Verify version
-   node --version  # Should be 18.17 or higher
+   node --version  # Should be 22.x
    ```
 
-3. Delete `node_modules` and reinstall:
+3. Delete `node_modules` and reinstall using clean install:
    ```bash
-   rm -rf node_modules package-lock.json
-   npm install
+   rm -rf node_modules
+   npm ci
    ```
 
 ### Missing Environment Variables
@@ -308,7 +341,7 @@ PORT=3001 npm run dev
 
 **Solution**:
 
-1. Ensure you're using Node.js 18.17+ (older versions are slower)
+1. Ensure you're using Node.js 22 (matching `.nvmrc` and CI)
 2. Reduce polling intervals in development:
    ```typescript
    // Temporarily disable or increase polling intervals
