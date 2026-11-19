@@ -164,6 +164,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           action: "scheduleSessionRefresh",
         });
         clearWallet();
+        setError(new Error("Session expired. Reconnect your wallet."));
       }, 0);
 
       return () => window.clearTimeout(expiry);
@@ -177,6 +178,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       void authenticate(publicKey).catch((caught: unknown) => {
         captureError(caught, { scope: "auth", action: "refreshSession" });
         clearWallet();
+        setError(new Error("Session expired. Reconnect your wallet."));
       });
     }, schedule.delayMs);
 

@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 import { setLoggerUser } from "@/lib/logger";
 import {
   MIN_SESSION_REFRESH_DELAY_MS,
@@ -52,7 +53,13 @@ function mockWorkingWallet(jwt = "jwt-token") {
 }
 
 function renderWallet() {
-  return renderHook(() => useStellarWallet(), { wrapper: NetworkProvider });
+  return renderHook(() => useStellarWallet(), {
+    wrapper: ({ children }) => (
+      <NetworkProvider>
+        <WalletProvider>{children}</WalletProvider>
+      </NetworkProvider>
+    ),
+  });
 }
 
 beforeEach(() => {

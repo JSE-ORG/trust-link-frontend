@@ -8,7 +8,7 @@ import { handleSessionExpired, SESSION_EXPIRED_EVENT, SESSION_STORAGE_KEYS } fro
 import * as stellarAuth from "@/lib/stellar";
 import * as freighter from "@/lib/stellar/freighter";
 
-import useWallet, { SESSION_KEY } from "./useWallet";
+import useWallet, { SESSION_KEY, useWallet as useWalletNamed, useWalletContext } from "./useWallet";
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),
@@ -142,5 +142,10 @@ describe("useWallet session expiry", () => {
     } finally {
       window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
     }
+  });
+
+  it("exports both named and default useWallet with identical implementation", () => {
+    expect(useWalletNamed).toBe(useWallet);
+    expect(useWalletContext).toBe(useWallet);
   });
 });

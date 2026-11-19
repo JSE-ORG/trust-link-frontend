@@ -100,6 +100,18 @@ describe("WalletProvider SEP-10 Flow", () => {
     expect(stellar.verifyChallenge).toHaveBeenCalledWith(mockSignedXdr);
   });
 
+  it("produces exactly one initialization lifecycle per provider mount", async () => {
+    vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
+    vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: false });
+
+    renderWithProviders(<TestComponent />);
+
+    await act(async () => {});
+
+    expect(freighter.isFreighterInstalled).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("isLoading")).toHaveTextContent("false");
+  });
+
   it("handles errors during authentication", async () => {
     vi.mocked(freighter.isFreighterInstalled).mockResolvedValue(true);
     vi.mocked(freighter.isConnected).mockResolvedValue({ isConnected: true });
