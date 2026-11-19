@@ -91,6 +91,15 @@ export interface MockApiOptions {
 export function setupNextOnFetch(next: NextFixture, options?: MockApiOptions) {
   next.onFetch(async (request) => {
     const url = new URL(request.url);
+
+    // Prevent any server-side fetch from contacting external payment/RPC backends
+    if (url.hostname.includes("stellar.org")) {
+      return new Response(JSON.stringify({ ok: true, status: "SUCCESS" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const asyncMock = await getAsyncMockResponse(url.pathname, request.method, options);
     if (asyncMock) {
       return new Response(JSON.stringify(asyncMock.body), {
@@ -132,8 +141,17 @@ export function setupNextOnFetch(next: NextFixture, options?: MockApiOptions) {
 export async function setupNetworkMocks(page: Page, next: NextFixture, options?: MockApiOptions) {
   // 1. Setup SSR Mocks using next.onFetch (for Node.js fetches)
   setupNextOnFetch(next, options);
-  
-  // 2. Setup CSR Mocks using page.route (for Browser fetches)
+
+  // 2. Intercept any external payment/RPC network calls so tests never hit real backends
+  await page.route(/(horizon|soroban).*stellar\.org/, async (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, status: "SUCCESS" }),
+    });
+  });
+
+  // 3. Setup CSR Mocks using page.route (for Browser fetches)
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());

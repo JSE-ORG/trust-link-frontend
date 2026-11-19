@@ -3,8 +3,8 @@ import { fn } from "@storybook/test";
 import React from "react";
 
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
-import { WalletProvider } from "@/components/providers/WalletProvider";
 
+import { MockWalletProvider } from "../../.storybook/mock-wallet";
 import PaymentForm from "./PaymentForm";
 
 const meta: Meta<typeof PaymentForm> = {
@@ -21,15 +21,15 @@ const meta: Meta<typeof PaymentForm> = {
     },
   },
   decorators: [
-    (Story: () => React.ReactNode) => (
+    (Story: () => React.ReactNode, context) => (
       <NetworkProvider>
-        <WalletProvider>
-          <div className="min-h-screen bg-zcin-100 dark:bg-zinc-900 p-8">
+        <MockWalletProvider {...context.parameters?.wallet}>
+          <div className="min-h-screen bg-zinc-100 dark:bg-zinc-900 p-8">
             <div className="max-w-md mx-auto">
               <Story />
             </div>
           </div>
-        </WalletProvider>
+        </MockWalletProvider>
       </NetworkProvider>
     ),
   ],
@@ -67,19 +67,19 @@ const defaultArgs = {
 /**
  * Idle state — form ready, wallet connected.
  *
- * In this Storybook environment Freighter is not installed, so the form
- * renders in the "wallet not connected" visual state. In production, when
- * Freighter is installed and connected, the Pay button is fully enabled.
+ * Renders with a mock connected wallet. The CTA reads "Pay with Freighter"
+ * and is enabled without requiring an actual browser extension.
  */
 export const Idle: Story = {
   name: "Idle — form ready, wallet connected",
   args: { ...defaultArgs },
   parameters: {
+    wallet: { status: "connected" },
     docs: {
       description: {
         story:
-          "Form is ready for payment. When Freighter is installed and the wallet is connected, " +
-          "the CTA reads \"Pay with Freighter\" and is fully enabled.",
+          "Form is ready for payment. Rendered with an isolated mock wallet fixture, " +
+          "the CTA reads \"Pay with Freighter\" and is fully enabled without contacting extension services.",
       },
     },
   },
@@ -87,12 +87,13 @@ export const Idle: Story = {
 
 /**
  * Wallet not connected — shows the connect-wallet prompt.
- * In Storybook (no Freighter installed) this is the default visual state.
+ * Rendered using a disconnected mock wallet fixture.
  */
 export const WalletNotConnected: Story = {
   name: "Wallet Not Connected — connect-wallet prompt",
-  args: { ...defaultArgs },
+  args: { ...defaultArgs, previewWalletDisconnected: true },
   parameters: {
+    wallet: { status: "disconnected" },
     docs: {
       description: {
         story:
@@ -105,42 +106,39 @@ export const WalletNotConnected: Story = {
 
 /**
  * Submitting — loading state while the transaction is being signed and broadcast.
- *
- * NOTE: This state requires Freighter to be installed and connected.
- * In Storybook the wallet is not available, so the button stays in its
- * disabled state. In production, clicking "Pay with Freighter" triggers
- * a spinner and "Processing payment’label.
  */
 export const Submitting: Story = {
   name: "Submitting — CTA loading state",
-  args: { ...defaultArgs },
+  args: { ...defaultArgs, previewFormState: "loading" },
   parameters: {
+    wallet: { status: "connected" },
     docs: {
       description: {
         story:
-          "While the Freighter transaction is in-flight the CTA shows a spinner " +
-          "and the label changes to \"Processing payment…\". " +
-          "Requires a connected Freighter wallet to reach this state.",
+          "While the transaction is in-flight the CTA shows a spinner " +
+          "and the label changes to \"Processing payment…\".",
       },
     },
   },
 };
 
 /**
- * Error — Horizon transaction rejected by the wallet or network.
- *
- * NOTE: Requires a connected Freighter wallet to trigger the error flow.
- * In production, rejecting the transaction in Freighter sets the error banner.
+ * Error — transaction rejected by the wallet or network.
  */
 export const Error: Story = {
   name: "Error — Horizon transaction rejected",
-  args: { ...defaultArgs },
+  args: {
+    ...defaultArgs,
+    previewFormState: "error",
+    previewErrorMessage: "Transaction was rejected in wallet",
+  },
   parameters: {
+    wallet: { status: "connected" },
     docs: {
       description: {
         story:
-          "When Freighter rejects or the user cancels, an error banner appears: " +
-         "\"Transaction was rejected in wallet\". The CTA returns to its idle label.",
+          "When transaction signing or submission fails, an error banner appears: " +
+          "\"Transaction was rejected in wallet\".",
       },
     },
   },
@@ -148,15 +146,16 @@ export const Error: Story = {
 
 /**
  * Success — payment completed with transaction hash.
- *
- * NOTE: Requires a connected Freighter wallet and a successful signing.
- * In production, after the transaction is submitted, the form displays the
- * transaction hash and a success message.
  */
 export const Success: Story = {
   name: "Success — payment completed with hash",
-  args: { ...defaultArgs },
+  args: {
+    ...defaultArgs,
+    previewFormState: "success",
+    previewTxHash: "3f7a91bc901234567890abcdef",
+  },
   parameters: {
+    wallet: { status: "connected" },
     docs: {
       description: {
         story:
@@ -175,6 +174,7 @@ export const EscrowNotPayable: Story = {
   name: "Escrow Not Payable — wrong status",
   args: { ...defaultArgs, status: "COMPLETED" },
   parameters: {
+    wallet: { status: "connected" },
     docs: {
       description: {
         story:
@@ -197,6 +197,9 @@ export const LargeAmount: Story = {
     protocolFee: 125,
     total: 5125,
   },
+  parameters: {
+    wallet: { status: "connected" },
+  },
 };
 
 /**
@@ -210,5 +213,8 @@ export const SmallAmount: Story = {
     amount: 0.5,
     protocolFee: 0.01,
     total: 0.51,
+  },
+  parameters: {
+    wallet: { status: "connected" },
   },
 };

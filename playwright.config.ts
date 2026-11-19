@@ -7,10 +7,11 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "line",
+  reporter: [["line"], ["html", { open: "never" }]],
   use: {
     baseURL: "http://127.0.0.1:3000",
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   projects: [
     {
@@ -23,5 +24,17 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      NEXT_PUBLIC_API_URL:
+        process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3000/api",
+      NEXT_PUBLIC_CONTRACT_ID:
+        process.env.NEXT_PUBLIC_CONTRACT_ID ||
+        "Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      NEXT_PUBLIC_STELLAR_NETWORK:
+        process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet",
+      NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE:
+        process.env.NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE ||
+        "Test SDF Network ; September 2015",
+    },
   },
 });
