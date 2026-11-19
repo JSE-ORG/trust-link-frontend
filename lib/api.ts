@@ -42,6 +42,7 @@ export {
   normalizeVendorAnalyticsResponse,
   patchBuyerContact,
   patchVendorNotifications,
+  request,
   resolveDispute,
   shipEscrow,
   type ShipEscrowInput,

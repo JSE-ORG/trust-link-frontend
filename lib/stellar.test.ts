@@ -1,11 +1,13 @@
-import { beforeEach,describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiConfigurationError, ApiNetworkError } from "./api/client";
 import { getChallenge, verifyChallenge } from "./stellar";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  process.env.NEXT_PUBLIC_API_URL = API_URL;
 });
 
 describe("getChallenge", () => {
@@ -22,17 +24,15 @@ describe("getChallenge", () => {
 
     expect(result).toBe(mockTransaction);
     expect(readBody).toHaveBeenCalledOnce();
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      `${API_URL}/auth/challenge`,
-      expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicKey: "GBAM5V6X2J7E3...K4L9M2N8P1" }),
-      }),
-    );
+
+    const fetchCall = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(fetchCall[0]).toBe(`${API_URL}/auth/challenge`);
+    expect(fetchCall[1]?.method).toBe("POST");
+    expect(new Headers(fetchCall[1]?.headers).get("Content-Type")).toBe("application/json");
+    expect(fetchCall[1]?.body).toBe(JSON.stringify({ publicKey: "GBAM5V6X2J7E3...K4L9M2N8P1" }));
   });
 
-  it("throws an error when the response is not ok", async () => {
+  it("throws an ApiError when the JSON response contains an error message", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(JSON.stringify({ message: "Challenge rejected" }), {
         status: 401,
@@ -45,6 +45,19 @@ describe("getChallenge", () => {
     );
   });
 
+  it("throws an ApiError when the response is plaintext", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response("Service Temporarily Unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      }),
+    );
+
+    await expect(getChallenge("GBAM5V6X2J7E3...K4L9M2N8P1")).rejects.toThrow(
+      "Service Temporarily Unavailable",
+    );
+  });
+
   it("rejects malformed successful JSON", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response("{invalid json", {
@@ -54,17 +67,17 @@ describe("getChallenge", () => {
     );
 
     await expect(getChallenge("GABC123")).rejects.toThrow(
-      "Failed to parse auth challenge response: invalid JSON",
+      /Invalid API response for \/auth\/challenge/,
     );
   });
 
-  it("throws on network failure", async () => {
+  it("throws ApiNetworkError on network failure", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(
       new TypeError("Network error"),
     );
 
     await expect(getChallenge("GBAM5V6X2J7E3...K4L9M2N8P1")).rejects.toThrow(
-      TypeError,
+      ApiNetworkError,
     );
   });
 
@@ -79,12 +92,9 @@ describe("getChallenge", () => {
     const result = await getChallenge("");
 
     expect(result).toBe("tx-empty-key");
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      `${API_URL}/auth/challenge`,
-      expect.objectContaining({
-        body: JSON.stringify({ publicKey: "" }),
-      }),
-    );
+    const fetchCall = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(fetchCall[0]).toBe(`${API_URL}/auth/challenge`);
+    expect(fetchCall[1]?.body).toBe(JSON.stringify({ publicKey: "" }));
   });
 });
 
@@ -102,17 +112,15 @@ describe("verifyChallenge", () => {
 
     expect(result).toBe(mockToken);
     expect(readBody).toHaveBeenCalledOnce();
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      `${API_URL}/auth/verify`,
-      expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ xdr: "AAAAAgAAAABh...signedXdr" }),
-      }),
-    );
+
+    const fetchCall = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(fetchCall[0]).toBe(`${API_URL}/auth/verify`);
+    expect(fetchCall[1]?.method).toBe("POST");
+    expect(new Headers(fetchCall[1]?.headers).get("Content-Type")).toBe("application/json");
+    expect(fetchCall[1]?.body).toBe(JSON.stringify({ xdr: "AAAAAgAAAABh...signedXdr" }));
   });
 
-  it("throws an error when the response is not ok", async () => {
+  it("throws an error when the plaintext response is not ok", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response("Verification service unavailable", {
         status: 503,
@@ -125,6 +133,19 @@ describe("verifyChallenge", () => {
     );
   });
 
+  it("throws an error when the JSON response contains an error message", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(verifyChallenge("invalid-xdr")).rejects.toThrow(
+      "Invalid signature",
+    );
+  });
+
   it("rejects malformed successful JSON", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response("not-json", {
@@ -134,16 +155,16 @@ describe("verifyChallenge", () => {
     );
 
     await expect(verifyChallenge("signed-xdr")).rejects.toThrow(
-      "Failed to parse verification response: invalid JSON",
+      /Invalid API response for \/auth\/verify/,
     );
   });
 
-  it("throws on network failure", async () => {
+  it("throws ApiNetworkError on network failure", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(
       new TypeError("Network error"),
     );
 
-    await expect(verifyChallenge("signed-xdr")).rejects.toThrow(TypeError);
+    await expect(verifyChallenge("signed-xdr")).rejects.toThrow(ApiNetworkError);
   });
 
   it("handles empty signed XDR gracefully", async () => {
@@ -157,11 +178,22 @@ describe("verifyChallenge", () => {
     const result = await verifyChallenge("");
 
     expect(result).toBe("token-from-empty-xdr");
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      `${API_URL}/auth/verify`,
-      expect.objectContaining({
-        body: JSON.stringify({ xdr: "" }),
-      }),
-    );
+    const fetchCall = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(fetchCall[0]).toBe(`${API_URL}/auth/verify`);
+    expect(fetchCall[1]?.body).toBe(JSON.stringify({ xdr: "" }));
+  });
+});
+
+describe("environment configuration and module import", () => {
+  it("does not require NEXT_PUBLIC_API_URL on module import, and throws ApiConfigurationError on request", async () => {
+    const originalUrl = process.env.NEXT_PUBLIC_API_URL;
+    delete process.env.NEXT_PUBLIC_API_URL;
+
+    try {
+      await expect(getChallenge("pubkey")).rejects.toThrow(ApiConfigurationError);
+      await expect(verifyChallenge("xdr")).rejects.toThrow(ApiConfigurationError);
+    } finally {
+      process.env.NEXT_PUBLIC_API_URL = originalUrl;
+    }
   });
 });

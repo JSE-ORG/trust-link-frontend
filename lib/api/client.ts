@@ -225,7 +225,7 @@ type ResponseGuard<T> = (value: unknown) => value is T;
  * @throws {ApiNetworkError} If the request never reached the API.
  * @throws {ApiError} For any non-2xx response.
  */
-async function request<T>(
+export async function request<T>(
   path: string,
   init: RequestInit = {},
   token?: string,
