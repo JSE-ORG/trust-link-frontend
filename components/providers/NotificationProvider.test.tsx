@@ -57,11 +57,18 @@ describe("notification fetch recovery", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem("wallet.jwt", "token");
+    Object.defineProperty(document, "visibilityState", { value: "visible", writable: true, configurable: true });
+    Object.defineProperty(document, "hidden", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", { value: true, writable: true, configurable: true });
   });
+
   afterEach(() => {
     vi.useRealTimers();
     localStorage.clear();
     vi.restoreAllMocks();
+    Object.defineProperty(document, "visibilityState", { value: "visible", writable: true, configurable: true });
+    Object.defineProperty(document, "hidden", { value: false, writable: true, configurable: true });
+    Object.defineProperty(navigator, "onLine", { value: true, writable: true, configurable: true });
   });
 
   it("distinguishes initial failure, recovers, and retains stale notifications", async () => {
@@ -138,5 +145,139 @@ describe("notification fetch recovery", () => {
     unmount();
     const pollInterval = setIntervalSpy.mock.results[0].value;
     expect(clearIntervalSpy).toHaveBeenCalledWith(pollInterval);
+  });
+
+  it("pauses polling while hidden and refreshes once upon returning visible", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getVendorEscrows).mockResolvedValue(ESCROWS);
+
+    renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Document becomes hidden
+    Object.defineProperty(document, "visibilityState", { value: "hidden", writable: true, configurable: true });
+    Object.defineProperty(document, "hidden", { value: true, writable: true, configurable: true });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    // Advance timers while hidden: no requests made
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Document returns visible
+    Object.defineProperty(document, "visibilityState", { value: "visible", writable: true, configurable: true });
+    Object.defineProperty(document, "hidden", { value: false, writable: true, configurable: true });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    // Refreshes once immediately
+    expect(getVendorEscrows).toHaveBeenCalledTimes(2);
+
+    // Polling resumes
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(3);
+  });
+
+  it("pauses polling while offline and refreshes once upon returning online", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getVendorEscrows).mockResolvedValue(ESCROWS);
+
+    renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Network goes offline
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    await act(async () => {
+      window.dispatchEvent(new Event("offline"));
+    });
+
+    // Advance timers while offline: no requests made
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Network goes online
+    Object.defineProperty(navigator, "onLine", { value: true, writable: true, configurable: true });
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+    });
+
+    // Refreshes once immediately
+    expect(getVendorEscrows).toHaveBeenCalledTimes(2);
+
+    // Polling resumes
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not schedule API requests when mounted hidden or offline", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getVendorEscrows).mockResolvedValue(ESCROWS);
+
+    Object.defineProperty(document, "visibilityState", { value: "hidden", writable: true, configurable: true });
+    Object.defineProperty(document, "hidden", { value: true, writable: true, configurable: true });
+
+    renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    expect(getVendorEscrows).toHaveBeenCalledTimes(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(0);
+  });
+
+  it("does not overlap slow requests during scheduled polling", async () => {
+    vi.useFakeTimers();
+    let resolveSlowRequest!: (value: Escrow[]) => void;
+    vi.mocked(getVendorEscrows).mockImplementation(
+      () => new Promise((resolve) => { resolveSlowRequest = resolve; })
+    );
+
+    renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Interval ticks while the first fetch is still in flight
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(1);
+
+    // Resolve the first fetch
+    await act(async () => {
+      resolveSlowRequest(ESCROWS);
+    });
+
+    // Subsequent interval tick triggers next fetch
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(getVendorEscrows).toHaveBeenCalledTimes(2);
+  });
+
+  it("cleans up event listeners and timers on unmount", async () => {
+    const removeEventListenerDocSpy = vi.spyOn(document, "removeEventListener");
+    const removeEventListenerWinSpy = vi.spyOn(window, "removeEventListener");
+    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
+
+    const { unmount } = renderHook(() => useNotifications(), { wrapper });
+    unmount();
+
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    expect(removeEventListenerDocSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+    expect(removeEventListenerWinSpy).toHaveBeenCalledWith("online", expect.any(Function));
+    expect(removeEventListenerWinSpy).toHaveBeenCalledWith("offline", expect.any(Function));
   });
 });
