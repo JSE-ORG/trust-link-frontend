@@ -112,6 +112,11 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
     const errors = validateContact(t, email, phone);
     if (Object.keys(errors).length > 0) {
       setContactErrors(errors);
+      if (errors.email || errors.base) {
+        document.getElementById("buyer-email")?.focus();
+      } else if (errors.phone) {
+        document.getElementById("buyer-phone")?.focus();
+      }
       return;
     }
     setContactErrors({});
@@ -230,15 +235,15 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
       )}
 
       {isPayable ? (
-        <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-          <h2 className="mb-1 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+        <fieldset className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800" aria-describedby="contact-desc">
+          <legend className="mb-1 text-lg font-medium text-zinc-900 dark:text-zinc-100">
             {t("payment.contactPromptTitle")}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          </legend>
+          <p id="contact-desc" className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
             {t("payment.contactPromptDesc")}
           </p>
           {contactErrors.base ? (
-            <p className="mb-3 text-sm text-red-600 dark:text-red-400">{contactErrors.base}</p>
+            <p id="contact-base-error" role="alert" className="mb-3 text-sm text-red-600 dark:text-red-400">{contactErrors.base}</p>
           ) : null}
           <div className="space-y-4">
             <div>
@@ -252,14 +257,22 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
                 id="buyer-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setContactErrors((prev) => ({ ...prev, email: undefined, base: undefined }));
+                }}
                 placeholder="you@example.com"
-                aria-invalid={Boolean(contactErrors.email)}
-                aria-describedby={contactErrors.email ? "buyer-email-error" : undefined}
+                aria-required="false"
+                aria-invalid={Boolean(contactErrors.email || (contactErrors.base && !email.trim()))}
+                aria-describedby={[
+                  contactErrors.base ? "contact-base-error" : undefined,
+                  contactErrors.email ? "buyer-email-error" : undefined,
+                  "contact-desc",
+                ].filter(Boolean).join(" ") || undefined}
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400 dark:focus-visible:ring-zinc-300"
               />
               {contactErrors.email ? (
-                <p id="buyer-email-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p id="buyer-email-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-400">
                   {contactErrors.email}
                 </p>
               ) : null}
@@ -288,20 +301,28 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
                 id="buyer-phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setContactErrors((prev) => ({ ...prev, phone: undefined, base: undefined }));
+                }}
                 placeholder="+12125551234"
-                aria-invalid={Boolean(contactErrors.phone)}
-                aria-describedby={contactErrors.phone ? "buyer-phone-error" : undefined}
+                aria-required="false"
+                aria-invalid={Boolean(contactErrors.phone || (contactErrors.base && !phone.trim()))}
+                aria-describedby={[
+                  contactErrors.base ? "contact-base-error" : undefined,
+                  contactErrors.phone ? "buyer-phone-error" : undefined,
+                  "contact-desc",
+                ].filter(Boolean).join(" ") || undefined}
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400 dark:focus-visible:ring-zinc-300"
               />
               {contactErrors.phone ? (
-                <p id="buyer-phone-error" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p id="buyer-phone-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-400">
                   {contactErrors.phone}
                 </p>
               ) : null}
             </div>
           </div>
-        </div>
+        </fieldset>
       ) : null}
 
       {isFunded ? (

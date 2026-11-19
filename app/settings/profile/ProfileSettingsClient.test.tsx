@@ -77,4 +77,44 @@ describe("ProfileSettingsClient storage failures", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/please try again/i);
     expect(screen.getByLabelText(/Business Name/)).toHaveValue("Acme Goods");
   });
+
+  describe("accessibility and validation failures", () => {
+    it("marks required fields and exposes aria-required", () => {
+      render(<ProfileSettingsClient />);
+      const businessNameInput = screen.getByLabelText(/Business Name/);
+      expect(businessNameInput).toHaveAttribute("required");
+      expect(businessNameInput).toHaveAttribute("aria-required", "true");
+    });
+
+    it("announces failed submission and moves focus predictably to the first invalid control", () => {
+      render(<ProfileSettingsClient />);
+      const businessNameInput = screen.getByLabelText(/Business Name/);
+      fireEvent.change(businessNameInput, { target: { value: "" } });
+
+      const submitButton = screen.getByRole("button", { name: "Save Changes" });
+      fireEvent.click(submitButton);
+
+      expect(businessNameInput).toHaveAttribute("aria-invalid", "true");
+      expect(businessNameInput).toHaveFocus();
+      expect(screen.getByText("Business name is required.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Please correct the errors in the form before saving.")
+      ).toHaveAttribute("role", "alert");
+    });
+
+    it("focuses invalid email when business name is valid but email is invalid", () => {
+      render(<ProfileSettingsClient />);
+      const businessNameInput = screen.getByLabelText(/Business Name/);
+      const emailInput = screen.getByLabelText(/Contact Email/);
+
+      fireEvent.change(businessNameInput, { target: { value: "Acme Goods" } });
+      fireEvent.change(emailInput, { target: { value: "invalid-email" } });
+
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+      expect(emailInput).toHaveAttribute("aria-invalid", "true");
+      expect(emailInput).toHaveFocus();
+      expect(screen.getByText("Enter a valid email address.")).toHaveAttribute("role", "alert");
+    });
+  });
 });

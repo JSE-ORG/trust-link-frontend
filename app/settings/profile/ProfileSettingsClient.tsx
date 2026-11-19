@@ -32,6 +32,7 @@ export default function ProfileSettingsClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -70,8 +71,22 @@ export default function ProfileSettingsClient() {
     const errs = validate(values);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
+      setSubmissionError("Please correct the errors in the form before saving.");
+      const fieldOrder: (keyof ProfileValues)[] = [
+        "businessName",
+        "displayName",
+        "email",
+        "bio",
+        "website",
+        "shippingLocations",
+      ];
+      const firstInvalid = fieldOrder.find((field) => errs[field]);
+      if (firstInvalid) {
+        document.getElementById(firstInvalid)?.focus();
+      }
       return;
     }
+    setSubmissionError(null);
     setIsSaving(true);
     setSaved(false);
     try {
@@ -121,14 +136,17 @@ export default function ProfileSettingsClient() {
               <input
                 id="businessName"
                 type="text"
+                required
+                aria-required="true"
                 value={values.businessName}
                 onChange={(e) => updateField("businessName", e.target.value)}
+                aria-invalid={Boolean(errors.businessName)}
                 aria-describedby={errors.businessName ? "businessName-error" : undefined}
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-950 outline-none focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus-visible:ring-zinc-300"
                 placeholder="Acme Goods Ltd."
               />
               {errors.businessName && (
-                <p id="businessName-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <p id="businessName-error" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
                   {errors.businessName}
                 </p>
               )}
@@ -146,9 +164,16 @@ export default function ProfileSettingsClient() {
                 type="text"
                 value={values.displayName}
                 onChange={(e) => updateField("displayName", e.target.value)}
+                aria-invalid={Boolean(errors.displayName)}
+                aria-describedby={errors.displayName ? "displayName-error" : undefined}
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-950 outline-none focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus-visible:ring-zinc-300"
                 placeholder="@acme"
               />
+              {errors.displayName && (
+                <p id="displayName-error" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {errors.displayName}
+                </p>
+              )}
             </div>
 
             <div>
@@ -163,12 +188,13 @@ export default function ProfileSettingsClient() {
                 type="email"
                 value={values.email}
                 onChange={(e) => updateField("email", e.target.value)}
+                aria-invalid={Boolean(errors.email)}
                 aria-describedby={errors.email ? "email-error" : undefined}
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-950 outline-none focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus-visible:ring-zinc-300"
                 placeholder="hello@acme.com"
               />
               {errors.email && (
-                <p id="email-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <p id="email-error" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
                   {errors.email}
                 </p>
               )}
@@ -186,9 +212,16 @@ export default function ProfileSettingsClient() {
                 rows={3}
                 value={values.bio}
                 onChange={(e) => updateField("bio", e.target.value)}
+                aria-invalid={Boolean(errors.bio)}
+                aria-describedby={errors.bio ? "bio-error" : undefined}
                 className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-950 outline-none focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus-visible:ring-zinc-300"
                 placeholder="We sell quality goods via secure escrow."
               />
+              {errors.bio && (
+                <p id="bio-error" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {errors.bio}
+                </p>
+              )}
             </div>
             {([{ field: "website", label: "Website" }, { field: "shippingLocations", label: "Shipping Locations" }] as const).map(({ field, label }) => (
               <div key={field}>
@@ -198,10 +231,11 @@ export default function ProfileSettingsClient() {
                   type={field === "website" ? "url" : "text"}
                   value={values[field]}
                   onChange={(e) => updateField(field, e.target.value)}
+                  aria-invalid={Boolean(errors[field])}
                   aria-describedby={errors[field] ? `${field}-error` : undefined}
                   className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus-visible:ring-zinc-300"
                 />
-                {errors[field] && <p id={`${field}-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[field]}</p>}
+                {errors[field] && <p id={`${field}-error`} role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{errors[field]}</p>}
               </div>
             ))}
           </div>
@@ -220,6 +254,11 @@ export default function ProfileSettingsClient() {
               </p>
             )}
           </div>
+          {submissionError && (
+            <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">
+              {submissionError}
+            </p>
+          )}
           {saveError && (
             <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">
               {saveError}
