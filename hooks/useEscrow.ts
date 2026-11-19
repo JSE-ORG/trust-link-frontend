@@ -75,7 +75,7 @@ export function useEscrow(
     data: data ?? null,
     isLoading,
     error: error instanceof Error ? error : error != null ? new Error(String(error)) : null,
-    refetch: mutate,
+    refetch: () => mutate(),
   };
 }
 
