@@ -20,6 +20,7 @@ Whether you're fixing a broken button on mobile, building a new dashboard page, 
 - [Pull Request Process](#pull-request-process)
 - [Testing](#testing)
 - [Accessibility Standards](#accessibility-standards)
+- [Localization (i18n) Guidelines](#localization-i18n-guidelines)
 - [Getting Help](#getting-help)
 
 ---
@@ -459,6 +460,56 @@ npm install -g @axe-core/cli
 # Scan a local page
 axe http://localhost:3000/pay/test-escrow-id
 ```
+
+---
+
+## Localization (i18n) Guidelines
+
+TrustLink is designed for cross-border and emerging-market trade. We support English (`en`), French (`fr`), and Nigerian Pidgin (`pcm`) using `i18next` and `react-i18next`. Full reference documentation is available in [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
+
+### 1. Key Nesting & Namespaces
+Translations live in `locales/{en,fr,pcm}/translation.json`. Always nest new keys within the appropriate feature domain object (e.g. `dashboard`, `payment`, `tracking`, `dispute`, `common`):
+
+```json
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "selectedCount": "{{count}} selected",
+    "buyer": "Buyer: {{buyer}}"
+  }
+}
+```
+
+In components:
+```tsx
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
+t("dashboard.selectedCount", { count: 3 });
+```
+
+### 2. Token Parity Rules
+Interpolation tokens use double curly braces (`{{token}}`). **Tokens must never be translated or renamed across locale files.**
+- ✅ English: `"Buyer: {{buyer}}"` → French: `"Acheteur : {{buyer}}"`
+- ❌ French: `"Acheteur : {{acheteur}}"` *(broken interpolation)*
+
+### 3. Beware the "Silent Fallback Trap"
+`lib/i18n.ts` configures `fallbackLng: "en"`. If a key is missing from `fr` or `pcm`, `react-i18next` automatically resolves the English string.
+> ⚠️ **Visual testing in a non-English locale alone is not sufficient** to verify translation completeness, because missing strings silently render in English without error. Always audit that every key added to `locales/en/translation.json` is mirrored in `locales/fr/translation.json` and `locales/pcm/translation.json`.
+
+### 4. Testing Language Switching
+Test local language switching in your browser console:
+```javascript
+// Switch to French and reload
+localStorage.setItem("trustlink.language", "fr");
+location.reload();
+
+// Switch to Nigerian Pidgin
+localStorage.setItem("trustlink.language", "pcm");
+location.reload();
+```
+
+See [docs/LOCALIZATION.md](docs/LOCALIZATION.md) for automated key-parity auditing scripts and diagnostic instructions.
 
 ---
 
