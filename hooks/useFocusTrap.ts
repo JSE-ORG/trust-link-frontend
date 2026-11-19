@@ -9,7 +9,18 @@ interface UseFocusTrapOptions {
   autoFocus?: boolean;
 }
 
-/** Keeps keyboard focus inside an active dialog-like container. */
+/**
+ * Keeps keyboard focus inside an active dialog-like container.
+ *
+ * Traps Tab and Shift+Tab traversal across currently enabled focusable elements
+ * inside `ref`. Calls `onEscape` when the Escape key is pressed.
+ *
+ * Note on Focus Restoration:
+ * Unlike the `<FocusTrap />` component, this hook does not capture or restore
+ * the previously focused element upon deactivation. Consumers managing modal
+ * lifecycle directly should restore focus manually or wrap their markup with
+ * `<FocusTrap />` if automatic restoration to the trigger element is desired.
+ */
 export function useFocusTrap(
   ref: RefObject<HTMLElement | null>,
   isActive: boolean,

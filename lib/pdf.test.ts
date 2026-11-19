@@ -68,7 +68,11 @@ vi.mock('jspdf', () => {
     addPage(...args: unknown[]) {
       record('addPage', args);
     }
-    splitTextToSize(value: string) {
+    splitTextToSize(value: string, ...args: unknown[]) {
+      record('splitTextToSize', [value, ...args]);
+      if (typeof value === 'string' && value.length > 40) {
+        return [value.slice(0, 40), value.slice(40)];
+      }
       return [value];
     }
     save(filename: string) {
@@ -366,10 +370,34 @@ describe('PDF Export Utility', () => {
       timestamp: '2024-01-15T10:30:00Z',
     };
 
-    it('renders a valid receipt', async () => {
+    it('renders a valid receipt and contains escrow, item, hash and amount breakdown', async () => {
       resetMocks();
       await generateReceiptPDF(validReceipt);
       expect(mockState.savedFilenames).toEqual(['trustlink-receipt-escrow-1.pdf']);
+
+      const textCalls = callsOf('text').map((call) => call.args[0]);
+
+      // Transaction details section
+      expect(textCalls).toContain('Transaction Details');
+      expect(textCalls).toContain('Escrow ID:');
+      expect(textCalls).toContain('Item:');
+      expect(textCalls).toContain('Paid At:');
+      expect(textCalls).toContain('Transaction Hash:');
+
+      // Escrow ID and Item values rendered
+      expect(textCalls).toContainEqual(['escrow-1']);
+      expect(textCalls).toContainEqual(['Electronics Item']);
+      expect(textCalls).toContainEqual(['1/15/2024, 10:30:00 AM']);
+      expect(textCalls).toContainEqual(['abc123']);
+
+      // Amount breakdown
+      expect(textCalls).toContain('Amount');
+      expect(textCalls).toContain('Item Amount');
+      expect(textCalls).toContain('100.00 USDC');
+      expect(textCalls).toContain('Protocol Fee');
+      expect(textCalls).toContain('5.00 USDC');
+      expect(textCalls).toContain('Total Paid');
+      expect(textCalls).toContain('105.00 USDC');
     });
 
     it('prints the escrow item, fee and total in USDC', async () => {
@@ -385,33 +413,96 @@ describe('PDF Export Utility', () => {
       expect(text.some((value) => typeof value === 'string' && value.includes('XLM'))).toBe(false);
     });
 
-    it('uses USDC when deriving the total without a fee', async () => {
+    it('handles omitted optional fields gracefully', async () => {
       resetMocks();
-      await generateReceiptPDF({ ...validReceipt, protocolFee: undefined });
+      // Omit timestamp, protocolFee, and total
+      await generateReceiptPDF({
+        escrowId: 'escrow-opt',
+        itemName: 'Minimal Item',
+        amount: 250,
+        txHash: 'tx-simple-456',
+      });
+
+      expect(mockState.savedFilenames).toEqual(['trustlink-receipt-escrow-opt.pdf']);
       const text = callsOf('text').map((call) => call.args[0]);
-      expect(text.filter((value) => value === '100.00 USDC')).toHaveLength(2);
+
+      // Omitted protocol fee means fee row is not rendered
       expect(text).not.toContain('Protocol Fee');
+
+      // Both Item Amount and Total Paid reflect 250.00 USDC
+      const usdcAmounts = text.filter((value) => value === '250.00 USDC');
+      expect(usdcAmounts).toHaveLength(2);
+
+      // Paid At timestamp is rendered with current date fallback
+      expect(text).toContain('Paid At:');
     });
 
-    it('rejects negative amounts', async () => {
+    it('rejects invalid numeric amounts before save', async () => {
       resetMocks();
       await expect(
         generateReceiptPDF({ ...validReceipt, amount: -5 })
       ).rejects.toThrow(/Invalid receipt amount/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, amount: Number.NaN })
+      ).rejects.toThrow(/Invalid receipt amount/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, amount: Number.POSITIVE_INFINITY })
+      ).rejects.toThrow(/Invalid receipt amount/);
+      expect(mockState.savedFilenames).toHaveLength(0);
     });
 
-    it('rejects NaN totals', async () => {
+    it('rejects invalid numeric protocol fees before save', async () => {
       resetMocks();
       await expect(
-        generateReceiptPDF({ ...validReceipt, total: Number.NaN })
-      ).rejects.toThrow(/Invalid receipt total/);
+        generateReceiptPDF({ ...validReceipt, protocolFee: -2 })
+      ).rejects.toThrow(/Invalid receipt protocol fee/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, protocolFee: Number.NaN })
+      ).rejects.toThrow(/Invalid receipt protocol fee/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, protocolFee: Number.POSITIVE_INFINITY })
+      ).rejects.toThrow(/Invalid receipt protocol fee/);
+      expect(mockState.savedFilenames).toHaveLength(0);
     });
 
-    it('rejects negative totals', async () => {
+    it('rejects invalid numeric totals before save', async () => {
       resetMocks();
       await expect(
         generateReceiptPDF({ ...validReceipt, total: -1 })
       ).rejects.toThrow(/Invalid receipt total/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, total: Number.NaN })
+      ).rejects.toThrow(/Invalid receipt total/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+
+      await expect(
+        generateReceiptPDF({ ...validReceipt, total: Number.POSITIVE_INFINITY })
+      ).rejects.toThrow(/Invalid receipt total/);
+      expect(mockState.savedFilenames).toHaveLength(0);
+    });
+
+    it('saves with default or custom filenames', async () => {
+      resetMocks();
+      await generateReceiptPDF(validReceipt);
+      expect(mockState.savedFilenames).toEqual(['trustlink-receipt-escrow-1.pdf']);
+
+      resetMocks();
+      await generateReceiptPDF(validReceipt, 'custom-buyer-receipt.pdf');
+      expect(mockState.savedFilenames).toEqual(['custom-buyer-receipt.pdf']);
+
+      resetMocks();
+      await generateReceiptPDF(validReceipt, 'unextended-filename');
+      expect(mockState.savedFilenames).toEqual(['unextended-filename.pdf']);
     });
 
     it('sanitises a traversal escrowId out of the default filename', async () => {
@@ -420,10 +511,29 @@ describe('PDF Export Utility', () => {
       expect(mockState.savedFilenames).toEqual(['passwd.pdf']);
     });
 
-    it('forces a .pdf extension', async () => {
+    it('wraps long transaction hash and item text without overflowing', async () => {
       resetMocks();
-      await generateReceiptPDF(validReceipt, 'receipt');
-      expect(mockState.savedFilenames).toEqual(['receipt.pdf']);
+      const longHash = 'a'.repeat(64);
+      const longItem = 'Extremely Long Item Title Exceeding Single Line Width Capacity In PDF Template';
+
+      await generateReceiptPDF({
+        ...validReceipt,
+        itemName: longItem,
+        txHash: longHash,
+      });
+
+      // Verify splitTextToSize was called for item and txHash with max width (210 - 2*15 - 45 = 135)
+      const splitCalls = callsOf('splitTextToSize');
+      const splitItems = splitCalls.map((c) => c.args[0]);
+      expect(splitItems).toContain(longItem);
+      expect(splitItems).toContain(longHash);
+
+      const splitWidths = splitCalls.map((c) => c.args[1]);
+      expect(splitWidths.every((w) => w === 135)).toBe(true);
+
+      // Verify text was drawn with multi-line wrapped arrays
+      const textCalls = callsOf('text').map((c) => c.args[0]);
+      expect(textCalls.some((arg) => Array.isArray(arg) && arg.length > 1)).toBe(true);
     });
   });
 });
