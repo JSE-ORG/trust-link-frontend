@@ -4,20 +4,20 @@ import { AlertCircle, BarChart3,Bell, Home, PlusCircle, Search, Truck, User } fr
 import { useRouter } from "next/navigation";
 import { useEffect, useRef,useState } from "react";
 
-type Command = {
+export type Command = {
   label: string;
   route: string;
   description?: string;
   icon: React.ReactNode;
 };
 
-const COMMANDS: Command[] = [
+export const COMMANDS: Command[] = [
   { label: "Dashboard", route: "/dashboard", description: "Go to vendor dashboard", icon: <Home className="h-5 w-5" /> },
   { label: "Analytics", route: "/dashboard/analytics", description: "View vendor performance analytics", icon: <BarChart3 className="h-5 w-5" /> },
   { label: "Create Escrow", route: "/create", description: "Start a new escrow transaction", icon: <PlusCircle className="h-5 w-5" /> },
   { label: "Profile", route: "/profile", description: "View your profile", icon: <User className="h-5 w-5" /> },
-  { label: "Tracking", route: "/track", description: "Track your shipments", icon: <Truck className="h-5 w-5" /> },
-  { label: "Disputes", route: "/dispute", description: "Manage disputes", icon: <AlertCircle className="h-5 w-5" /> },
+  { label: "Tracking", route: "/tracking", description: "Track your shipments", icon: <Truck className="h-5 w-5" /> },
+  { label: "Dispute Guide", route: "/docs", description: "Learn how dispute resolution works", icon: <AlertCircle className="h-5 w-5" /> },
   { label: "Notifications", route: "/notifications", description: "View your notifications", icon: <Bell className="h-5 w-5" /> },
 ];
 

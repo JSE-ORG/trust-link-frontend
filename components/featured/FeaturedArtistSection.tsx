@@ -1,4 +1,4 @@
-import { ArrowRight, MapPin,ShieldCheck, Star } from "lucide-react";
+import { MapPin, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
 
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -84,22 +84,13 @@ export default function FeaturedArtistSection() {
   return (
     <section className="py-20 sm:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-12">
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-4">
-              Featured Artists
-            </h2>
-            <p className="text-lg text-[var(--muted)] max-w-2xl">
-              Top-rated vendors trusted by our community for secure transactions
-            </p>
-          </div>
-          <Link
-            href="/vendor"
-            className="mt-4 sm:mt-0 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary)] hover:text-[var(--accent)] transition-colors"
-          >
-            View All Artists
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+        <div className="mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] mb-4">
+            Featured Artists
+          </h2>
+          <p className="text-lg text-[var(--muted)] max-w-2xl">
+            Top-rated vendors trusted by our community for secure transactions
+          </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -84,7 +84,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/verify",
-        destination: "/track",
+        destination: "/tracking",
         permanent: true,
       },
     ];
