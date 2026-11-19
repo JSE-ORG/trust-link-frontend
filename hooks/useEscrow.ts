@@ -3,7 +3,34 @@
 import useSWR from "swr";
 
 import { getEscrow } from "@/lib/api";
-import { Escrow, FetchHookResult } from "@/types";
+import { Escrow, EscrowStatusConst, FetchHookResult } from "@/types";
+
+/**
+ * Set of terminal escrow statuses where automatic periodic polling is stopped.
+ * Documented policy: COMPLETED, RELEASED, REFUNDED, and EXPIRED represent
+ * final settlement states where no further automated on-chain updates occur.
+ * Active states (PENDING, FUNDED, SHIPPED, DISPUTED) continue polling.
+ */
+export const TERMINAL_ESCROW_STATUSES = new Set<string>([
+  EscrowStatusConst.COMPLETED,
+  EscrowStatusConst.RELEASED,
+  EscrowStatusConst.REFUNDED,
+  EscrowStatusConst.EXPIRED,
+]);
+
+/**
+ * Determines whether an escrow status represents a terminal settlement state.
+ *
+ * Terminal states (COMPLETED, RELEASED, REFUNDED, EXPIRED) stop automatic
+ * periodic polling, reducing network overhead on settled order pages.
+ * Active states (PENDING, FUNDED, SHIPPED, DISPUTED) continue polling.
+ */
+export function isTerminalEscrowStatus(
+  status: string | null | undefined
+): boolean {
+  if (!status) return false;
+  return TERMINAL_ESCROW_STATUSES.has(status.toUpperCase());
+}
 
 /**
  * Configuration options for the {@link useEscrow} hook.
@@ -22,8 +49,9 @@ interface UseEscrowOptions {
  * Fetches and caches a single escrow record, with automatic polling.
  *
  * Wraps {@link getEscrow} with SWR for caching, deduplication, and
- * focus-based revalidation. Pass `null` or `undefined` as `escrowId`
- * to conditionally skip the request.
+ * focus-based revalidation. Stops periodic background polling once the escrow
+ * reaches a terminal settlement state (COMPLETED, RELEASED, REFUNDED, EXPIRED).
+ * Pass `null` or `undefined` as `escrowId` to conditionally skip the request.
  *
  * @param escrowId - Unique identifier of the escrow to fetch, or
  *   `null`/`undefined` to disable the request entirely.
@@ -34,22 +62,6 @@ interface UseEscrowOptions {
  *   - `isLoading` – `true` while the initial fetch is in progress.
  *   - `error`     – An `Error` instance if the request failed, otherwise `null`.
  *   - `refetch`   – SWR `mutate` function to manually revalidate the cache.
- *
- * @example
- * ```tsx
- * import { useEscrow } from "@/hooks/useEscrow";
- *
- * function EscrowDetails({ id }: { id: string }) {
- *   const { data, isLoading, error } = useEscrow(id);
- *
- *   if (isLoading) return <Spinner />;
- *   if (error)     return <p>Failed to load escrow.</p>;
- *   return <p>{data?.item} — {data?.amount} USDC</p>;
- * }
- * ```
- *
- * @see {@link Escrow} for the shape of the returned data.
- * @see {@link UseEscrowOptions} for available configuration.
  */
 export function useEscrow(
   escrowId: string | null | undefined,
@@ -64,7 +76,13 @@ export function useEscrow(
       return getEscrow(escrowId);
     },
     {
-      refreshInterval,
+      refreshInterval: (escrow: Escrow | undefined) => {
+        if (refreshInterval === 0) return 0;
+        if (escrow && isTerminalEscrowStatus(escrow.status)) {
+          return 0;
+        }
+        return refreshInterval;
+      },
       fallbackData: initialData,
       revalidateOnFocus: true,
       dedupingInterval: 2000,
@@ -74,7 +92,12 @@ export function useEscrow(
   return {
     data: data ?? null,
     isLoading,
-    error: error instanceof Error ? error : error != null ? new Error(String(error)) : null,
+    error:
+      error instanceof Error
+        ? error
+        : error != null
+          ? new Error(String(error))
+          : null,
     refetch: () => mutate(),
   };
 }
