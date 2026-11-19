@@ -19,6 +19,7 @@ import ProGate from "@/components/subscription/ProGate";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getVendorEscrows } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 import type { Escrow, EscrowStatus } from "@/types";
 import { EscrowStatusConst } from "@/types";
 
@@ -218,7 +219,7 @@ function AnalyticsPageContent() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const jwt = window.localStorage.getItem("wallet.jwt");
+    const jwt = window.localStorage.getItem(SESSION_KEY);
     if (!jwt) {
       router.push("/");
       return;
@@ -228,7 +229,7 @@ function AnalyticsPageContent() {
 
   useEffect(() => {
     if (isChecking || !isPro || planLoading) return;
-    const token = localStorage.getItem("wallet.jwt") ?? undefined;
+    const token = localStorage.getItem(SESSION_KEY) ?? undefined;
     startTransition(() => {
       setIsLoading(true);
       setError(null);
@@ -276,7 +277,7 @@ function AnalyticsPageContent() {
               title="We couldn't load your analytics"
               message={error}
               onRetry={() => {
-                const token = localStorage.getItem("wallet.jwt") ?? undefined;
+                const token = localStorage.getItem(SESSION_KEY) ?? undefined;
                 setError(null);
                 setIsLoading(true);
                 getVendorEscrows(token)

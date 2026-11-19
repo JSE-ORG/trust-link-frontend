@@ -16,25 +16,34 @@ export const SESSION_KEY = "wallet.jwt" as const;
 /** The localStorage key that holds the connected public key. */
 export const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey" as const;
 
-/** Event dispatched on `window` when the session expires. */
+/** Canonical event dispatched on `window` when the session expires. */
 export const SESSION_EXPIRED_EVENT = "app:unauthorized" as const;
+
+/** Legacy session events dispatched or listened to by older components. */
+export const LEGACY_SESSION_EXPIRED_EVENTS = [
+  "app:session_expired",
+  "auth:unauthorized",
+] as const;
 
 /** The single redirect target used when a session expires. */
 export const SESSION_EXPIRED_REDIRECT = "/" as const;
 
-/** All localStorage keys that must be cleared on session expiry. */
-export const SESSION_STORAGE_KEYS = [
-  SESSION_KEY,
-  PUBLIC_KEY_STORAGE_KEY,
-  // Legacy keys from before the `@/lib/session` unification — must still be
-  // cleared so a 401 never leaves a half-cleared session behind.
+/** Legacy session storage keys that must be explicitly cleaned up without erasing unrelated preferences. */
+export const LEGACY_STORAGE_KEYS = [
   "wallet.token",
   "wallet.jwk",
   "wallet.session",
 ] as const;
 
+/** All localStorage keys that must be cleared on session expiry. */
+export const SESSION_STORAGE_KEYS = [
+  SESSION_KEY,
+  PUBLIC_KEY_STORAGE_KEY,
+  ...LEGACY_STORAGE_KEYS,
+] as const;
+
 /**
- * Clears every session-related localStorage key and notifies listeners.
+ * Clears every session-related localStorage and sessionStorage key and notifies listeners.
  *
  * This is the single entry point for handling a 401 / expired session.
  * It is safe to call in any environment; browser-only side effects are
@@ -44,10 +53,27 @@ export function handleSessionExpired(): void {
   if (typeof window === "undefined") return;
 
   for (const key of SESSION_STORAGE_KEYS) {
-    window.localStorage.removeItem(key);
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }
+
+  // Explicit narrow cleanup for legacy keys stored in sessionStorage
+  for (const key of LEGACY_STORAGE_KEYS) {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
   }
 
   window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+
+  for (const legacyEvent of LEGACY_SESSION_EXPIRED_EVENTS) {
+    window.dispatchEvent(new Event(legacyEvent));
+  }
 }
 
 /**

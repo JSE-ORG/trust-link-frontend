@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { cancelEscrow } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 import type { Escrow } from "@/types";
 
 import type { TranslateFn } from "./vendorListShared";
@@ -36,7 +37,7 @@ export function useCancelEscrow({
 
     setIsCancelling(true);
     try {
-      const token = window.localStorage.getItem("wallet.jwt") || undefined;
+      const token = window.localStorage.getItem(SESSION_KEY) || undefined;
       await cancelEscrow(escrowToCancel.id, token);
 
       setEscrows(

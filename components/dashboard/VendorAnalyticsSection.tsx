@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getVendorAnalytics, type VendorAnalyticsPoint, type VendorAnalyticsResponse } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 
 import { VendorAnalyticsHeader } from "./VendorAnalyticsHeader";
 import { VendorAnalyticsMetricsGrid } from "./VendorAnalyticsMetricsGrid";
@@ -72,7 +73,7 @@ export default function VendorAnalyticsSection() {
     let mounted = true;
 
     async function loadAnalytics() {
-      const token = window.localStorage.getItem("wallet.jwt");
+      const token = window.localStorage.getItem(SESSION_KEY);
       if (!token) {
         router.push("/");
         return;

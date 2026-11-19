@@ -5,8 +5,10 @@ import { afterEach,beforeEach,describe, expect, it, vi } from "vitest";
 import useWallet from "@/hooks/useWallet";
 import { setLoggerUser } from "@/lib/logger";
 import {
+  handleSessionExpired,
   MIN_SESSION_REFRESH_DELAY_MS,
   PUBLIC_KEY_STORAGE_KEY,
+  SESSION_EXPIRED_EVENT,
   SESSION_KEY,
   SESSION_REFRESH_LEAD_MS,
 } from "@/lib/session";
@@ -215,6 +217,30 @@ describe("WalletProvider identity rollback", () => {
     expect(screen.getByTestId("token")).toBeEmptyDOMElement();
     expect(window.localStorage.getItem(PUBLIC_KEY_STORAGE_KEY)).toBeNull();
     expect(vi.mocked(setLoggerUser).mock.calls.at(-1)).toEqual([null]);
+  });
+
+  it("clears in-memory wallet state once when handleSessionExpired is called", async () => {
+    mockWorkingWallet();
+    renderWithProviders(<StatusHarness />);
+    await clickConnect();
+    expect(screen.getByTestId("token")).toHaveTextContent("jwt-token");
+    expect(screen.getByTestId("publicKey")).toHaveTextContent(PUBLIC_KEY);
+
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    try {
+      act(() => {
+        handleSessionExpired();
+      });
+
+      expect(onExpired).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("token")).toBeEmptyDOMElement();
+      expect(screen.getByTestId("publicKey")).toBeEmptyDOMElement();
+      expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();
+      expect(window.localStorage.getItem(PUBLIC_KEY_STORAGE_KEY)).toBeNull();
+    } finally {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    }
   });
 });
 

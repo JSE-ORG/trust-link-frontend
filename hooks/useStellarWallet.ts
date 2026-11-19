@@ -6,7 +6,16 @@ import { toast } from "sonner";
 
 import { useNetwork } from "@/components/providers/NetworkProvider";
 import { captureError, setLoggerUser } from "@/lib/logger";
-import { getSessionRefreshSchedule, type SessionRefreshSchedule } from "@/lib/session";
+import {
+  getSessionRefreshSchedule,
+  handleSessionExpired,
+  LEGACY_SESSION_EXPIRED_EVENTS,
+  LEGACY_STORAGE_KEYS,
+  PUBLIC_KEY_STORAGE_KEY,
+  SESSION_EXPIRED_EVENT,
+  SESSION_KEY,
+  type SessionRefreshSchedule,
+} from "@/lib/session";
 import { getChallenge, verifyChallenge } from "@/lib/stellar";
 import {
   connectFreighter,
@@ -26,8 +35,7 @@ interface JwtPayload {
   iat?: number;
 }
 
-const PUBLIC_KEY_STORAGE_KEY = "wallet.publicKey";
-const TOKEN_STORAGE_KEY = "wallet.token";
+
 
 export interface StellarWalletState {
   publicKey: string | null;
@@ -60,7 +68,7 @@ export function useStellarWallet() {
       const jwt = await verifyChallenge(signedXdr);
       setToken(jwt);
       if (typeof window !== "undefined") {
-        localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+        localStorage.setItem(SESSION_KEY, jwt);
       }
       return jwt;
     } catch (err: unknown) {
@@ -83,7 +91,15 @@ export function useStellarWallet() {
     setLoggerUser(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(SESSION_KEY);
+      for (const key of LEGACY_STORAGE_KEYS) {
+        try {
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+        } catch {
+          // ignore storage errors in restricted contexts
+        }
+      }
     }
   }, []);
 
@@ -108,10 +124,7 @@ export function useStellarWallet() {
             setLoggerUser(storedPublicKey);
             await authenticate(storedPublicKey);
           } else {
-            if (typeof window !== "undefined") {
-              localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
-              localStorage.removeItem(TOKEN_STORAGE_KEY);
-            }
+            clearIdentity();
           }
         } catch (e) {
           captureError(e, { scope: "wallet", action: "restoreSession" });
@@ -128,6 +141,24 @@ export function useStellarWallet() {
     init();
     return () => { isMounted = false; };
   }, [authenticate, clearIdentity]);
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      if (token || publicKey) {
+        clearIdentity();
+      }
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
+    for (const legacyEvent of LEGACY_SESSION_EXPIRED_EVENTS) {
+      window.addEventListener(legacyEvent, onUnauthorized);
+    }
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, onUnauthorized);
+      for (const legacyEvent of LEGACY_SESSION_EXPIRED_EVENTS) {
+        window.removeEventListener(legacyEvent, onUnauthorized);
+      }
+    };
+  }, [token, publicKey, clearIdentity]);
 
   const connect = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
@@ -214,6 +245,7 @@ export function useStellarWallet() {
           action: "scheduleSessionRefresh",
         });
         clearIdentity();
+        handleSessionExpired();
         setError("Session expired. Reconnect your wallet.");
       }, 0);
 
@@ -228,6 +260,7 @@ export function useStellarWallet() {
       void authenticate(publicKey).catch((err: unknown) => {
         captureError(err, { scope: "auth", action: "refreshSession" });
         clearIdentity();
+        handleSessionExpired();
         setError("Session expired. Reconnect your wallet.");
       });
     }, schedule.delayMs);

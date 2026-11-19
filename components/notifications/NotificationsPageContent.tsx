@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { useNotifications } from "@/components/providers/NotificationProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { SESSION_KEY } from "@/lib/session";
 
 import { NotificationFetchFeedback } from "./NotificationFetchFeedback";
 import { NotificationRow } from "./NotificationRow";
@@ -57,7 +58,7 @@ function NotificationsContent() {
   }, [filteredNotifications, effectivePage]);
 
   useEffect(() => {
-    const jwt = window.localStorage.getItem("wallet.jwt");
+    const jwt = window.localStorage.getItem(SESSION_KEY);
     if (!jwt) {
       router.push("/");
       return;

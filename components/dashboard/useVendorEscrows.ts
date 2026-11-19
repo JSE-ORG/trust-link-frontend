@@ -3,6 +3,7 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 
 import { getVendorEscrows } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 import type { Escrow } from "@/types";
 
 interface UseVendorEscrowsOptions {
@@ -23,7 +24,7 @@ export function useVendorEscrows({ errorMessage }: UseVendorEscrowsOptions) {
     const requestId = ++latestRequestRef.current;
     try {
       setError(null);
-      const token = window.localStorage.getItem("wallet.jwt") || undefined;
+      const token = window.localStorage.getItem(SESSION_KEY) || undefined;
       const data = await getVendorEscrows(token);
       if (requestId === latestRequestRef.current) setEscrows(data);
     } catch (err) {

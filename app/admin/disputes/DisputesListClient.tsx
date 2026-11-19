@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getAdminDisputes } from "@/lib/api";
+import { SESSION_KEY } from "@/lib/session";
 import { formatTimeAgo } from "@/lib/utils";
 import { Dispute } from "@/types";
 import { formatUSDC } from "@/utils/currency";
@@ -66,7 +67,7 @@ export function DisputesListClient() {
 
   useEffect(() => {
     let isMounted = true;
-    const token = window.localStorage.getItem("wallet.jwt");
+    const token = window.localStorage.getItem(SESSION_KEY);
 
     if (!token) {
       router.push("/");
@@ -128,7 +129,7 @@ export function DisputesListClient() {
           onRetry={() => {
             setError(null);
             setIsLoading(true);
-            void getAdminDisputes(window.localStorage.getItem("wallet.jwt") ?? "")
+            void getAdminDisputes(window.localStorage.getItem(SESSION_KEY) ?? "")
               .then(setDisputes)
               .catch((caught) => {
                 setError(caught instanceof Error ? caught.message : "Failed to load disputes");

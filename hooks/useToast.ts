@@ -2,6 +2,8 @@
 
 import { toast as sonnerToast } from "sonner";
 
+import { handleSessionExpired } from "@/lib/session";
+
 const DEFAULT_DURATION = 4000;
 
 type ToastOptions = Parameters<typeof sonnerToast.success>[1];
@@ -25,8 +27,8 @@ const SESSION_EXPIRED_TOAST_ID = "session-expired";
  * Use this in API interceptors when receiving a 401 response.
  */
 export function sessionExpired() {
-  // Remove the expired token from localStorage
-  window.localStorage.removeItem("wallet.jwt");
+  // Clear the stored session keys and dispatch expiry event
+  handleSessionExpired();
 
   // Notify the user and prompt them to reconnect
   sonnerToast.error("Session expired. Please reconnect your wallet.", {

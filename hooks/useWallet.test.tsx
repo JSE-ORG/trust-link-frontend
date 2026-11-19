@@ -135,7 +135,7 @@ describe("useWallet session expiry", () => {
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
     try {
       act(() => { handleSessionExpired(); });
-      expect(onExpired).toHaveBeenCalled();
+      expect(onExpired).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId("publicKey")).toHaveTextContent("");
       expect(screen.getByTestId("token")).toHaveTextContent("");
       for (const key of SESSION_STORAGE_KEYS) expect(localStorage.getItem(key)).toBeNull();
