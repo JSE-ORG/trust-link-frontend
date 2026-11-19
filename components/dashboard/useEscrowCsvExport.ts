@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 
 import type { Escrow } from "@/types";
-import { downloadCsv } from "@/utils/exportCsv";
+import { type CsvColumn, downloadCsv } from "@/utils/exportCsv";
 
 import type { TranslateFn } from "./vendorListShared";
 
@@ -30,7 +30,7 @@ export function useEscrowCsvExport({
   translate,
 }: UseEscrowCsvExportOptions) {
   const getCsvColumns = useCallback(
-    () =>
+    (): readonly CsvColumn<Escrow>[] =>
       [
         { key: "id", header: translate("dashboard.csvHeaders.escrowId") },
         { key: "item", header: translate("dashboard.csvHeaders.item") },
@@ -45,8 +45,8 @@ export function useEscrowCsvExport({
   const handleExportCsv = useCallback(() => {
     if (!filteredEscrows || filteredEscrows.length === 0) return;
     downloadCsv(
-      filteredEscrows as unknown as Record<string, unknown>[],
-      getCsvColumns() as unknown as { key: string; header: string }[],
+      filteredEscrows,
+      getCsvColumns(),
       csvFilename()
     );
   }, [filteredEscrows, getCsvColumns]);
@@ -54,8 +54,8 @@ export function useEscrowCsvExport({
   const handleExportSelected = useCallback(() => {
     if (selectedCount === 0) return;
     downloadCsv(
-      selectedEscrows as unknown as Record<string, unknown>[],
-      getCsvColumns() as unknown as { key: string; header: string }[],
+      selectedEscrows,
+      getCsvColumns(),
       csvFilename()
     );
     toast.success(

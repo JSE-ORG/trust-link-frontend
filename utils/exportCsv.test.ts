@@ -1,6 +1,6 @@
 import { afterEach, beforeEach,describe, expect, it, vi } from "vitest";
 
-import { downloadCsv, ensureCsvExtension } from "./exportCsv";
+import { type CsvColumn, downloadCsv, ensureCsvExtension } from "./exportCsv";
 
 const UTF8_BOM = "\uFEFF";
 
@@ -167,5 +167,47 @@ describe("downloadCsv", () => {
     expect(() => {
       downloadCsv([{ id: "1" }], [{ key: "id", header: "ID" }], "ssr.csv");
     }).not.toThrow();
+  });
+
+  it("exports typed records directly without casts and preserves column types", () => {
+    interface TestItem {
+      id: string;
+      title: string;
+      price: number;
+    }
+    const items: TestItem[] = [
+      { id: "item-1", title: "Vintage Lens", price: 450 },
+    ];
+    const columns: readonly CsvColumn<TestItem>[] = [
+      { key: "id", header: "Item ID" },
+      { key: "title", header: "Title" },
+      { key: "price", header: "Price" },
+    ];
+
+    const getContent = captureBlob();
+    downloadCsv(items, columns, "items.csv");
+    const blobContent = getContent();
+
+    const lines = blobContent.slice(UTF8_BOM.length).split("\r\n");
+    expect(lines[0]).toBe("Item ID,Title,Price");
+    expect(lines[1]).toBe("item-1,Vintage Lens,450");
+  });
+
+  it("enforces type-safety on column keys against row keys", () => {
+    interface SampleData {
+      sku: string;
+      stock: number;
+    }
+    const data: SampleData[] = [{ sku: "SKU-99", stock: 12 }];
+    const validColumns: readonly CsvColumn<SampleData>[] = [
+      { key: "sku", header: "SKU" },
+      { key: "stock", header: "In Stock" },
+    ];
+    downloadCsv(data, validColumns, "stock.csv");
+
+    // Invalid column key should be rejected at compile time:
+    // @ts-expect-error - 'nonExistentField' is not assignable to keyof SampleData
+    const invalidCols: readonly CsvColumn<SampleData>[] = [{ key: "nonExistentField", header: "Bad" }];
+    expect(invalidCols).toHaveLength(1);
   });
 });
