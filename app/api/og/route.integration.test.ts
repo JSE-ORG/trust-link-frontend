@@ -51,6 +51,18 @@ describe("GET /api/og Integration Tests", () => {
     expect(response.headers.get("Content-Type")).toBe("image/png");
   });
 
+  it("bounds oversized parameters safely before image generation", async () => {
+    const oversizedTitle = encodeURIComponent("X".repeat(500));
+    const oversizedAmount = encodeURIComponent("9".repeat(100));
+    const oversizedStatus = encodeURIComponent("PENDING".repeat(20));
+    const url = `http://localhost:3000/api/og?title=${oversizedTitle}&amount=${oversizedAmount}&status=${oversizedStatus}`;
+    const request = authed(url);
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/png");
+  });
+
   it("returns 401 when no bearer token is supplied", async () => {
     const request = new NextRequest("http://localhost:3000/api/og");
     const response = await GET(request);
