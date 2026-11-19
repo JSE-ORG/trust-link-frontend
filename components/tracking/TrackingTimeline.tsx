@@ -99,6 +99,17 @@ export default function TrackingTimeline({
     startTransition(() => setSwipeIndex(currentStageIndex));
   }, [currentStageIndex]);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncBreakpoint = () => setIsMobile(mediaQuery.matches);
+    syncBreakpoint();
+    mediaQuery.addEventListener?.("change", syncBreakpoint);
+    return () => mediaQuery.removeEventListener?.("change", syncBreakpoint);
+  }, []);
+
   const handleRaiseDispute = () => {
     window.location.href = `/dispute/${escrowId}`;
   };
@@ -162,7 +173,9 @@ export default function TrackingTimeline({
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div 
+          <ol 
+            role="list"
+            aria-label={t("tracking.escrowMilestones")}
             className={`flex transition-transform duration-300 ease-out md:block md:space-y-6 md:!transform-none ${
               ["translate-x-0", "-translate-x-full", "-translate-x-[200%]", "-translate-x-[300%]"][swipeIndex] ??
               "translate-x-0"
@@ -173,15 +186,21 @@ export default function TrackingTimeline({
               const isCurrent = index === currentStageIndex;
               const isPending = index > currentStageIndex;
               const Icon = stage.icon;
+              const isSlideVisible = !isMobile || index === swipeIndex;
 
               return (
-                <div key={stage.id} className="w-full flex-shrink-0 md:w-auto md:flex-shrink">
-                  <div
-                    tabIndex={0}
-                    role="listitem"
-                    aria-current={isCurrent ? "step" : undefined}
-                    className="flex items-start gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                  >
+                <li
+                  key={stage.id}
+                  role="listitem"
+                  tabIndex={isSlideVisible ? 0 : -1}
+                  aria-current={isCurrent ? "step" : undefined}
+                  aria-hidden={!isSlideVisible}
+                  className="w-full flex-shrink-0 list-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:w-auto md:flex-shrink"
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="sr-only">
+                      {index + 1} of {TRACKING_STAGES.length}
+                    </span>
                     {/* Icon */}
                     <div
                       className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
@@ -195,41 +214,41 @@ export default function TrackingTimeline({
                       <Icon className="h-6 w-6" />
                     </div>
 
-                {/* Content */}
-                <div className="flex-1">
-                  <p
-                    className={`text-base font-semibold ${
-                      isCompleted || isCurrent
-                        ? "text-zinc-950 dark:text-zinc-100"
-                        : "text-zinc-500 dark:text-zinc-500"
-                    }`}
-                  >
-                    {t(stage.titleKey)}
-                  </p>
-                  <p
-                    className={`mt-1 text-sm ${
-                      isCompleted || isCurrent
-                        ? "text-zinc-600 dark:text-zinc-400"
-                        : "text-zinc-400 dark:text-zinc-600"
-                    }`}
-                  >
-                    {t(stage.descriptionKey)}
-                  </p>
-                  {isCurrent && activeEscrow.updatedAt && (() => {
-                    const updatedAt = new Date(activeEscrow.updatedAt);
-                    const timestamp = Number.isNaN(updatedAt.getTime())
-                      ? UNAVAILABLE_DATE
-                      : new Intl.DateTimeFormat(i18n.language, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(updatedAt);
-                    return (
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-                        {timestamp}
+                    {/* Content */}
+                    <div className="flex-1">
+                      <p
+                        className={`text-base font-semibold ${
+                          isCompleted || isCurrent
+                            ? "text-zinc-950 dark:text-zinc-100"
+                            : "text-zinc-500 dark:text-zinc-500"
+                        }`}
+                      >
+                        {t(stage.titleKey)}
                       </p>
-                    );
-                  })()}
-                </div>
+                      <p
+                        className={`mt-1 text-sm ${
+                          isCompleted || isCurrent
+                            ? "text-zinc-600 dark:text-zinc-400"
+                            : "text-zinc-400 dark:text-zinc-600"
+                        }`}
+                      >
+                        {t(stage.descriptionKey)}
+                      </p>
+                      {isCurrent && activeEscrow.updatedAt && (() => {
+                        const updatedAt = new Date(activeEscrow.updatedAt);
+                        const timestamp = Number.isNaN(updatedAt.getTime())
+                          ? UNAVAILABLE_DATE
+                          : new Intl.DateTimeFormat(i18n.language, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }).format(updatedAt);
+                        return (
+                          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                            {timestamp}
+                          </p>
+                        );
+                      })()}
+                    </div>
 
                     {/* Status indicator */}
                     {isCompleted && (
@@ -244,25 +263,39 @@ export default function TrackingTimeline({
                       <Circle className="h-5 w-5 flex-shrink-0 text-zinc-300 dark:text-zinc-700" />
                     )}
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ol>
 
           {/* Mobile swipe indicators */}
-          <div className="mt-6 flex justify-center gap-2 md:hidden">
-            {TRACKING_STAGES.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setSwipeIndex(index)}
-                className={`h-2 w-2 rounded-full transition-colors ${
-                  index === swipeIndex
-                    ? "bg-blue-600 dark:bg-blue-400"
-                    : "bg-zinc-300 dark:bg-zinc-700"
-                }`}
-                aria-label={t("tracking.goToStage", { stage: index + 1 })}
-              />
-            ))}
+          <div
+            role="tablist"
+            aria-label={t("tracking.escrowMilestones")}
+            className="mt-6 flex items-center justify-center gap-1 md:hidden"
+          >
+            {TRACKING_STAGES.map((stage, index) => {
+              const isSelected = index === swipeIndex;
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => setSwipeIndex(index)}
+                  className="flex h-11 w-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label={`${t("tracking.goToStage", { stage: index + 1 })}: ${t(stage.titleKey)} (${index + 1} of ${TRACKING_STAGES.length})`}
+                >
+                  <span
+                    className={`block rounded-full transition-all duration-200 ${
+                      isSelected
+                        ? "h-2.5 w-6 bg-blue-600 dark:bg-blue-400"
+                        : "h-2.5 w-2.5 bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400"
+                    }`}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

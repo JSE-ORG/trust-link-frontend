@@ -132,7 +132,9 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Evidence files</label>
+        <label htmlFor="evidence" className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Evidence files
+        </label>
         <div
           onDragOver={(event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
@@ -144,14 +146,18 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
             setIsDragging(false);
             handleFileSelection(event.dataTransfer.files);
           }}
-          className={`rounded-3xl border border-dashed p-6 text-center transition-colors ${isDragging ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-zinc-200 dark:border-zinc-800"}`}
+          className={`rounded-3xl border border-dashed p-6 text-center transition-colors focus-within:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:ring-offset-2 ${
+            isDragging ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-zinc-200 dark:border-zinc-800"
+          }`}
         >
           <input
             id="evidence"
             type="file"
             accept={ACCEPT_ATTR}
             multiple
-            className="hidden"
+            className="sr-only"
+            aria-describedby={`evidence-hint${error ? " dispute-error" : ""}`}
+            aria-invalid={Boolean(error)}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
               handleFileSelection(event.target.files);
               // Reset the native selection so the same file can be picked again
@@ -160,20 +166,22 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
             }}
           />
           <label htmlFor="evidence" className="flex cursor-pointer flex-col items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-            <Upload className="h-5 w-5 text-[var(--accent)]" />
+            <Upload className="h-5 w-5 text-[var(--accent)]" aria-hidden="true" />
             <span className="font-medium text-zinc-900 dark:text-zinc-100">Upload images or PDFs</span>
             <span>Up to {MAX_FILES} files, 10 MB each</span>
           </label>
         </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">Accepted formats: {ALLOWED_TYPES_LABEL}. Max {MAX_FILES} files, 10 MB each.</p>
+        <p id="evidence-hint" className="text-xs text-zinc-500 dark:text-zinc-400">
+          Accepted formats: {ALLOWED_TYPES_LABEL}. Max {MAX_FILES} files, 10 MB each.
+        </p>
 
         {files.length > 0 && (
-          <ul className="space-y-2">
+          <ul className="space-y-2" aria-label="Attached evidence files">
             {files.map((file, index) => (
               <li key={`${file.name}-${index}`} className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-900/70">
-                <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-200"><FileText className="h-4 w-4" />{file.name}</span>
+                <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-200"><FileText className="h-4 w-4" aria-hidden="true" />{file.name}</span>
                 <button type="button" onClick={() => removeFile(index)} className="rounded-full p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label={`Remove ${file.name}`}>
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -182,8 +190,13 @@ export default function DisputeForm({ escrowId }: DisputeFormProps) {
       </div>
 
       {error && (
-        <p className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/20 dark:text-rose-200">
-          <AlertCircle className="h-4 w-4" />{error}
+        <p
+          id="dispute-error"
+          role="alert"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/20 dark:text-rose-200"
+        >
+          <AlertCircle className="h-4 w-4" aria-hidden="true" />{error}
         </p>
       )}
 

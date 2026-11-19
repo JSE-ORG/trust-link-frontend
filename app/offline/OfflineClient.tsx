@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function OfflineClient() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-6 dark:bg-black text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-6 dark:bg-black text-center">
       <div className="rounded-full bg-red-100 p-6 dark:bg-red-900/30 mb-6">
         <WifiOff className="h-12 w-12 text-red-600 dark:text-red-500" />
       </div>
@@ -19,6 +19,6 @@ export default function OfflineClient() {
       >
         Try Again
       </Link>
-    </main>
+    </div>
   );
 }

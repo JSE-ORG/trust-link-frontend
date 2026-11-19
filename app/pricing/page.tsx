@@ -15,7 +15,7 @@ export default function PricingPage() {
       fallback={
         /* Pricing skeleton — reserves the two-column card layout
            so there is no height jump when PricingClient mounts. */
-        <main className="min-h-screen bg-zinc-50 px-6 py-12 dark:bg-black">
+        <div className="min-h-screen bg-zinc-50 px-6 py-12 dark:bg-black">
           <div className="mx-auto max-w-4xl">
             <div className="mb-12 text-center">
               <div className="mx-auto mb-3 h-4 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
@@ -43,7 +43,7 @@ export default function PricingPage() {
               ))}
             </div>
           </div>
-        </main>
+        </div>
       }
     >
       <PricingClient />

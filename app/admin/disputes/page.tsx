@@ -11,12 +11,12 @@ export const metadata = {
 
 export default function AdminDisputesPage() {
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-6xl">
         <Suspense fallback={null}>
           <DisputesListClient />
         </Suspense>
       </div>
-    </main>
+    </div>
   );
 }

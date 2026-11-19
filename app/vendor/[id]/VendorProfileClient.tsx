@@ -48,7 +48,7 @@ export default function VendorProfileClient({
     vendor.disputeRate !== undefined;
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 pb-24 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 pb-24 dark:bg-black">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-center gap-4">
           <Link
@@ -212,6 +212,6 @@ export default function VendorProfileClient({
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }

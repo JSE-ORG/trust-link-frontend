@@ -90,7 +90,11 @@
       "tooltipTransactionVolume": "Volume des transactions : {{amount}}",
       "tooltipAverageOrder": "Montant moyen des commandes : {{amount}}",
       "tooltipCompletionRate": "Taux de finalisation : {{rate}}",
-      "tooltipDisputeRate": "Taux de litiges : {{rate}}"
+      "tooltipDisputeRate": "Taux de litiges : {{rate}}",
+      "viewDataTable": "Afficher sous forme de tableau",
+      "viewChart": "Afficher sous forme de graphique",
+      "dataTableCaption": "Tableau de données d'analyse quotidienne du vendeur présentant le volume des transactions, la valeur moyenne des commandes, le taux de finalisation et le taux de litiges",
+      "date": "Date"
     }
   },
   "payment": {

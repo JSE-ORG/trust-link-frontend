@@ -119,7 +119,7 @@ export default function VendorAnalyticsSection() {
 
   if (error) {
     return (
-      <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
+      <div className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-4">
           <Link
             href="/dashboard"
@@ -145,17 +145,17 @@ export default function VendorAnalyticsSection() {
             </button>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
+    <div className="analytics-page-background min-h-screen p-4 pb-24 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <VendorAnalyticsHeader periodLabel={periodLabel} generatedAt={generatedAt} />
         <VendorAnalyticsMetricsGrid metrics={metrics} />
         <VendorAnalyticsTrendSection chartData={chartData} isMobile={isMobile} />
       </div>
-    </main>
+    </div>
   );
 }

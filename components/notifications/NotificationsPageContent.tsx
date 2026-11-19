@@ -68,7 +68,7 @@ function NotificationsContent() {
 
   if (isChecking) {
     return (
-      <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+      <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
         <div className="mx-auto max-w-2xl">
           <div className="mb-6 flex items-center gap-3">
             <Skeleton className="h-9 w-9 rounded-full" />
@@ -76,12 +76,12 @@ function NotificationsContent() {
           </div>
           <NotificationsSkeleton />
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-2xl">
         <NotificationsToolbar
           unreadCount={unreadCount}
@@ -119,7 +119,7 @@ function NotificationsContent() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

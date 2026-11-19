@@ -17,7 +17,7 @@ export default function RouteGroupErrorBoundary({ error, reset, unstable_retry }
   }, [error]);
 
   return (
-    <main className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen min-h-dvh bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         <FetchErrorState
           title="Unable to load payment"
@@ -25,6 +25,6 @@ export default function RouteGroupErrorBoundary({ error, reset, unstable_retry }
           onRetry={unstable_retry ?? reset}
         />
       </div>
-    </main>
+    </div>
   );
 }

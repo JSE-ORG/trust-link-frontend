@@ -46,7 +46,7 @@ export default function ProfileClient() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
+    <div className="min-h-screen bg-zinc-50 p-6 dark:bg-black">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-6 text-3xl font-semibold text-zinc-950 dark:text-white">Profile</h1>
         <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -165,6 +165,6 @@ export default function ProfileClient() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

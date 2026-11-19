@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -74,5 +74,37 @@ describe("VendorAnalyticsChart", () => {
     );
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
     expect(container.querySelector(".recharts-wrapper")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /view as/i })).not.toBeInTheDocument();
+  });
+
+  it("renders an accessible data table with metrics and localized values when data points exist", () => {
+    render(<VendorAnalyticsChart dataPoints={mockDataPoints} isMobile={false} />);
+
+    const table = screen.getByRole("table", { hidden: true });
+    expect(table).toBeInTheDocument();
+
+    expect(screen.getByText(/dashboard.analyticsPage.date/i)).toBeInTheDocument();
+    expect(screen.getByText(/dashboard.analyticsPage.totalTransactionVolume/i)).toBeInTheDocument();
+    expect(screen.getByText(/dashboard.analyticsPage.averageOrderValue/i)).toBeInTheDocument();
+    expect(screen.getByText(/dashboard.analyticsPage.completionRate/i)).toBeInTheDocument();
+    expect(screen.getByText(/dashboard.analyticsPage.disputeRate/i)).toBeInTheDocument();
+
+    expect(screen.getByText("$1500")).toBeInTheDocument();
+    expect(screen.getByText("$2000")).toBeInTheDocument();
+    expect(screen.getByText("95.0%")).toBeInTheDocument();
+    expect(screen.getByText("1.0%")).toBeInTheDocument();
+  });
+
+  it("toggles between chart view and visible data table view on button click", () => {
+    render(<VendorAnalyticsChart dataPoints={mockDataPoints} isMobile={false} />);
+
+    const toggleBtn = screen.getByRole("button", { name: /dashboard.analyticsPage.viewDataTable/i });
+    expect(toggleBtn).toBeInTheDocument();
+
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByRole("region", { name: /dashboard.analyticsPage.dataTableCaption/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dashboard.analyticsPage.viewChart/i })).toBeInTheDocument();
   });
 });
