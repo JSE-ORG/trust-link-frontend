@@ -1,16 +1,40 @@
 "use client";
 
-import { ChevronDown, ExternalLink,LogOut, Wallet } from "lucide-react";
+import { ChevronDown, ExternalLink, LogOut, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Skeleton } from "@/components/ui/Skeleton";
 import useWallet from "@/hooks/useWallet";
 import { truncateAddress } from "@/utils/truncateAddress";
 
-export default function WalletConnectButton() {
-  const { isConnected, publicKey, isInstalled, connect, disconnect, isLoading, walletReady, error } = useWallet();
+export interface WalletConnectButtonProps {
+  /**
+   * Rendering style:
+   * - "default": Standard larger button with generous padding for hero/step cards.
+   * - "navbar": Compact variant aligned for fixed h-14 (56px) navigation headers without CLS.
+   */
+  variant?: "default" | "navbar";
+  className?: string;
+}
+
+export default function WalletConnectButton({
+  variant = "default",
+  className = "",
+}: WalletConnectButtonProps) {
+  const {
+    isConnected,
+    publicKey,
+    isInstalled,
+    connect,
+    disconnect,
+    isLoading,
+    walletReady,
+    error,
+  } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isNavbar = variant === "navbar";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,7 +59,12 @@ export default function WalletConnectButton() {
   }, []);
 
   if (!walletReady) {
-    return <Skeleton className="h-10 w-40 rounded-full" aria-hidden />;
+    return (
+      <Skeleton
+        className={isNavbar ? "h-8 w-28 rounded-full" : "h-10 w-40 rounded-full"}
+        aria-hidden
+      />
+    );
   }
 
   if (!isInstalled) {
@@ -44,9 +73,13 @@ export default function WalletConnectButton() {
         href="https://freighter.app"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-full bg-warning px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
+        className={
+          isNavbar
+            ? `inline-flex h-8 items-center gap-1.5 rounded-full bg-warning px-3 text-xs font-semibold text-white shadow-sm transition hover:opacity-90 ${className}`
+            : `inline-flex items-center gap-2 rounded-full bg-warning px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90 ${className}`
+        }
       >
-        <ExternalLink size={16} />
+        <ExternalLink size={isNavbar ? 14 : 16} />
         Install Freighter
       </a>
     );
@@ -54,53 +87,79 @@ export default function WalletConnectButton() {
 
   if (!isConnected) {
     if (isLoading) {
-      return <Skeleton className="h-11 w-40 rounded-full" aria-hidden />;
+      return (
+        <Skeleton
+          className={isNavbar ? "h-8 w-28 rounded-full" : "h-11 w-40 rounded-full"}
+          aria-hidden
+        />
+      );
     }
 
     return (
       <button
         type="button"
         onClick={connect}
-        className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900"
+        className={
+          isNavbar
+            ? `inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-xs font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 cursor-pointer ${className}`
+            : `inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-900 cursor-pointer ${className}`
+        }
       >
-        <Wallet size={18} />
+        <Wallet size={isNavbar ? 14 : 18} />
         Connect Wallet
       </button>
     );
   }
 
+  const truncated = publicKey ? truncateAddress(publicKey, 4, 4) : "Connected";
+
   return (
-    <div className="relative inline-flex" ref={dropdownRef}>
+    <div className={`relative inline-flex ${className}`} ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        className={
+          isNavbar
+            ? "inline-flex h-8 items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+            : "inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-5 py-3 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900 cursor-pointer"
+        }
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-        <span>{publicKey ? truncateAddress(publicKey, 5, 4) : "Connected"}</span>
-        <ChevronDown size={16} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+        <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" aria-hidden="true" />
+        <span>{truncated}</span>
+        <ChevronDown
+          size={isNavbar ? 14 : 16}
+          className={isOpen ? "rotate-180 transition-transform" : "transition-transform"}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950 z-50"
+        >
           <div className="space-y-1 p-3">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">Account</p>
-            <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{publicKey}</p>
+            <p
+              className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+              title={publicKey ?? ""}
+            >
+              {publicKey}
+            </p>
             {error ? <p className="text-xs text-destructive">{error.message}</p> : null}
           </div>
-          <div className="border-t border-zinc-100 dark:border-zinc-800">
+          <div className="border-t border-zinc-100 dark:border-zinc-800 p-1">
             <button
               type="button"
+              role="menuitem"
               onClick={() => {
                 disconnect();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-              role="menuitem"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 cursor-pointer"
             >
-              <LogOut size={16} className="inline-block mr-2" />
+              <LogOut size={16} />
               Disconnect
             </button>
           </div>
