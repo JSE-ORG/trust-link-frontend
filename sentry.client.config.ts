@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
 import { browserTracingIntegration } from "@sentry/nextjs";
 
+import { getTracesSampleRate } from "@/lib/sentry/sampleRate";
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: getTracesSampleRate(),
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   integrations: [browserTracingIntegration()],
