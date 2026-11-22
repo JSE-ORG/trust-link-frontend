@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
-import { beforeEach,describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  DEFAULT_TRACES_SAMPLE_RATE,
+  getTracesSampleRate,
+  parseTracesSampleRate,
+} from "../sentry/sampleRate";
 import {
   captureError,
   captureWalletError,
@@ -74,6 +79,78 @@ describe("Sentry Error Monitoring", () => {
         const mockEvent = { event_id: "test" };
         expect(beforeSend(mockEvent as never, unexpectedHint as never)).toBe(mockEvent);
       }
+    });
+
+    describe("Traces Sample Rate Configuration", () => {
+      it("parses valid finite rates in range [0, 1]", () => {
+        expect(parseTracesSampleRate(0)).toBe(0);
+        expect(parseTracesSampleRate("0")).toBe(0);
+        expect(parseTracesSampleRate("0.0")).toBe(0);
+        expect(parseTracesSampleRate(0.25)).toBe(0.25);
+        expect(parseTracesSampleRate("0.5")).toBe(0.5);
+        expect(parseTracesSampleRate(1)).toBe(1);
+        expect(parseTracesSampleRate("1.0")).toBe(1);
+      });
+
+      it("safely falls back to default on absent or whitespace values", () => {
+        expect(parseTracesSampleRate(undefined)).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate(null)).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate("")).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate("   ")).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+      });
+
+      it("safely falls back to default on invalid or out-of-range values", () => {
+        expect(parseTracesSampleRate("-0.1")).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate("1.5")).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate("invalid")).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate(NaN)).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate(Infinity)).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+        expect(parseTracesSampleRate(-Infinity)).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+      });
+
+      it("initializes client with configured rate and falls back when absent", async () => {
+        process.env.NEXT_PUBLIC_SENTRY_DSN = "https://fake@sentry.io/123";
+        delete process.env.SENTRY_TRACES_SAMPLE_RATE;
+        delete process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE;
+
+        vi.resetModules();
+        await import("../../sentry.client.config");
+
+        expect(Sentry.init).toHaveBeenCalled();
+        const clientCall = vi.mocked(Sentry.init).mock.calls[0][0];
+        expect(clientCall?.tracesSampleRate).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+
+        // Test with custom valid rate
+        process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE = "0.35";
+        vi.resetModules();
+        await import("../../sentry.client.config");
+        const customCall = vi.mocked(Sentry.init).mock.calls[1][0];
+        expect(customCall?.tracesSampleRate).toBe(0.35);
+      });
+
+      it("initializes server with configured rate", async () => {
+        process.env.NEXT_PUBLIC_SENTRY_DSN = "https://fake@sentry.io/123";
+        process.env.SENTRY_TRACES_SAMPLE_RATE = "0.75";
+
+        vi.resetModules();
+        await import("../../sentry.server.config");
+
+        expect(Sentry.init).toHaveBeenCalled();
+        const serverCall = vi.mocked(Sentry.init).mock.calls[0][0];
+        expect(serverCall?.tracesSampleRate).toBe(0.75);
+      });
+
+      it("initializes edge with fallback when rate is invalid", async () => {
+        process.env.NEXT_PUBLIC_SENTRY_DSN = "https://fake@sentry.io/123";
+        process.env.SENTRY_TRACES_SAMPLE_RATE = "not-a-number";
+
+        vi.resetModules();
+        await import("../../sentry.edge.config");
+
+        expect(Sentry.init).toHaveBeenCalled();
+        const edgeCall = vi.mocked(Sentry.init).mock.calls[0][0];
+        expect(edgeCall?.tracesSampleRate).toBe(DEFAULT_TRACES_SAMPLE_RATE);
+      });
     });
   });
 

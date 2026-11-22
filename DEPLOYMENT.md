@@ -41,7 +41,8 @@ The application uses Sentry (`@sentry/nextjs`) and PostHog for telemetry. The de
   * Source map upload is **disabled** (`withSentryConfig` specifies `sourcemaps: { disable: true }` in `next.config.ts`).
   * Production client builds omit public source maps to avoid exposing source details.
 * **Trace Sampling**:
-  * `tracesSampleRate: 1.0` (100% of transactions are traced across client, server, and edge environments).
+  * Configurable via `SENTRY_TRACES_SAMPLE_RATE` / `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` (bounded between `0.0` and `1.0`).
+  * Defaults to `0.1` (10% sampling) when absent or invalid across client, server, and edge environments.
 * **Session Replay (Client)**:
   * `replaysSessionSampleRate: 0.1` (10% of standard sessions recorded).
   * `replaysOnErrorSampleRate: 1.0` (100% of sessions with unhandled errors recorded).
