@@ -1,7 +1,15 @@
 import "@testing-library/jest-dom";
-import "@/lib/i18n";
 
+import { setI18n } from "react-i18next";
 import { vi } from "vitest";
+
+import i18n from "@/lib/i18n";
+
+// `lib/i18n` initialises i18next core only — the React binding is registered by
+// `components/providers/I18nProvider.tsx`, which no individual test necessarily
+// renders. Publish the instance here so every `useTranslation` consumer
+// resolves it the same way it does in the running app.
+setI18n(i18n);
 
 process.env.NEXT_PUBLIC_API_URL = "http://localhost:3000/api";
 // jsdom + Node `--localstorage-file` yields a broken localStorage stub that

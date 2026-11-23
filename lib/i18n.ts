@@ -1,10 +1,17 @@
 /**
  * Internationalisation (i18n) configuration for TrustLink.
  *
- * Uses i18next together with `react-i18next` to provide translated strings
- * throughout the app. The instance is initialised lazily (guarded by
- * `i18n.isInitialized`) so it is safe to import this module in both the
- * browser and Node.js (e.g. during tests or SSR).
+ * Initialises the i18next core singleton. The `react-i18next` binding is
+ * deliberately *not* registered here: route handlers reach this module through
+ * `lib/validations`, and in that bundle `react` resolves to Next's restricted
+ * server-component build, where `react-i18next`'s module-scope
+ * `createContext()` throws and fails the production build.
+ * `components/providers/I18nProvider.tsx` publishes this instance to React
+ * instead, and `vitest.setup.ts` does the same for tests.
+ *
+ * The instance is initialised lazily (guarded by `i18n.isInitialized`) so it is
+ * safe to import this module in both the browser and Node.js (e.g. during tests
+ * or SSR).
  *
  * Supported locales (each backed by its own JSON file under `locales/`):
  *   - `en`  — English (default / fallback)
@@ -30,7 +37,6 @@
  * @module i18n
  */
 import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
 
 import en from "@/locales/en/translation.json";
 import fr from "@/locales/fr/translation.json";
@@ -69,7 +75,7 @@ function detectLanguage(): string {
 if (!i18n.isInitialized) {
   const detectedLang = detectLanguage();
 
-  i18n.use(initReactI18next).init({
+  i18n.init({
     resources,
     lng: detectedLang,
     fallbackLng: "en",
