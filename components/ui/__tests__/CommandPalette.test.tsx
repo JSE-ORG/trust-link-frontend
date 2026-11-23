@@ -72,6 +72,12 @@ describe("CommandPalette keyboard navigation and accessibility", () => {
     const options = screen.getAllByRole("option");
     expect(options.length).toBeGreaterThan(1);
 
+    // `FocusTrap` moves focus into the dialog from a requestAnimationFrame
+    // callback, and `user.keyboard` dispatches to `document.activeElement`. Without
+    // waiting for that hand-off the arrow keys land on `<body>` and the palette
+    // never moves, so the test fails whenever the frame has not fired yet.
+    await waitFor(() => expect(searchInput).toHaveFocus());
+
     // Initial state: first item is active
     expect(options[0]).toHaveAttribute("aria-selected", "true");
     expect(searchInput).toHaveAttribute("aria-activedescendant", options[0].id);
