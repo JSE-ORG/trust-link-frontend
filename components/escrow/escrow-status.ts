@@ -1,4 +1,3 @@
-import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
   Banknote,
@@ -10,6 +9,7 @@ import {
   ShieldAlert,
   Truck,
 } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
 import type { BadgeProps } from "@/components/ui/Badge";
 import type { EscrowStatus } from "@/types/status";
@@ -36,7 +36,7 @@ export interface EscrowStatusPresentation {
   /** Notification action/event label (e.g., "Escrow created", "Payment received"). */
   notificationLabel: string;
   /** Lucide icon representing the status. */
-  icon: LucideIcon;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
   /** Badge variant for domain status badge presentation. */
   badgeVariant: BadgeProps["variant"];
   /** Text color utility class (e.g., used in notification dropdown). */

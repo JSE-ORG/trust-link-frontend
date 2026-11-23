@@ -10,13 +10,13 @@ import { EscrowStatusConst } from "@/types";
 
 import { PaymentEscrowClient } from "./PaymentEscrowClient";
 
-const { connect } = vi.hoisted(() => ({
+const { connect, publicKey } = vi.hoisted(() => ({
   connect: vi.fn().mockResolvedValue(true),
   publicKey: "GBTESTPUBLICKEYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 }));
 
 vi.mock("@/hooks/useWallet", () => ({
-  default: () => ({ connect, isLoading: false, publicKey: connect ? "GBTESTPUBLICKEYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" : null }),
+  default: () => ({ connect, isLoading: false, publicKey }),
 }));
 
 vi.mock("@/components/providers/NetworkProvider", () => ({
