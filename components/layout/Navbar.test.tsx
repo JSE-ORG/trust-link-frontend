@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import Navbar from "./Navbar";
@@ -52,5 +53,27 @@ describe("desktop navigation", () => {
     render(<Navbar />);
     expect(screen.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(1);
+  });
+});
+
+describe("brand home link", () => {
+  it("exposes the TrustLink brand as a client-side link to the home page", () => {
+    render(<Navbar />);
+
+    const brand = screen.getByRole("link", { name: "TrustLink home" });
+    expect(brand).toHaveAttribute("href", "/");
+    expect(brand).toHaveTextContent("TrustLink");
+  });
+
+  it("is the first keyboard stop in the header and carries a visible focus ring", async () => {
+    const user = userEvent.setup();
+    render(<Navbar />);
+
+    const brand = screen.getByRole("link", { name: "TrustLink home" });
+    await user.tab();
+
+    expect(brand).toHaveFocus();
+    expect(brand.className).toMatch(/focus-visible:ring-2/);
+    expect(brand.className).toMatch(/focus-visible:ring-blue-500/);
   });
 });

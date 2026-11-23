@@ -26,7 +26,11 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-full items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
-          <Link href="/" className="font-bold text-zinc-950 dark:text-white hover:opacity-90 transition-opacity">
+          <Link
+            href="/"
+            aria-label="TrustLink home"
+            className="rounded-md font-bold text-zinc-950 dark:text-white hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
             TrustLink
           </Link>
         </div>
