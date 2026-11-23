@@ -20,7 +20,10 @@ export async function mockFreighter(
 ) {
   await page.addInitScript(
     ({ pubKey, signedTx, rejectSignature }) => {
-      (window as unknown as Record<string, unknown>).freighter = 'mocked';
+      // Freighter injects a boolean, and `isFreighterInstalled()` reads the SDK's
+      // `isConnected` flag strictly (`=== true`), so a truthy string here is
+      // reported as "extension not installed" and every connect flow dies.
+      (window as unknown as Record<string, unknown>).freighter = true;
 
       (window as unknown as Record<string, unknown>).freighterApi = {
         getPublicKey: async () => pubKey,
