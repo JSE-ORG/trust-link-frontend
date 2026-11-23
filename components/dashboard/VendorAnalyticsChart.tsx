@@ -1,5 +1,7 @@
 "use client";
 
+import { BarChart3 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -127,7 +129,34 @@ export default function VendorAnalyticsChart({
   const { i18n, t } = useTranslation();
   const { formatAmount } = useCurrency();
   const [showTable, setShowTable] = useState(false);
-  const hasData = dataPoints.length > 0;
+  const hasData =
+    Boolean(dataPoints && dataPoints.length > 0) &&
+    dataPoints.some((point) => point.transactionVolume > 0);
+
+  if (!hasData) {
+    return (
+      <div
+        data-testid="analytics-empty-chart"
+        className="flex h-full min-h-[320px] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 p-6 text-center transition-colors dark:border-zinc-800 dark:bg-zinc-900/30"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+          <BarChart3 className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <h3 className="mt-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          {t("dashboard.analyticsPage.emptyChart.title")}
+        </h3>
+        <p className="mt-1 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+          {t("dashboard.analyticsPage.emptyChart.description")}
+        </p>
+        <Link
+          href="/create"
+          className="mt-5 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 cursor-pointer"
+        >
+          {t("dashboard.analyticsPage.emptyChart.createButton")}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col">

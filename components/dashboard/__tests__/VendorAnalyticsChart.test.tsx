@@ -68,14 +68,26 @@ describe("VendorAnalyticsChart", () => {
     expect(container.querySelector(".recharts-wrapper")).toBeInTheDocument();
   });
 
-  it("renders correctly with empty data points", () => {
-    const { container } = render(
-      <VendorAnalyticsChart dataPoints={[]} isMobile={false} />
-    );
-    expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
-    expect(container.querySelector(".recharts-wrapper")).toBeInTheDocument();
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /view as/i })).not.toBeInTheDocument();
+  it("renders empty state when data points array is empty", () => {
+    render(<VendorAnalyticsChart dataPoints={[]} isMobile={false} />);
+    expect(screen.queryByTestId("responsive-container")).not.toBeInTheDocument();
+    expect(screen.getByTestId("analytics-empty-chart")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.analyticsPage.emptyChart.title")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.analyticsPage.emptyChart.description")).toBeInTheDocument();
+    const createBtn = screen.getByRole("link", { name: "dashboard.analyticsPage.emptyChart.createButton" });
+    expect(createBtn).toBeInTheDocument();
+    expect(createBtn).toHaveAttribute("href", "/create");
+  });
+
+  it("renders empty state when all data points have zero transaction volume", () => {
+    const zeroVolumeData = [
+      { date: "2026-09-01", transactionVolume: 0, averageOrderValue: 0, completionRate: 0, disputeRate: 0 },
+      { date: "2026-09-02", transactionVolume: 0, averageOrderValue: 0, completionRate: 0, disputeRate: 0 },
+    ];
+    render(<VendorAnalyticsChart dataPoints={zeroVolumeData} isMobile={false} />);
+    expect(screen.queryByTestId("responsive-container")).not.toBeInTheDocument();
+    expect(screen.getByTestId("analytics-empty-chart")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.analyticsPage.emptyChart.title")).toBeInTheDocument();
   });
 
   it("renders an accessible data table with metrics and localized values when data points exist", () => {

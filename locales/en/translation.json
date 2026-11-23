@@ -127,7 +127,12 @@
       "viewDataTable": "View as data table",
       "viewChart": "View as chart",
       "dataTableCaption": "Daily vendor analytics data table showing transaction volume, average order value, completion rate, and dispute rate",
-      "date": "Date"
+      "date": "Date",
+      "emptyChart": {
+        "title": "No transaction volume yet",
+        "description": "Start creating escrow payment links to see your analytics and performance trends here.",
+        "createButton": "Create an Escrow"
+      }
     }
   },
   "payment": {
