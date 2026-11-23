@@ -201,7 +201,25 @@
   "footer": {
     "language": "Langue",
     "selectLanguage": "Choisir la langue",
-    "copyright": "TrustLink"
+    "copyright": "TrustLink",
+    "links": {
+      "product": "Produit",
+      "dashboard": "Tableau de bord",
+      "create": "Créer un séquestre",
+      "tracking": "Suivre une commande",
+      "pricing": "Tarifs",
+      "resources": "Ressources",
+      "docs": "Documentation",
+      "stellarExplorer": "Explorateur Stellar",
+      "github": "Dépôt GitHub",
+      "company": "Entreprise",
+      "about": "À propos",
+      "contact": "Contact",
+      "legal": "Mentions légales",
+      "terms": "Conditions d’utilisation",
+      "privacy": "Politique de confidentialité",
+      "comingSoon": "Les documents juridiques seront bientôt disponibles."
+    }
   },
   "about": {
     "title": "À propos de TrustLink",

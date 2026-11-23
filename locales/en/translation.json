@@ -234,7 +234,25 @@
   "footer": {
     "language": "Language",
     "selectLanguage": "Select language",
-    "copyright": "TrustLink"
+    "copyright": "TrustLink",
+    "links": {
+      "product": "Product",
+      "dashboard": "Dashboard",
+      "create": "Create escrow",
+      "tracking": "Track an order",
+      "pricing": "Pricing",
+      "resources": "Resources",
+      "docs": "Documentation",
+      "stellarExplorer": "Stellar Explorer",
+      "github": "GitHub repository",
+      "company": "Company",
+      "about": "About us",
+      "contact": "Contact",
+      "legal": "Legal",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "comingSoon": "Legal documents are coming soon."
+    }
   },
   "about": {
     "title": "About TrustLink",
