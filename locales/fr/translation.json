@@ -305,9 +305,7 @@
     "save": "Économisez 20 %",
     "billedAnnually": "{{amount}} $ facturés par an",
     "perMonth": "/mois"
-  }
-
-}
+  },
   "network": {
     "offlineBanner": {
       "message": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être indisponibles jusqu'à ce que votre connexion soit rétablie.",

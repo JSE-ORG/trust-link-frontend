@@ -88,3 +88,8 @@ export function downloadCsv<T extends object>(
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Alias for downloadCsv for backward-compatibility and standardized naming.
+ */
+export const exportToCsv = downloadCsv;

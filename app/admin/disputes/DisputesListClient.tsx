@@ -1,17 +1,61 @@
 "use client";
 
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import FetchErrorState, { getFetchErrorMessage } from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getAdminDisputes } from "@/lib/api";
+import { sanitizeCsvCell } from "@/lib/sanitize";
 import { SESSION_KEY } from "@/lib/session";
 import { formatTimeAgo } from "@/lib/utils";
 import { Dispute } from "@/types";
 import { formatUSDC } from "@/utils/currency";
+import { type CsvColumn, exportToCsv } from "@/utils/exportCsv";
+
+export interface DisputeCsvRow {
+  disputeId: string;
+  escrowId: string;
+  item: string;
+  amount: string;
+  buyerAddress: string;
+  vendorAddress: string;
+  reason: string;
+  createdDate: string;
+  status: string;
+}
+
+export const DISPUTE_CSV_COLUMNS: readonly CsvColumn<DisputeCsvRow>[] = [
+  { key: "disputeId", header: "Dispute ID" },
+  { key: "escrowId", header: "Escrow ID" },
+  { key: "item", header: "Item" },
+  { key: "amount", header: "Amount (USDC)" },
+  { key: "buyerAddress", header: "Buyer Address" },
+  { key: "vendorAddress", header: "Vendor Address" },
+  { key: "reason", header: "Reason" },
+  { key: "createdDate", header: "Created Date" },
+  { key: "status", header: "Status" },
+] as const;
+
+export function formatDisputeForCsv(dispute: Dispute): DisputeCsvRow {
+  return {
+    disputeId: sanitizeCsvCell(dispute.id ?? ""),
+    escrowId: sanitizeCsvCell(dispute.escrowId ?? dispute.escrow?.id ?? ""),
+    item: sanitizeCsvCell(dispute.escrow?.item ?? ""),
+    amount: sanitizeCsvCell(
+      dispute.escrow?.amount !== undefined ? String(dispute.escrow.amount) : ""
+    ),
+    buyerAddress: sanitizeCsvCell(dispute.buyerId || dispute.escrow?.buyerId || ""),
+    vendorAddress: sanitizeCsvCell(dispute.escrow?.vendorId ?? ""),
+    reason: sanitizeCsvCell(dispute.reason ?? ""),
+    createdDate: sanitizeCsvCell(dispute.createdAt ?? ""),
+    status: sanitizeCsvCell(dispute.status ?? ""),
+  };
+}
 
 type SortField = "date" | "amount" | "status";
 export type StatusFilter = "all" | "open" | "resolved";
@@ -73,18 +117,14 @@ export function DisputesListClient() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
 
   const queryStatus = searchParams?.get("status")?.toLowerCase() ?? null;
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
-    return isValidStatusFilter(queryStatus) ? queryStatus : "all";
-  });
+  const currentStatusParam: StatusFilter = isValidStatusFilter(queryStatus) ? queryStatus : "all";
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(currentStatusParam);
+  const [prevStatusParam, setPrevStatusParam] = useState(currentStatusParam);
 
-  useEffect(() => {
-    const param = searchParams?.get("status")?.toLowerCase() ?? null;
-    if (isValidStatusFilter(param)) {
-      setStatusFilter(param);
-    } else if (!param) {
-      setStatusFilter("all");
-    }
-  }, [searchParams]);
+  if (currentStatusParam !== prevStatusParam) {
+    setPrevStatusParam(currentStatusParam);
+    setStatusFilter(currentStatusParam);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -178,6 +218,15 @@ export function DisputesListClient() {
     tabEl?.focus();
   };
 
+  const handleExportCsv = () => {
+    if (sortedDisputes.length === 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const filename = `trustlink-disputes-${today}.csv`;
+    const rows = sortedDisputes.map(formatDisputeForCsv);
+    exportToCsv(rows, DISPUTE_CSV_COLUMNS, filename);
+    toast.success("Dispute logs exported successfully.");
+  };
+
   return (
     <section 
       className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
@@ -190,19 +239,33 @@ export function DisputesListClient() {
             Open Disputes: <span className="font-medium">{counts.open}</span>
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-          Sort by
-          <select
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={sortField}
-            onChange={(event) => setSortField(event.target.value as SortField)}
-            aria-label="Sort disputes by field"
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            id="export-disputes-button"
+            data-testid="export-disputes-button"
+            aria-label="Export Disputes"
+            onClick={handleExportCsv}
+            disabled={isLoading || sortedDisputes.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-300"
           >
-            <option value="date">Date</option>
-            <option value="amount">Amount</option>
-            <option value="status">Status</option>
-          </select>
-        </label>
+            <Download className="h-4 w-4" aria-hidden="true" />
+            <span>Export Disputes</span>
+          </button>
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+            Sort by
+            <select
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={sortField}
+              onChange={(event) => setSortField(event.target.value as SortField)}
+              aria-label="Sort disputes by field"
+            >
+              <option value="date">Date</option>
+              <option value="amount">Amount</option>
+              <option value="status">Status</option>
+            </select>
+          </label>
+        </div>
       </header>
 
       <div className="mb-6 border-b border-zinc-200 dark:border-zinc-800">

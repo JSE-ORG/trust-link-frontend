@@ -1,10 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAdminDisputes } from "@/lib/api";
 import { Dispute, DisputeStatusConst } from "@/types";
+import { exportToCsv } from "@/utils/exportCsv";
 
-import { DisputesListClient } from "./DisputesListClient";
+import { DisputesListClient, formatDisputeForCsv } from "./DisputesListClient";
 
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
@@ -28,6 +30,18 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/lib/api", () => ({
   getAdminDisputes: vi.fn(),
+}));
+
+vi.mock("@/utils/exportCsv", () => ({
+  exportToCsv: vi.fn(),
+  downloadCsv: vi.fn(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 const mockDisputes: Dispute[] = [
@@ -206,5 +220,86 @@ describe("DisputesListClient", () => {
     fireEvent.click(resolvedTab);
 
     expect(screen.getByText("No resolved disputes right now.")).toBeInTheDocument();
+  });
+
+  it("exports dispute logs to CSV with sanitized cells and triggers toast", async () => {
+    const exportToCsvMock = vi.mocked(exportToCsv);
+    exportToCsvMock.mockClear();
+    vi.mocked(toast.success).mockClear();
+
+    render(<DisputesListClient />);
+
+    await screen.findByText("Laptop Stand");
+
+    const exportBtn = screen.getByRole("button", { name: /export disputes/i });
+    expect(exportBtn).toBeEnabled();
+
+    fireEvent.click(exportBtn);
+
+    expect(exportToCsvMock).toHaveBeenCalledTimes(1);
+    const [rows, columns, filename] = exportToCsvMock.mock.calls[0];
+
+    expect(filename).toMatch(/^trustlink-disputes-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(columns.map((c) => c.header)).toEqual([
+      "Dispute ID",
+      "Escrow ID",
+      "Item",
+      "Amount (USDC)",
+      "Buyer Address",
+      "Vendor Address",
+      "Reason",
+      "Created Date",
+      "Status",
+    ]);
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatchObject({
+      disputeId: "dispute-3", // sorted by date descending: dispute-3 is 2026-09-03
+      item: "Wireless Mouse",
+    });
+
+    expect(toast.success).toHaveBeenCalledWith("Dispute logs exported successfully.");
+  });
+
+  it("neutralizes spreadsheet formula injection in dispute records", () => {
+    const maliciousDispute: Dispute = {
+      id: "=CMD('calc')",
+      escrowId: "+12345",
+      escrow: {
+        id: "+12345",
+        item: "@danger",
+        amount: 100,
+        buyerId: "-buyer",
+        vendorId: "\tvendor",
+        status: "DISPUTED",
+        createdAt: "2026-09-01T00:00:00Z",
+        updatedAt: "2026-09-01T00:00:00Z",
+        history: [],
+      },
+      buyerId: "-buyer",
+      reason: "=1+1",
+      evidence: [],
+      status: DisputeStatusConst.OPEN,
+      createdAt: "2026-09-01T10:00:00Z",
+      updatedAt: "2026-09-01T10:00:00Z",
+    };
+
+    const row = formatDisputeForCsv(maliciousDispute);
+    expect(row.disputeId).toBe("'=CMD('calc')");
+    expect(row.escrowId).toBe("'+12345");
+    expect(row.item).toBe("'@danger");
+    expect(row.buyerAddress).toBe("'-buyer");
+    expect(row.vendorAddress).toBe("'\tvendor");
+    expect(row.reason).toBe("'=1+1");
+  });
+
+  it("disables export button when there are no disputes", async () => {
+    vi.mocked(getAdminDisputes).mockResolvedValue([]);
+    render(<DisputesListClient />);
+
+    await screen.findByText("No disputes right now.");
+
+    const exportBtn = screen.getByRole("button", { name: /export disputes/i });
+    expect(exportBtn).toBeDisabled();
   });
 });
