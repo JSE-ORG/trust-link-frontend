@@ -108,7 +108,9 @@ export default function CommandPalette() {
   useEffect(() => {
     if (activeIndex >= 0) {
       const activeEl = document.getElementById(`command-item-${activeIndex}`);
-      activeEl?.scrollIntoView({ block: "nearest" });
+      if (typeof activeEl?.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
     }
   }, [activeIndex]);
 
