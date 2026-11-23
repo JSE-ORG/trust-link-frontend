@@ -22,6 +22,13 @@ describe("CommandPalette keyboard navigation and accessibility", () => {
 
   async function openPalette(user: ReturnType<typeof userEvent.setup>) {
     await user.keyboard("{Control>}k{/Control}");
+    // FocusTrap moves focus into the combobox on the next animation frame;
+    // wait for it to land so subsequent arrow/Home/End keys reach the input.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole("combobox", { name: "Search commands" })
+      );
+    });
   }
 
   it("opens on Ctrl+K and exposes accessible dialog and combobox names", async () => {
@@ -68,6 +75,77 @@ describe("CommandPalette keyboard navigation and accessibility", () => {
     // Press Enter to activate selected command
     await user.keyboard("{Enter}");
     expect(pushMock).toHaveBeenCalledWith("/dashboard");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("wraps ArrowDown past the last item and ArrowUp past the first", async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette />);
+
+    await openPalette(user);
+
+    const searchInput = screen.getByRole("combobox", { name: "Search commands" });
+
+    // Jump to the last option, then ArrowDown should wrap back to the first.
+    await user.keyboard("{End}");
+    let options = screen.getAllByRole("option");
+    const lastIndex = options.length - 1;
+    expect(options[lastIndex]).toHaveAttribute("aria-selected", "true");
+    expect(searchInput).toHaveAttribute(
+      "aria-activedescendant",
+      options[lastIndex].id
+    );
+
+    await user.keyboard("{ArrowDown}");
+    options = screen.getAllByRole("option");
+    expect(options[0]).toHaveAttribute("aria-selected", "true");
+    expect(searchInput).toHaveAttribute("aria-activedescendant", options[0].id);
+
+    // From the first option, ArrowUp should wrap to the last.
+    await user.keyboard("{ArrowUp}");
+    options = screen.getAllByRole("option");
+    expect(options[lastIndex]).toHaveAttribute("aria-selected", "true");
+    expect(searchInput).toHaveAttribute(
+      "aria-activedescendant",
+      options[lastIndex].id
+    );
+  });
+
+  it("jumps to first and last options with Home and End", async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette />);
+
+    await openPalette(user);
+
+    const searchInput = screen.getByRole("combobox", { name: "Search commands" });
+
+    await user.keyboard("{End}");
+    let options = screen.getAllByRole("option");
+    expect(options[options.length - 1]).toHaveAttribute("aria-selected", "true");
+    expect(searchInput).toHaveAttribute(
+      "aria-activedescendant",
+      options[options.length - 1].id
+    );
+
+    await user.keyboard("{Home}");
+    options = screen.getAllByRole("option");
+    expect(options[0]).toHaveAttribute("aria-selected", "true");
+    expect(searchInput).toHaveAttribute("aria-activedescendant", options[0].id);
+  });
+
+  it("pressing Enter routes to the highlighted command", async () => {
+    const user = userEvent.setup();
+    render(<CommandPalette />);
+
+    await openPalette(user);
+
+    // Highlight the second command (Analytics) and activate it.
+    await user.keyboard("{ArrowDown}");
+    const options = screen.getAllByRole("option");
+    expect(options[1]).toHaveAttribute("aria-selected", "true");
+
+    await user.keyboard("{Enter}");
+    expect(pushMock).toHaveBeenCalledWith("/dashboard/analytics");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
