@@ -83,7 +83,10 @@
       "otherCarrier": "Other",
       "submit": "Submit",
       "submitting": "Submitting...",
-      "submitError": "Failed to submit tracking details."
+      "submitError": "Failed to submit tracking details.",
+      "customCarrier": "Carrier name",
+      "customCarrierPlaceholder": "e.g., DHL, FedEx, Local Courier",
+      "customCarrierRequired": "Enter a carrier name."
     },
     "pdfExport": {
       "noTransactions": "No transactions to export",
