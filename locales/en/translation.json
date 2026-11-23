@@ -83,7 +83,10 @@
       "otherCarrier": "Other",
       "submit": "Submit",
       "submitting": "Submitting...",
-      "submitError": "Failed to submit tracking details."
+      "submitError": "Failed to submit tracking details.",
+      "customCarrier": "Carrier name",
+      "customCarrierPlaceholder": "e.g., DHL, FedEx, Local Courier",
+      "customCarrierRequired": "Enter a carrier name."
     },
     "pdfExport": {
       "noTransactions": "No transactions to export",
@@ -239,7 +242,25 @@
   "footer": {
     "language": "Language",
     "selectLanguage": "Select language",
-    "copyright": "TrustLink"
+    "copyright": "TrustLink",
+    "links": {
+      "product": "Product",
+      "dashboard": "Dashboard",
+      "create": "Create escrow",
+      "tracking": "Track an order",
+      "pricing": "Pricing",
+      "resources": "Resources",
+      "docs": "Documentation",
+      "stellarExplorer": "Stellar Explorer",
+      "github": "GitHub repository",
+      "company": "Company",
+      "about": "About us",
+      "contact": "Contact",
+      "legal": "Legal",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "comingSoon": "Legal documents are coming soon."
+    }
   },
   "about": {
     "title": "About TrustLink",
@@ -277,6 +298,16 @@
       "shippingWindowInvalid": "Select a valid shipping window."
     }
   },
+  "pricing": {
+    "billingCycle": "Billing cycle",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save": "Save 20%",
+    "billedAnnually": "${{amount}} billed annually",
+    "perMonth": "/month"
+  }
+
+}
   "network": {
     "offlineBanner": {
       "message": "You are offline. Some features may be unavailable until your connection is restored.",

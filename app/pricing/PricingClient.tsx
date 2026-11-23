@@ -4,6 +4,7 @@ import { Check, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { clearSubscriptionCache, useSubscription } from "@/components/providers/SubscriptionProvider";
@@ -61,9 +62,11 @@ function FeatureRow({ label, included }: { label: string; included: boolean }) {
 
 export default function PricingClient() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { isPro, isLoading, refetch } = useSubscription();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   async function handleUpgrade() {
     const token =
@@ -159,12 +162,40 @@ export default function PricingClient() {
               <p className="text-sm font-semibold uppercase tracking-wider text-amber-500">
                 Pro
               </p>
-              <div className="mt-2 flex items-end gap-1">
-                <span className="text-4xl font-bold text-zinc-950 dark:text-white">
-                  $19
-                </span>
-                <span className="mb-1 text-sm text-zinc-400">/month</span>
+              <div className="mt-4" role="radiogroup" aria-label={t("pricing.billingCycle")}>
+                <div className="inline-flex rounded-full bg-zinc-100 p-1 dark:bg-zinc-900">
+                  {(["monthly", "annual"] as const).map((cycle) => (
+                    <button
+                      key={cycle}
+                      type="button"
+                      role="radio"
+                      aria-checked={billingCycle === cycle}
+                      tabIndex={billingCycle === cycle ? 0 : -1}
+                      onClick={() => setBillingCycle(cycle)}
+                      onKeyDown={(event) => {
+                        if (["ArrowLeft", "ArrowRight", " ", "Enter"].includes(event.key)) {
+                          event.preventDefault();
+                          const nextCycle = event.key === "ArrowLeft" ? "monthly" : event.key === "ArrowRight" ? "annual" : cycle;
+                          setBillingCycle(nextCycle);
+                          document.getElementById(`billing-${nextCycle}`)?.focus();
+                        }
+                      }}
+                      id={`billing-${cycle}`}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${billingCycle === cycle ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-800 dark:text-white" : "text-zinc-500 dark:text-zinc-400"}`}
+                    >
+                      {t(`pricing.${cycle}`)}
+                      {cycle === "annual" && <span className="ml-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">{t("pricing.save")}</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
+              <div className="mt-2 flex items-end gap-1 transition-all duration-200">
+                <span className="text-4xl font-bold text-zinc-950 dark:text-white">
+                  ${billingCycle === "annual" ? "23" : "29"}
+                </span>
+                <span className="mb-1 text-sm text-zinc-400">{t("pricing.perMonth")}</span>
+              </div>
+              {billingCycle === "annual" && <p className="mt-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">{t("pricing.billedAnnually", { amount: 276 })}</p>}
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                 For growing vendors who need advanced tools.
               </p>

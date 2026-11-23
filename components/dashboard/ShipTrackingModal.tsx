@@ -40,6 +40,7 @@ export default function ShipTrackingModal({
   const { token } = useWallet();
   const [trackingId, setTrackingId] = useState("");
   const [carrier, setCarrier] = useState("Terminal Africa");
+  const [customCarrier, setCustomCarrier] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,12 @@ export default function ShipTrackingModal({
       return;
     }
 
+    const trimmedCarrier = customCarrier.trim();
+    if (carrier === "Other" && !trimmedCarrier) {
+      setError(t("dashboard.shipment.customCarrierRequired"));
+      return;
+    }
+
     if (!token) {
       setError(t("dashboard.reconnectPrompt"));
       return;
@@ -75,13 +82,14 @@ export default function ShipTrackingModal({
     try {
       await shipEscrow(escrowId, {
         trackingId: trimmedTrackingId,
-        carrier: carrier,
+        carrier: carrier === "Other" ? trimmedCarrier : carrier,
       }, token);
 
       onSuccess(escrowId);
       onClose();
       setTrackingId("");
       setCarrier("Terminal Africa");
+      setCustomCarrier("");
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
@@ -157,13 +165,40 @@ export default function ShipTrackingModal({
             <select
               id="carrier"
               value={carrier}
-              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setCarrier(event.target.value)}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                setCarrier(event.target.value);
+                setError(null);
+              }}
               className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-zinc-300"
             >
               <option value="Terminal Africa">{t("dashboard.shipment.terminalAfrica")}</option>
               <option value="GIGL">{t("dashboard.shipment.gigl")}</option>
               <option value="Other">{t("dashboard.shipment.otherCarrier")}</option>
             </select>
+          </div>
+
+          <div className={`grid transition-[grid-template-rows,opacity] duration-200 ${carrier === "Other" ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+            <div className="min-h-0 overflow-hidden">
+              {carrier === "Other" && (
+                <div className="pb-1">
+                  <label htmlFor="customCarrier" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {t("dashboard.shipment.customCarrier")}
+                  </label>
+                  <input
+                    id="customCarrier"
+                    value={customCarrier}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setCustomCarrier(event.target.value);
+                      if (error === t("dashboard.shipment.customCarrierRequired")) setError(null);
+                    }}
+                    placeholder={t("dashboard.shipment.customCarrierPlaceholder")}
+                    aria-invalid={error === t("dashboard.shipment.customCarrierRequired")}
+                    aria-describedby={error === t("dashboard.shipment.customCarrierRequired") ? "tracking-error" : undefined}
+                    className="mt-2 w-full rounded-3xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-zinc-300"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {error ? (

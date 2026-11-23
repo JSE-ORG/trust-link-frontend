@@ -68,6 +68,9 @@
     "cancelEscrowTitle": "Cancel Escrow",
     "cancelEscrowDescription": "You sure say you wan cancel this escrow for \"{{item}}\"? You no fit undo am.",
     "keepEscrow": "Keep Escrow",
+    "shipment": { "title": "Mark shipment as shipped", "description": "Add tracking details for {{vendorName}} make escrow update.", "closeModal": "Close modal", "trackingId": "Tracking ID", "trackingIdPlaceholder": "Enter tracking ID", "trackingIdHint": "Required, max 64 characters.", "trackingIdRequired": "Tracking ID dey required.", "trackingIdTooLong": "Tracking ID no fit pass 64 characters.", "carrier": "Logistics carrier", "terminalAfrica": "Terminal Africa", "gigl": "GIGL", "otherCarrier": "Other", "submit": "Submit", "submitting": "Submitting...", "submitError": "Tracking details no submit." , "customCarrier": "Carrier name", "customCarrierPlaceholder": "e.g., DHL, FedEx, Local Courier", "customCarrierRequired": "Abeg enter carrier name."},
+    "pdfExport": { "noTransactions": "No transactions to export", "success": "PDF don export", "error": "PDF export no work", "title": "Export transaction history as PDF", "exporting": "Exporting...", "button": "Export PDF" },
+    "currency": { "select": "Select currency", "info": "Values na estimate based on current exchange rates. Escrows dey priced in USDC." },
     "shipment": {
       "title": "Mark shipment as shipped",
       "description": "Add tracking details for {{vendorName}} make escrow update.",
@@ -239,7 +242,25 @@
   "footer": {
     "language": "Language",
     "selectLanguage": "Select language",
-    "copyright": "TrustLink"
+    "copyright": "TrustLink",
+    "links": {
+      "product": "Product",
+      "dashboard": "Dashboard",
+      "create": "Create escrow",
+      "tracking": "Track order",
+      "pricing": "Pricing",
+      "resources": "Resources",
+      "docs": "Documentation",
+      "stellarExplorer": "Stellar Explorer",
+      "github": "GitHub repository",
+      "company": "Company",
+      "about": "About us",
+      "contact": "Contact",
+      "legal": "Legal",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "comingSoon": "Legal documents go soon ready."
+    }
   },
   "about": {
     "title": "About TrustLink",
@@ -277,6 +298,16 @@
       "shippingWindowInvalid": "Choose the correct shipping window."
     }
   },
+  "pricing": {
+    "billingCycle": "Billing cycle",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save": "Save 20%",
+    "billedAnnually": "${{amount}} go bill yearly",
+    "perMonth": "/month"
+  }
+
+}
   "network": {
     "offlineBanner": {
       "message": "You dey offline. Some features fit no work until your internet connection come back.",
