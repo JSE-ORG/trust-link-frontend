@@ -1,10 +1,13 @@
 "use client";
 
-import { ChevronDown, ExternalLink, LogOut, Wallet } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Copy, ExternalLink, LogOut, Wallet } from "lucide-react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
+import { NetworkContext } from "@/components/providers/NetworkProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
 import useWallet from "@/hooks/useWallet";
+import { getStellarExpertAccountUrl } from "@/lib/explorer";
 import { truncateAddress } from "@/utils/truncateAddress";
 
 export interface WalletConnectButtonProps {
@@ -33,8 +36,23 @@ export default function WalletConnectButton({
   } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const networkContext = useContext(NetworkContext);
 
   const isNavbar = variant === "navbar";
+
+  const handleCopyAddress = async () => {
+    if (!publicKey) return;
+    try {
+      await navigator.clipboard.writeText(publicKey);
+      toast.success("Address copied to clipboard");
+    } catch {
+      toast.error("Failed to copy address");
+    }
+  };
+
+  const explorerUrl = publicKey
+    ? getStellarExpertAccountUrl(publicKey, networkContext?.network)
+    : "";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -149,7 +167,29 @@ export default function WalletConnectButton({
             </p>
             {error ? <p className="text-xs text-destructive">{error.message}</p> : null}
           </div>
-          <div className="border-t border-zinc-100 dark:border-zinc-800 p-1">
+          <div className="border-t border-zinc-100 dark:border-zinc-800 p-1 space-y-0.5">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleCopyAddress}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus:bg-zinc-900 cursor-pointer"
+            >
+              <Copy size={16} />
+              Copy Address
+            </button>
+            {publicKey ? (
+              <a
+                role="menuitem"
+                href={explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsOpen(false)}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus:bg-zinc-900 cursor-pointer"
+              >
+                <ExternalLink size={16} />
+                View on Stellar Expert
+              </a>
+            ) : null}
             <button
               type="button"
               role="menuitem"
@@ -157,7 +197,7 @@ export default function WalletConnectButton({
                 disconnect();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 cursor-pointer"
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus:bg-zinc-900 cursor-pointer"
             >
               <LogOut size={16} />
               Disconnect

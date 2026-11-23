@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NetworkProvider } from "@/components/providers/NetworkProvider";
@@ -6,6 +7,21 @@ import { WalletProvider } from "@/components/providers/WalletProvider";
 import * as freighter from "@/lib/stellar/freighter";
 
 import WalletConnectButton from "./WalletConnectButton";
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock the clipboard API
+const mockWriteText = vi.fn().mockResolvedValue(undefined);
+Object.assign(navigator, {
+  clipboard: {
+    writeText: mockWriteText,
+  },
+});
 
 vi.mock("@/lib/stellar/freighter", () => ({
   isFreighterInstalled: vi.fn(),
@@ -95,6 +111,22 @@ describe("WalletConnectButton", () => {
 
     // Clicking account button toggles dropdown
     fireEvent.click(accountBadge);
+
+    const copyBtn = await screen.findByRole("menuitem", { name: /copy address/i });
+    expect(copyBtn).toBeInTheDocument();
+
+    fireEvent.click(copyBtn);
+    expect(mockWriteText).toHaveBeenCalledWith("GABCDE12345XYZ");
+    expect(toast.success).toHaveBeenCalledWith("Address copied to clipboard");
+
+    const explorerLink = screen.getByRole("menuitem", { name: /view on stellar expert/i });
+    expect(explorerLink).toBeInTheDocument();
+    expect(explorerLink).toHaveAttribute("target", "_blank");
+    expect(explorerLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(explorerLink).toHaveAttribute(
+      "href",
+      "https://stellar.expert/explorer/testnet/account/GABCDE12345XYZ"
+    );
 
     const disconnectBtn = await screen.findByRole("menuitem", { name: /disconnect/i });
     expect(disconnectBtn).toBeInTheDocument();
