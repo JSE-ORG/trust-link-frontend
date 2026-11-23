@@ -130,7 +130,12 @@
       "viewDataTable": "View as data table",
       "viewChart": "View as chart",
       "dataTableCaption": "Daily vendor analytics data table showing transaction volume, average order value, completion rate, and dispute rate",
-      "date": "Date"
+      "date": "Date",
+      "emptyChart": {
+        "title": "No transaction volume yet",
+        "description": "Start creating escrow payment links to see your analytics and performance trends here.",
+        "createButton": "Create an Escrow"
+      }
     }
   },
   "payment": {
@@ -302,4 +307,14 @@
     "perMonth": "/month"
   }
 
+}
+  "network": {
+    "offlineBanner": {
+      "message": "You are offline. Some features may be unavailable until your connection is restored.",
+      "checkConnection": "Check connection",
+      "checking": "Checking...",
+      "connectionRestored": "Connection restored. You are back online.",
+      "stillOffline": "Still offline. Please check your network connection."
+    }
+  }
 }

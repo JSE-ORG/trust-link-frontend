@@ -57,13 +57,49 @@
     "cancelEscrowError": "Escrow no cancel.",
     "loadEscrowsError": "Vendor escrows no load.",
     "loadEscrowsTitle": "We no fit load your escrows",
-    "csvHeaders": { "escrowId": "Escrow ID", "item": "Item", "buyer": "Buyer", "amount": "Amount (USDC)", "status": "Status", "createdAt": "Created At" },
+    "csvHeaders": {
+      "escrowId": "Escrow ID",
+      "item": "Item",
+      "buyer": "Buyer",
+      "amount": "Amount (USDC)",
+      "status": "Status",
+      "createdAt": "Created At"
+    },
     "cancelEscrowTitle": "Cancel Escrow",
     "cancelEscrowDescription": "You sure say you wan cancel this escrow for \"{{item}}\"? You no fit undo am.",
     "keepEscrow": "Keep Escrow",
     "shipment": { "title": "Mark shipment as shipped", "description": "Add tracking details for {{vendorName}} make escrow update.", "closeModal": "Close modal", "trackingId": "Tracking ID", "trackingIdPlaceholder": "Enter tracking ID", "trackingIdHint": "Required, max 64 characters.", "trackingIdRequired": "Tracking ID dey required.", "trackingIdTooLong": "Tracking ID no fit pass 64 characters.", "carrier": "Logistics carrier", "terminalAfrica": "Terminal Africa", "gigl": "GIGL", "otherCarrier": "Other", "submit": "Submit", "submitting": "Submitting...", "submitError": "Tracking details no submit." , "customCarrier": "Carrier name", "customCarrierPlaceholder": "e.g., DHL, FedEx, Local Courier", "customCarrierRequired": "Abeg enter carrier name."},
     "pdfExport": { "noTransactions": "No transactions to export", "success": "PDF don export", "error": "PDF export no work", "title": "Export transaction history as PDF", "exporting": "Exporting...", "button": "Export PDF" },
     "currency": { "select": "Select currency", "info": "Values na estimate based on current exchange rates. Escrows dey priced in USDC." },
+    "shipment": {
+      "title": "Mark shipment as shipped",
+      "description": "Add tracking details for {{vendorName}} make escrow update.",
+      "closeModal": "Close modal",
+      "trackingId": "Tracking ID",
+      "trackingIdPlaceholder": "Enter tracking ID",
+      "trackingIdHint": "Required, max 64 characters.",
+      "trackingIdRequired": "Tracking ID dey required.",
+      "trackingIdTooLong": "Tracking ID no fit pass 64 characters.",
+      "carrier": "Logistics carrier",
+      "terminalAfrica": "Terminal Africa",
+      "gigl": "GIGL",
+      "otherCarrier": "Other",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "submitError": "Tracking details no submit."
+    },
+    "pdfExport": {
+      "noTransactions": "No transactions to export",
+      "success": "PDF don export",
+      "error": "PDF export no work",
+      "title": "Export transaction history as PDF",
+      "exporting": "Exporting...",
+      "button": "Export PDF"
+    },
+    "currency": {
+      "select": "Select currency",
+      "info": "Values na estimate based on current exchange rates. Escrows dey priced in USDC."
+    },
     "analyticsPage": {
       "loadError": "We no fit load di vendor analytics.",
       "loadErrorTitle": "We no fit load how your business dey do.",
@@ -94,7 +130,12 @@
       "viewDataTable": "View as data table",
       "viewChart": "View as chart",
       "dataTableCaption": "Daily vendor analytics data table wey show transaction amount, average order amount, completion rate, and dispute rate",
-      "date": "Date"
+      "date": "Date",
+      "emptyChart": {
+        "title": "No transaction volume yet",
+        "description": "Make you start to create escrow payment links to see your analytics and performance trends here.",
+        "createButton": "Create an Escrow"
+      }
     }
   },
   "payment": {
@@ -266,4 +307,14 @@
     "perMonth": "/month"
   }
 
+}
+  "network": {
+    "offlineBanner": {
+      "message": "You dey offline. Some features fit no work until your internet connection come back.",
+      "checkConnection": "Check connection",
+      "checking": "De check...",
+      "connectionRestored": "Connection don return. You dey back online.",
+      "stillOffline": "You still dey offline. Abeg check your internet connection."
+    }
+  }
 }

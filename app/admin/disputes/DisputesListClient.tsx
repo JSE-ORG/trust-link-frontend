@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +14,11 @@ import { Dispute } from "@/types";
 import { formatUSDC } from "@/utils/currency";
 
 type SortField = "date" | "amount" | "status";
+export type StatusFilter = "all" | "open" | "resolved";
+
+function isValidStatusFilter(value: string | null): value is StatusFilter {
+  return value === "all" || value === "open" || value === "resolved";
+}
 
 function DisputesListSkeleton() {
   return (
@@ -59,11 +64,27 @@ function sortDisputes(disputes: Dispute[], field: SortField): Dispute[] {
 
 export function DisputesListClient() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("date");
   const [disputes, setDisputes] = useState<Dispute[]>([]);
+
+  const queryStatus = searchParams?.get("status")?.toLowerCase() ?? null;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    return isValidStatusFilter(queryStatus) ? queryStatus : "all";
+  });
+
+  useEffect(() => {
+    const param = searchParams?.get("status")?.toLowerCase() ?? null;
+    if (isValidStatusFilter(param)) {
+      setStatusFilter(param);
+    } else if (!param) {
+      setStatusFilter("all");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -92,7 +113,70 @@ export function DisputesListClient() {
     return () => { isMounted = false; };
   }, [router]);
 
-  const sortedDisputes = useMemo(() => sortDisputes(disputes, sortField), [disputes, sortField]);
+  const counts = useMemo(() => {
+    const all = disputes.length;
+    const open = disputes.filter((d) => d.status.toLowerCase() !== "resolved").length;
+    const resolved = disputes.filter((d) => d.status.toLowerCase() === "resolved").length;
+    return { all, open, resolved };
+  }, [disputes]);
+
+  const filteredDisputes = useMemo(() => {
+    if (statusFilter === "open") {
+      return disputes.filter((d) => d.status.toLowerCase() !== "resolved");
+    }
+    if (statusFilter === "resolved") {
+      return disputes.filter((d) => d.status.toLowerCase() === "resolved");
+    }
+    return disputes;
+  }, [disputes, statusFilter]);
+
+  const sortedDisputes = useMemo(
+    () => sortDisputes(filteredDisputes, sortField),
+    [filteredDisputes, sortField]
+  );
+
+  const tabs: Array<{ id: StatusFilter; label: string; count: number }> = [
+    { id: "all", label: "All", count: counts.all },
+    { id: "open", label: "Open / Investigating", count: counts.open },
+    { id: "resolved", label: "Resolved", count: counts.resolved },
+  ];
+
+  const handleTabChange = (newFilter: StatusFilter) => {
+    setStatusFilter(newFilter);
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : "");
+    if (newFilter === "all") {
+      params.delete("status");
+    } else {
+      params.set("status", newFilter);
+    }
+    const qs = params.toString();
+    const newUrl = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
+    let nextIndex = index;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      event.preventDefault();
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+
+    const nextTab = tabs[nextIndex];
+    handleTabChange(nextTab.id);
+    const tabEl = document.getElementById(`tab-${nextTab.id}`);
+    tabEl?.focus();
+  };
 
   return (
     <section 
@@ -103,7 +187,7 @@ export function DisputesListClient() {
         <div>
           <h1 id="disputes-heading" className="text-3xl font-semibold text-zinc-950 dark:text-white">Admin Disputes</h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">
-            Open Disputes: <span className="font-medium">{disputes.length}</span>
+            Open Disputes: <span className="font-medium">{counts.open}</span>
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
@@ -121,31 +205,79 @@ export function DisputesListClient() {
         </label>
       </header>
 
-      {isLoading ? <DisputesListSkeleton /> : null}
-      {error ? (
-        <FetchErrorState
-          title="We couldn't load disputes"
-          message={getFetchErrorMessage(error, "Failed to load disputes.")}
-          onRetry={() => {
-            setError(null);
-            setIsLoading(true);
-            void getAdminDisputes(window.localStorage.getItem(SESSION_KEY) ?? "")
-              .then(setDisputes)
-              .catch((caught) => {
-                setError(caught instanceof Error ? caught.message : "Failed to load disputes");
-              })
-              .finally(() => setIsLoading(false));
-          }}
-          className="min-h-[160px]"
-        />
-      ) : null}
+      <div className="mb-6 border-b border-zinc-200 dark:border-zinc-800">
+        <div
+          role="tablist"
+          aria-label="Filter disputes by status"
+          className="flex space-x-2"
+        >
+          {tabs.map((tab, index) => {
+            const isSelected = statusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                id={`tab-${tab.id}`}
+                role="tab"
+                type="button"
+                aria-selected={isSelected}
+                aria-controls="disputes-tabpanel"
+                tabIndex={isSelected ? 0 : -1}
+                onClick={() => handleTabChange(tab.id)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                className={`flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  isSelected
+                    ? "border-zinc-900 text-zinc-950 dark:border-white dark:text-white"
+                    : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    isSelected
+                      ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                      : "bg-zinc-100/70 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {!isLoading && !error && sortedDisputes.length === 0 ? (
-        <p className="text-sm text-zinc-500" role="status">No open disputes right now.</p>
-      ) : null}
+      <div id="disputes-tabpanel" role="tabpanel" aria-labelledby={`tab-${statusFilter}`}>
+        {isLoading ? <DisputesListSkeleton /> : null}
+        {error ? (
+          <FetchErrorState
+            title="We couldn't load disputes"
+            message={getFetchErrorMessage(error, "Failed to load disputes.")}
+            onRetry={() => {
+              setError(null);
+              setIsLoading(true);
+              void getAdminDisputes(window.localStorage.getItem(SESSION_KEY) ?? "")
+                .then(setDisputes)
+                .catch((caught) => {
+                  setError(caught instanceof Error ? caught.message : "Failed to load disputes");
+                })
+                .finally(() => setIsLoading(false));
+            }}
+            className="min-h-[160px]"
+          />
+        ) : null}
 
-      {!isLoading && !error && sortedDisputes.length > 0 ? (
-        <div className="space-y-4" role="list" aria-label="Disputes list">
+        {!isLoading && !error && sortedDisputes.length === 0 ? (
+          <p className="text-sm text-zinc-500" role="status">
+            {statusFilter === "open"
+              ? "No open disputes right now."
+              : statusFilter === "resolved"
+              ? "No resolved disputes right now."
+              : "No disputes right now."}
+          </p>
+        ) : null}
+
+        {!isLoading && !error && sortedDisputes.length > 0 ? (
+          <div className="space-y-4" role="list" aria-label="Disputes list">
           {sortedDisputes.map((dispute) => (
             <article
               key={dispute.id}
@@ -197,6 +329,7 @@ export function DisputesListClient() {
           ))}
         </div>
       ) : null}
+      </div>
     </section>
   );
 }
