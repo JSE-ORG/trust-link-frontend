@@ -276,5 +276,14 @@
       "descriptionTooLong": "Description no suppose pass {{max}} character.",
       "shippingWindowInvalid": "Choose the correct shipping window."
     }
+  },
+  "network": {
+    "offlineBanner": {
+      "message": "You dey offline. Some features fit no work until your internet connection come back.",
+      "checkConnection": "Check connection",
+      "checking": "De check...",
+      "connectionRestored": "Connection don return. You dey back online.",
+      "stillOffline": "You still dey offline. Abeg check your internet connection."
+    }
   }
 }

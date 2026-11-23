@@ -276,5 +276,14 @@
       "descriptionTooLong": "Description must be {{max}} characters or fewer.",
       "shippingWindowInvalid": "Select a valid shipping window."
     }
+  },
+  "network": {
+    "offlineBanner": {
+      "message": "You are offline. Some features may be unavailable until your connection is restored.",
+      "checkConnection": "Check connection",
+      "checking": "Checking...",
+      "connectionRestored": "Connection restored. You are back online.",
+      "stillOffline": "Still offline. Please check your network connection."
+    }
   }
 }

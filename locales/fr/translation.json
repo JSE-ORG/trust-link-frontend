@@ -276,5 +276,14 @@
       "descriptionTooLong": "La description doit contenir au maximum {{max}} caractères.",
       "shippingWindowInvalid": "Sélectionnez un délai de livraison valide."
     }
+  },
+  "network": {
+    "offlineBanner": {
+      "message": "Vous êtes hors ligne. Certaines fonctionnalités peuvent être indisponibles jusqu'à ce que votre connexion soit rétablie.",
+      "checkConnection": "Vérifier la connexion",
+      "checking": "Vérification...",
+      "connectionRestored": "Connexion rétablie. Vous êtes de nouveau en ligne.",
+      "stillOffline": "Toujours hors ligne. Veuillez vérifier votre connexion réseau."
+    }
   }
 }
