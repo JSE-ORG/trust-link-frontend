@@ -256,5 +256,14 @@
       "descriptionTooLong": "Description no suppose pass {{max}} character.",
       "shippingWindowInvalid": "Choose the correct shipping window."
     }
+  },
+  "pricing": {
+    "billingCycle": "Billing cycle",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save": "Save 20%",
+    "billedAnnually": "${{amount}} go bill yearly",
+    "perMonth": "/month"
   }
+
 }
