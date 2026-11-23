@@ -3,16 +3,29 @@
  *
  * @param address - The Stellar contract public address.
  * @param network - Optional network name ("mainnet", "public", or "testnet"). Defaults to env or "testnet".
- * @returns The explorer URL for viewing the contract.
+ * @param type - The entity type ("contract" or "account"). Defaults to "contract".
+ * @returns The explorer URL for viewing the entity.
  */
-export function getStellarExpertUrl(address: string, network?: string): string {
+export function getStellarExpertUrl(
+  address: string,
+  network?: string,
+  type: "contract" | "account" = "contract"
+): string {
   const net = network || process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet";
+  const isMainnet = net.toLowerCase() === "mainnet" || net.toLowerCase() === "public";
+  const path = isMainnet ? "public" : "testnet";
+  return `https://stellar.expert/explorer/${path}/${type}/${address}`;
+}
 
-  if (net.toLowerCase() === "mainnet" || net.toLowerCase() === "public") {
-    return `https://stellar.expert/explorer/public/contract/${address}`;
-  }
-
-  return `https://stellar.expert/explorer/testnet/contract/${address}`;
+/**
+ * Generates the Stellar Expert block explorer URL for an account public key.
+ *
+ * @param account - The Stellar account public key.
+ * @param network - Optional network name ("mainnet", "public", or "testnet"). Defaults to env or "testnet".
+ * @returns The explorer URL for viewing account details.
+ */
+export function getStellarExpertAccountUrl(account: string, network?: string): string {
+  return getStellarExpertUrl(account, network, "account");
 }
 
 /**

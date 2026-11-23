@@ -48,7 +48,7 @@ function resolveInitialNetwork(): Network {
   return "testnet";
 }
 
-const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
+export const NetworkContext = createContext<NetworkContextType | undefined>(undefined);
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetworkState] = useState<Network>(resolveInitialNetwork);
