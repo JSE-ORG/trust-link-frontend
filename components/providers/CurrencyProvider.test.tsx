@@ -67,7 +67,7 @@ describe("CurrencyProvider", () => {
   it("updates formatting, persists each choice, and restores it after remount", () => {
     const { unmount } = renderConsumer();
     for (const currency of ["EUR", "NGN", "GBP", "USD", "USDC", "EUR"] as const) {
-      fireEvent.click(screen.getByRole("button", { name: currency, exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: currency }));
       expectCurrency(currency);
       expect(localStorage.getItem("preferredCurrency")).toBe(currency);
     }
