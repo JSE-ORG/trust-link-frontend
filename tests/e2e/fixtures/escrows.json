@@ -4,7 +4,7 @@
     "network_passphrase": "Test SDF Network ; September 2015"
   },
   "authVerify": {
-    "token": "jwt-token"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2ZW5kb3JfdGVzdF8xIiwiZXhwIjo0MTAyNDQ0ODAwfQ.e2e-mock-signature"
   },
   "fundEscrow": {
     "txHash": "abc123def456tx789hash_mock_payment_confirmed",
