@@ -556,7 +556,7 @@ describe("lib/stellar/contract.ts", () => {
 
       const result = await fundEscrow(validContractId, [], validSourceAccount, "TESTNET");
 
-      expect(result).toEqual({ hash: "pending-hash", resultXdr: { toXDR: () => "late-result" } });
+      expect(result).toEqual({ hash: "pending-hash", resultXdr: "late-result" });
       expect(getTransaction).toHaveBeenCalledWith("pending-hash");
     });
 

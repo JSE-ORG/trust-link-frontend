@@ -131,7 +131,7 @@ describe("VendorDashboardList currency integration across Card and Table views",
     });
 
     // Switch to Table View
-    const tableButton = screen.getByRole("button", { name: "Table" });
+    const tableButton = screen.getByRole("button", { name: "dashboard.tableView" });
     await userEvent.click(tableButton);
 
     // Verify Table view is active and displays amounts in GBP
@@ -150,7 +150,7 @@ describe("VendorDashboardList currency integration across Card and Table views",
     });
 
     // Switch back to Card View
-    const cardButton = screen.getByRole("button", { name: "Card" });
+    const cardButton = screen.getByRole("button", { name: "dashboard.cardView" });
     await userEvent.click(cardButton);
 
     // Verify Card view preserved USD selection

@@ -373,11 +373,12 @@ describe("bounded in-memory rate-limit fallback map", () => {
 
     // Flood with unique one-time keys, periodically refreshing frequent-client
     for (let i = 0; i < 40; i++) {
-      await checkRateLimit(`transient-${i}`, 10, 60_000);
-      if (i === 20) {
+      await checkRateLimit(`transient-${i}`, 10, 5_000);
+      if (i === 10) {
         // Refresh frequent client position
         await checkRateLimit("frequent-client", 5, 60_000);
       }
+      if (i % 10 === 9) vi.advanceTimersByTime(6_000);
     }
 
     // Frequent client should still be present with updated count (not evicted and not reset)

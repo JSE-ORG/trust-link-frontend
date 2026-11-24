@@ -29,11 +29,13 @@ const mockEscrow: Escrow = {
 
 const createWrapper = () => {
   const cache = new Map();
-  return ({ children }: { children: React.ReactNode }) => (
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>
       {children}
     </SWRConfig>
   );
+  Wrapper.displayName = "SWRTestWrapper";
+  return Wrapper;
 };
 
 describe("isTerminalEscrowStatus", () => {

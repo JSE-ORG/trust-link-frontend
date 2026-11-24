@@ -117,7 +117,9 @@ describe("WalletConnectButton", () => {
 
     fireEvent.click(copyBtn);
     expect(mockWriteText).toHaveBeenCalledWith("GABCDE12345XYZ");
-    expect(toast.success).toHaveBeenCalledWith("Address copied to clipboard");
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Address copied to clipboard");
+    });
 
     const explorerLink = screen.getByRole("menuitem", { name: /view on stellar expert/i });
     expect(explorerLink).toBeInTheDocument();

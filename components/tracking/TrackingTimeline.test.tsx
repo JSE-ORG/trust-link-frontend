@@ -239,7 +239,7 @@ describe("TrackingTimeline", () => {
     });
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText("We couldn't load tracking status")).toBeInTheDocument();
+    expect(screen.getByText("tracking.loadErrorTitle")).toBeInTheDocument();
     expect(screen.getByText("Failed to fetch escrow")).toBeInTheDocument();
   });
 

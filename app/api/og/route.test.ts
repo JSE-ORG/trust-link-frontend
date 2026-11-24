@@ -1,4 +1,4 @@
-import type React from "react";
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -13,6 +13,19 @@ import { __resetRateLimitMemory, RATE_LIMITS } from "@/lib/rateLimit";
 import { authHeader, MALFORMED_TOKEN } from "@/tests/support/jwt";
 
 import { boundOgText, GET, OG_BOUNDS } from "./route";
+
+function getRenderedText(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(getRenderedText).join(" ").replace(/\s+/g, " ");
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return getRenderedText(node.props.children);
+  }
+  return "";
+}
 
 function authedRequest(url = "http://localhost/api/og", headers: Record<string, string> = {}) {
   return new Request(url, { headers: { ...authHeader(), ...headers } });
@@ -76,7 +89,7 @@ describe("GET /api/og", () => {
     expect(response.status).toBe(200);
 
     const imageResp = response as unknown as {
-      element: React.ReactElement<{
+      element: ReactElement<{
         style: Record<string, unknown>;
         children: React.ReactNode[];
       }>;
@@ -87,7 +100,7 @@ describe("GET /api/og", () => {
     expect(imageResp.options.height).toBe(630);
     expect(imageResp.element.props.style.backgroundColor).toBe("#1B2A6B");
 
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = getRenderedText(imageResp.element);
     const statusMatches = elementStr.match(/Status:\s*Funded/g);
     expect(statusMatches).toHaveLength(1);
   });
@@ -106,13 +119,13 @@ describe("GET /api/og", () => {
     expect(response.status).toBe(200);
 
     const imageResp = response as unknown as {
-      element: React.ReactElement<{
+      element: ReactElement<{
         style: Record<string, unknown>;
         children: React.ReactNode[];
       }>;
     };
 
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = getRenderedText(imageResp.element);
 
     // Title should be truncated to MAX_TITLE_LENGTH (100)
     expect(elementStr).toContain("A".repeat(OG_BOUNDS.MAX_TITLE_LENGTH));
@@ -141,12 +154,12 @@ describe("GET /api/og", () => {
     expect(response.status).toBe(200);
 
     const imageResp = response as unknown as {
-      element: React.ReactElement<{
+      element: ReactElement<{
         style: Record<string, unknown>;
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = getRenderedText(imageResp.element);
     expect(elementStr).toContain(exactTitle);
     expect(elementStr).toContain(`Amount: ${exactAmount} USDC`);
     expect(elementStr).toContain(`Status: ${exactStatus}`);
@@ -161,13 +174,15 @@ describe("GET /api/og", () => {
     expect(response.status).toBe(200);
 
     const imageResp = response as unknown as {
-      element: React.ReactElement<{
+      element: ReactElement<{
         style: Record<string, unknown>;
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
-    const expectedEmojiTitle = "🛡️".repeat(OG_BOUNDS.MAX_TITLE_LENGTH);
+    const elementStr = getRenderedText(imageResp.element);
+    const expectedEmojiTitle = Array.from(emojiTitle)
+      .slice(0, OG_BOUNDS.MAX_TITLE_LENGTH)
+      .join("");
     expect(elementStr).toContain(expectedEmojiTitle);
   });
 

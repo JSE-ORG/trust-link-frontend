@@ -225,9 +225,13 @@ describe("ShareModal keyboard accessibility", () => {
   it("focuses the WhatsApp action with Tab and activates it with Space", async () => {
     const user = userEvent.setup();
     const openWindow = vi.spyOn(window, "open").mockImplementation(() => null);
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: undefined,
+    });
     render(<ShareModal {...defaultProps} />);
 
-    await user.tab();
+    screen.getByRole("button", { name: "Close" }).focus();
     await user.tab();
     await user.tab();
     await user.tab();

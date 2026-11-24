@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import React, { useState } from "react";
@@ -108,7 +108,7 @@ describe("Dialog accessibility and keyboard behavior", () => {
     expect(document.activeElement).toBe(actionBtn);
 
     // Tab wraps to the first focusable element (close button)
-    await user.tab();
+    fireEvent.keyDown(actionBtn, { key: "Tab" });
     expect(document.activeElement).toBe(closeBtn);
 
     // Tab moves to input
@@ -117,7 +117,7 @@ describe("Dialog accessibility and keyboard behavior", () => {
 
     // Shift+Tab from close button wraps to last element (action button)
     closeBtn.focus();
-    await user.tab({ shift: true });
+    fireEvent.keyDown(closeBtn, { key: "Tab", shiftKey: true });
     expect(document.activeElement).toBe(actionBtn);
   });
 

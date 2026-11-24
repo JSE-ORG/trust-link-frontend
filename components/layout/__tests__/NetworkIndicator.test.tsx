@@ -7,6 +7,14 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import Navbar from "../Navbar";
 import TestnetBanner from "../TestnetBanner";
 
+vi.mock("@/components/wallet/WalletConnectButton", () => ({
+  default: () => null,
+}));
+
+vi.mock("@/components/wallet/WalletConnectButton", () => ({
+  default: () => null,
+}));
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({

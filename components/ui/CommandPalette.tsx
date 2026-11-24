@@ -11,7 +11,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import FocusTrap from "./FocusTrap";
 
@@ -76,17 +76,29 @@ export default function CommandPalette() {
   const listboxId = useId();
   const titleId = useId();
 
+  const closePalette = useCallback(() => {
+    setIsOpen(false);
+    setSearch("");
+    setActiveIndex(0);
+  }, []);
+
   // Toggle Command Palette with keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setIsOpen((open) => !open);
+        if (isOpen) {
+          closePalette();
+        } else {
+          setSearch("");
+          setActiveIndex(0);
+          setIsOpen(true);
+        }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [closePalette, isOpen]);
 
   const filteredCommands = COMMANDS.filter(
     (cmd) =>
@@ -94,15 +106,6 @@ export default function CommandPalette() {
       (cmd.description &&
         cmd.description.toLowerCase().includes(search.toLowerCase()))
   );
-
-  // Synchronise active index with filtered results
-  useEffect(() => {
-    if (filteredCommands.length > 0) {
-      setActiveIndex(0);
-    } else {
-      setActiveIndex(-1);
-    }
-  }, [search, filteredCommands.length]);
 
   // Scroll active item into view when activeIndex changes
   useEffect(() => {
@@ -114,15 +117,9 @@ export default function CommandPalette() {
     }
   }, [activeIndex]);
 
-  // Body scroll lock and reset search on close
+  // Keep the background from scrolling while the palette is open.
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-      setSearch("");
-      setActiveIndex(0);
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "auto";
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -131,7 +128,7 @@ export default function CommandPalette() {
   if (!isOpen) return null;
 
   const handleSelect = (route: string) => {
-    setIsOpen(false);
+    closePalette();
     router.push(route);
   };
 
@@ -168,11 +165,11 @@ export default function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] sm:pt-[20vh] bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => setIsOpen(false)}
+      onClick={closePalette}
     >
       <FocusTrap
         active={isOpen}
-        onEscape={() => setIsOpen(false)}
+        onEscape={closePalette}
         initialFocusRef={inputRef}
       >
         <div
@@ -203,7 +200,10 @@ export default function CommandPalette() {
               className="flex-1 bg-transparent text-lg text-zinc-900 placeholder-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 dark:text-white dark:placeholder-zinc-500 dark:focus-visible:ring-zinc-300 rounded"
               placeholder="Type a command or search..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setActiveIndex(0);
+              }}
               onKeyDown={handleInputKeyDown}
             />
             <kbd className="hidden sm:inline-block rounded bg-zinc-100 px-2 py-1 text-xs font-mono text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 ml-3 shrink-0">

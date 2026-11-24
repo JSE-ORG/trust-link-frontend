@@ -55,13 +55,13 @@ describe("Primary navigation targets and route tree integrity", () => {
     fireEvent.keyDown(document, { key: "k", metaKey: true });
 
     // Select Tracking
-    const trackingBtn = screen.getByRole("button", { name: /Tracking/i });
+    const trackingBtn = screen.getByRole("option", { name: /Tracking/i });
     await userEvent.click(trackingBtn);
     expect(mockPush).toHaveBeenCalledWith("/tracking");
 
     // Re-open palette and select Dispute Guide
     fireEvent.keyDown(document, { key: "k", metaKey: true });
-    const disputeBtn = screen.getByRole("button", { name: /Dispute Guide/i });
+    const disputeBtn = screen.getByRole("option", { name: /Dispute Guide/i });
     await userEvent.click(disputeBtn);
     expect(mockPush).toHaveBeenCalledWith("/docs");
   });

@@ -11,6 +11,10 @@ vi.mock("@/lib/api", () => ({
   createEscrow: vi.fn(),
 }));
 
+vi.mock("@/lib/utils/downloadQrCode", () => ({
+  downloadQrCode: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),

@@ -181,10 +181,11 @@ describe("ConfirmationDialog (issue #69)", () => {
       />
     );
     const dialog = screen.getByRole("dialog");
+    const title = screen.getByRole("heading", { name: "Confirm" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute(
       "aria-labelledby",
-      "confirmation-dialog-title"
+      title.id
     );
   });
 

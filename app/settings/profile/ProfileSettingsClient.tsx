@@ -123,6 +123,7 @@ export default function ProfileSettingsClient() {
 
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
         >
           <div className="space-y-5">

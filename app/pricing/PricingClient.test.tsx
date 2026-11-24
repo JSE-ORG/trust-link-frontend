@@ -53,7 +53,7 @@ describe("PricingClient upgrade journeys", () => {
     render(<PricingClient />);
 
     expect(screen.getByText("$0")).toBeInTheDocument();
-    expect(screen.getByText("$19")).toBeInTheDocument();
+    expect(screen.getByText("$29")).toBeInTheDocument();
     expect(screen.getByText("Current plan")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade to Pro" })).toBeEnabled();
     expect(upgradeSubscription).not.toHaveBeenCalled();

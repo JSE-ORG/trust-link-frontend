@@ -197,18 +197,18 @@ describe("NotificationBell", () => {
 
       // Focus trap is implemented on the outer ref (toggle + dialog).
       // Ensure dialog is open and has focusable items.
-      const focusable = container.querySelectorAll(
+      const focusable = dialog.querySelectorAll(
         'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       expect(focusable.length).toBeGreaterThan(0);
 
+      const first = focusable[0] as HTMLElement;
       const last = Array.from(focusable).at(-1) as HTMLElement;
       last.focus();
       await user.keyboard("{Tab}");
 
-      // After wrapping, focus should still be inside the component (not escaped to body)
-      const stillInside = container.contains(document.activeElement as Node);
-      expect(stillInside).toBe(true);
+      expect(document.activeElement).toBe(first);
+      expect(container).toContainElement(last);
       expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument();
     });
 
@@ -219,15 +219,16 @@ describe("NotificationBell", () => {
       const dialog = screen.getByRole("dialog", { name: "Notifications" });
       expect(dialog).toBeInTheDocument();
 
-      const focusable = container.querySelectorAll(
+      const focusable = dialog.querySelectorAll(
         'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       const first = focusable[0] as HTMLElement;
+      const last = focusable[focusable.length - 1] as HTMLElement;
       first.focus();
       await user.keyboard("{Shift>}{Tab}{/Shift}");
 
-      const stillInside = container.contains(document.activeElement as Node);
-      expect(stillInside).toBe(true);
+      expect(document.activeElement).toBe(last);
+      expect(container).toContainElement(last);
     });
 
     it("restores focus to toggle button when closed via Escape", async () => {

@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 export interface QrCodeProps {
@@ -16,23 +15,6 @@ export function QrCode({
   label,
   className,
 }: QrCodeProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div
-        data-testid="qr-code-skeleton"
-        style={{ width: size, height: size }}
-        className="animate-pulse rounded bg-zinc-100 dark:bg-zinc-800"
-        aria-hidden="true"
-      />
-    );
-  }
-
   return (
     <QRCodeSVG
       value={value}

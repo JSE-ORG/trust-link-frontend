@@ -17,12 +17,11 @@ describe("FeaturedArtistSection", () => {
     ).toBeInTheDocument();
   });
 
-  it('renders a "View All Artists" link pointing to /vendor', () => {
-    render(<FeaturedArtistSection />);
+  it("does not link to the unavailable vendor directory", () => {
+    const { container } = render(<FeaturedArtistSection />);
+    const links = Array.from(container.querySelectorAll("a"));
 
-    const viewAllLink = screen.getByRole("link", { name: /view all artists/i });
-    expect(viewAllLink).toBeInTheDocument();
-    expect(viewAllLink).toHaveAttribute("href", "/vendor");
+    expect(links.some((link) => link.getAttribute("href") === "/vendor")).toBe(false);
   });
 
   it("renders a card for every featured artist with correct details and links", () => {

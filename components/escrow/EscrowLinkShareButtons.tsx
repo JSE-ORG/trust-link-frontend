@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import type { RefObject } from "react";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,15 @@ async function copyToClipboard(text: string): Promise<void> {
     throw new Error("Clipboard not supported");
   }
   await navigator.clipboard.writeText(text);
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AbortError"
+  );
 }
 
 interface EscrowLinkShareButtonsProps {
@@ -48,7 +57,6 @@ export default function EscrowLinkShareButtons({
   onNativeShare,
   qrRef,
 }: EscrowLinkShareButtonsProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const copyErrorId = useId();
   const [failedCopy, setFailedCopy] = useState<{
     platform: "instagram" | "twitter";
@@ -82,7 +90,7 @@ export default function EscrowLinkShareButtons({
         await track("link_shared", { platform: "whatsapp", method: "native" });
         return;
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
+        if (isAbortError(err)) return;
         console.error("Share failed:", err);
       }
     }
@@ -103,7 +111,7 @@ export default function EscrowLinkShareButtons({
         await track("link_shared", { platform: "instagram", method: "native" });
         return;
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
+        if (isAbortError(err)) return;
         console.error("Share failed:", err);
       }
     }

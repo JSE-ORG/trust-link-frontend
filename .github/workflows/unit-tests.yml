@@ -14,6 +14,12 @@ jobs:
   test:
     name: Vitest
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
+      NEXT_PUBLIC_CONTRACT_ID: CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+      NEXT_PUBLIC_STELLAR_NETWORK: testnet
+      NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE: "Test SDF Network ; September 2015"
+      NEXT_PUBLIC_SITE_URL: https://trustlink.app
 
     steps:
       - name: Checkout code

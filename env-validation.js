@@ -1,4 +1,4 @@
-const { loadEnvConfig } = require('@next/env');
+import { loadEnvConfig } from "@next/env";
 
 // Load the same .env* files used by Next.js before validating configuration.
 loadEnvConfig(process.cwd());

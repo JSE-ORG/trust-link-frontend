@@ -3,8 +3,9 @@ import userEvent from "@testing-library/user-event";
 import React, { useRef, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import FocusTrap from "../FocusTrap";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+
+import FocusTrap from "../FocusTrap";
 
 describe("FocusTrap component behavioral tests", () => {
   it("focuses the first enabled element by default on activation", async () => {

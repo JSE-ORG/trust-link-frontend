@@ -136,7 +136,7 @@ describe("PaymentEscrowClient payment eligibility", () => {
   };
 
   it("saves contact details and routes into the escrow funding pipeline", async () => {
-    render(<PaymentEscrowClient escrow={baseEscrow} escrowId={baseEscrow.id} />);
+    render(<PaymentEscrowClient escrow={payableEscrow} escrowId={baseEscrow.id} />);
 
     fireEvent.change(screen.getByLabelText(/Email address/), {
       target: { value: "buyer@example.com" },
@@ -150,8 +150,8 @@ describe("PaymentEscrowClient payment eligibility", () => {
       email: "buyer@example.com",
       emailReceipt: true,
     });
-    expect(screen.getByRole("button", { name: "Pay with Freighter" })).toBeInTheDocument();
-    expect(screen.queryByText(/Freighter signature completed/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download Receipt PDF" })).toBeInTheDocument();
+    expect(screen.getByText("mock_tx_hash_123456")).toBeInTheDocument();
   });
 
   it.each(Object.values(EscrowStatusConst))(
@@ -159,7 +159,11 @@ describe("PaymentEscrowClient payment eligibility", () => {
     async (status) => {
       render(
         <PaymentEscrowClient
-          escrow={{ ...baseEscrow, status, expiresAt: new Date(Date.now() + 60_000).toISOString() }}
+          escrow={{
+            ...(status === EscrowStatusConst.PENDING ? payableEscrow : baseEscrow),
+            status,
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+          }}
           escrowId={baseEscrow.id}
         />
       );
@@ -171,8 +175,9 @@ describe("PaymentEscrowClient payment eligibility", () => {
         });
         await act(async () => { fireEvent.click(button); });
         expect(patchBuyerContact).toHaveBeenCalledOnce();
-        expect(isFreighterInstalled).not.toHaveBeenCalled();
-        expect(connectFreighter).not.toHaveBeenCalled();
+        expect(isFreighterInstalled).toHaveBeenCalledOnce();
+        expect(connectFreighter).toHaveBeenCalledOnce();
+        expect(screen.getByRole("button", { name: "Download Receipt PDF" })).toBeInTheDocument();
       } else {
         expect(button).toBeDisabled();
         expect(screen.getByText(i18n.t(guidance[status]!))).toBeInTheDocument();

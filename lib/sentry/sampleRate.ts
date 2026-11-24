@@ -22,6 +22,10 @@ export function parseTracesSampleRate(
     return fallback;
   }
 
+  if (typeof value === "string" && value.trim() === "") {
+    return fallback;
+  }
+
   const num = typeof value === "number" ? value : Number(String(value).trim());
 
   if (Number.isFinite(num) && num >= 0 && num <= 1) {
