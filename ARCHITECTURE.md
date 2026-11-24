@@ -279,3 +279,10 @@ Desired Consolidation (Backlog Issue #106):
 5. **Dispute Handling**:
    - In case of a defect or non-delivery, either party submits `DisputeForm` via `createDispute()` (`POST /escrows/:id/dispute`).
    - Admins review active disputes in `app/admin/disputes/page.tsx` (`GET /disputes?status=OPEN,UNDER_REVIEW`) and execute resolutions via `resolveDispute()` (`PATCH /disputes/:id/resolve`).
+
+---
+
+## Further Reading
+
+- [Soroban Contract Integration](docs/SOROBAN_CONTRACT_INTEGRATION.md): how the frontend builds, signs, submits and confirms contract transactions, including confirmation polling, timeouts and known gaps.
+- [Payment Mock Flags & Production Funding Boundaries](docs/PAYMENT_BOUNDARIES.md): what mock flags change and what counts as real settlement.
