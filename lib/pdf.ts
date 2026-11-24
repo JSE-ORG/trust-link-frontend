@@ -398,6 +398,8 @@ export interface ReceiptData {
   protocolFee?: number;
   /** USDC amount actually paid; defaults to `amount + protocolFee`. */
   total?: number;
+  /** Buyer email and/or phone number supplied for the escrow. */
+  buyerContact?: string;
   /** On-chain transaction hash for the funding payment. */
   txHash: string;
   /** When the payment settled; defaults to now. */
@@ -474,6 +476,7 @@ export async function generateReceiptPDF(
   const rows: Array<[string, string]> = [
     ['Escrow ID', receipt.escrowId],
     ['Item', receipt.itemName],
+    ...(receipt.buyerContact ? [['Buyer Contact', receipt.buyerContact] as [string, string]] : []),
     ['Paid At', formatDateTime(paidAt)],
     ['Transaction Hash', receipt.txHash],
   ];
