@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 import HomePageContent from "@/components/home/HomePageContent";
-import FaqAccordion from "@/components/ui/FaqAccordion";
+import { Accordion } from "@/components/ui/Accordion";
 
 const FAQ_ITEMS = [
   {
@@ -232,7 +232,7 @@ export default function Home() {
             </p>
           </div>
           {/* Client component — only this subtree needs JS for interactivity */}
-          <FaqAccordion items={FAQ_ITEMS} />
+          <Accordion items={FAQ_ITEMS} />
         </div>
       </section>
 
