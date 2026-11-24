@@ -117,6 +117,8 @@ stateDiagram-v2
 
 ## Getting Started
 
+> **Working without a wallet or backend?** Read the [Local Development & Mock Mode Guide](docs/LOCAL_DEVELOPMENT_MOCK_MODE.md). It explains what the two mock flags do (and do not do), how to work with Storybook, Vitest and Playwright without a wallet, and how to set up Freighter and Friendbot for real Testnet testing, with troubleshooting for common Freighter errors.
+
 ### Prerequisites
 
 - Node.js `22` (see `.nvmrc` and CI workflows; run `nvm use` or `nvm install` to match)

@@ -76,6 +76,8 @@ This repository is part of the **[Stellar Wave Program](https://www.drips.networ
 
 ## Development Setup
 
+> **Working without a wallet or backend?** Read the [Local Development & Mock Mode Guide](docs/LOCAL_DEVELOPMENT_MOCK_MODE.md). It explains what the two mock flags do (and do not do), how to work with Storybook, Vitest and Playwright without a wallet, and how to set up Freighter and Friendbot for real Testnet testing, with troubleshooting for common Freighter errors.
+
 ### Prerequisites
 
 | Tool | Version | Notes |
