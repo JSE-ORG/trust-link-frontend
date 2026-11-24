@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import Pagination from "@/components/ui/Pagination";
 import type { Escrow } from "@/types";
 
 import { useEscrowFilters } from "../useEscrowFilters";
-import VendorPagination from "../VendorPagination";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -33,11 +33,10 @@ function Harness({ escrows }: { escrows: Escrow[] | null }) {
           <li key={e.id}>{e.item}</li>
         ))}
       </ul>
-      <VendorPagination
+      <Pagination
         currentPage={filters.currentPage}
         totalPages={filters.totalPages}
-        onPrevious={filters.goToPreviousPage}
-        onNext={filters.goToNextPage}
+        onPageChange={filters.goToPage}
       />
     </div>
   );

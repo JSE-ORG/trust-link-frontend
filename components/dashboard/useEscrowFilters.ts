@@ -69,9 +69,10 @@ export function useEscrowFilters(escrows: Escrow[] | null) {
   };
 
   // Step from the clamped page so a stale out-of-range value cannot leak back.
-  const goToPreviousPage = () => setCurrentPage(Math.max(1, effectivePage - 1));
-  const goToNextPage = () =>
-    setCurrentPage(Math.min(lastPage, effectivePage + 1));
+  const goToPage = (page: number) =>
+    setCurrentPage(Math.min(lastPage, Math.max(1, page)));
+  const goToPreviousPage = () => goToPage(effectivePage - 1);
+  const goToNextPage = () => goToPage(effectivePage + 1);
 
   return {
     searchQuery,
@@ -88,6 +89,7 @@ export function useEscrowFilters(escrows: Escrow[] | null) {
     totalPages,
     clearDateFilter,
     resetFilters,
+    goToPage,
     goToPreviousPage,
     goToNextPage,
   };

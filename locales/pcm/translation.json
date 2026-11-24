@@ -305,9 +305,7 @@
     "save": "Save 20%",
     "billedAnnually": "${{amount}} go bill yearly",
     "perMonth": "/month"
-  }
-
-}
+  },
   "network": {
     "offlineBanner": {
       "message": "You dey offline. Some features fit no work until your internet connection come back.",
