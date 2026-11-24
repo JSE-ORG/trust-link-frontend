@@ -25,4 +25,16 @@ describe("truncateAddress", () => {
     const address = "GABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDE";
     expect(truncateAddress(address, 2, 2)).toBe("GA...DE");
   });
+
+  it("handles null inputs gracefully", () => {
+    expect(truncateAddress(null)).toBe("");
+  });
+
+  it("leaves a string exactly at the cutoff length untouched", () => {
+    expect(truncateAddress("ABCDEFGH", 4, 4)).toBe("ABCDEFGH");
+  });
+
+  it("truncates one character past the cutoff", () => {
+    expect(truncateAddress("ABCDEFGHI", 4, 4)).toBe("ABCD...FGHI");
+  });
 });

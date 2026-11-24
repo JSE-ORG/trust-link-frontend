@@ -1,4 +1,5 @@
 import { type Escrow, EscrowStatusConst, type VendorProfile } from "@/types";
+import { truncateAddress } from "@/utils/truncateAddress";
 
 /**
  * Escrow statuses that are still open for a buyer to fund, and therefore worth
@@ -80,6 +81,5 @@ export function safeWebsiteUrl(website?: string): string | null {
  * @returns The address, truncated when long enough to warrant it.
  */
 export function shortenAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+  return truncateAddress(address, 6, 6);
 }
