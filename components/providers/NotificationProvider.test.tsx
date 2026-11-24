@@ -280,4 +280,51 @@ describe("notification fetch recovery", () => {
     expect(removeEventListenerWinSpy).toHaveBeenCalledWith("online", expect.any(Function));
     expect(removeEventListenerWinSpy).toHaveBeenCalledWith("offline", expect.any(Function));
   });
+
+  it("does not fetch or poll for anonymous visitors", async () => {
+    localStorage.clear();
+    const intervalSpy = vi.spyOn(globalThis, "setInterval");
+    const { result } = renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+
+    expect(getVendorEscrows).not.toHaveBeenCalled();
+    expect(intervalSpy.mock.calls.filter(([, delay]) => delay === 30_000)).toHaveLength(0);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.notifications).toHaveLength(0);
+  });
+
+  it("starts fetching and polling when a session token appears", async () => {
+    localStorage.clear();
+    vi.mocked(getVendorEscrows).mockResolvedValue(ESCROWS);
+    const { result } = renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    expect(getVendorEscrows).not.toHaveBeenCalled();
+
+    localStorage.setItem("wallet.jwt", "token");
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "wallet.jwt" }));
+    });
+
+    await waitFor(() => expect(getVendorEscrows).toHaveBeenCalledWith("token"));
+    expect(result.current.notifications).toHaveLength(2);
+  });
+
+  it("clears polling and notification state when the session expires", async () => {
+    localStorage.setItem("wallet.jwt", "token");
+    vi.mocked(getVendorEscrows).mockReset().mockResolvedValue(ESCROWS);
+    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
+    const { result } = renderHook(() => useNotifications(), { wrapper });
+    await act(async () => {});
+    await waitFor(() => expect(result.current.notifications).toHaveLength(2));
+
+    localStorage.removeItem("wallet.jwt");
+    await act(async () => {
+      window.dispatchEvent(new Event("app:unauthorized"));
+    });
+
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    expect(result.current.notifications).toHaveLength(0);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.hasLoaded).toBe(false);
+  });
 });

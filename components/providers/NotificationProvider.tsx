@@ -10,13 +10,14 @@ import React, {
   useState,
 } from "react";
 
+import { WalletContext } from "@/components/providers/WalletProvider";
 import { getVendorEscrows } from "@/lib/api";
 import {
   deriveNotifications,
   getReadIds,
   saveReadIds,
 } from "@/lib/notifications";
-import { SESSION_KEY } from "@/lib/session";
+import { SESSION_EXPIRED_EVENT, SESSION_KEY } from "@/lib/session";
 import type { AppNotification } from "@/types";
 
 interface NotificationContextType {
@@ -35,6 +36,16 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 );
 
 const POLL_MS = 30_000;
+
+/** Reads the persisted SEP-10 JWT without assuming a browser environment. */
+function readSessionToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function canUseUpdates(): boolean {
   if (typeof document !== "undefined") {
@@ -55,9 +66,14 @@ export function NotificationProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const wallet = useContext(WalletContext);
+  // WalletProvider writes the JWT to storage; falling back to storage keeps the
+  // provider usable on its own (and in tests) without a wallet ancestor.
+  const sessionToken =
+    wallet?.token ?? (typeof window === "undefined" ? null : readSessionToken());
   const [raw, setRaw] = useState<Omit<AppNotification, "read">[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const generationRef = useRef(0);
@@ -68,12 +84,14 @@ export function NotificationProvider({
 
   const fetchNotifications = useCallback(async () => {
     if (!activeRef.current || fetchingRef.current || !canUseUpdates()) return;
+    const token = readSessionToken();
+    // Nothing to fetch for anonymous visitors: skip both the request and the
+    // loading-state churn that would otherwise re-render every 30 seconds.
+    if (!token) return;
     const generation = generationRef.current;
     fetchingRef.current = true;
     setIsLoading(true);
     try {
-      const token = localStorage.getItem(SESSION_KEY);
-      if (!token) return;
       const escrows = await getVendorEscrows(token);
       if (!activeRef.current || generation !== generationRef.current) return;
       setRaw(deriveNotifications(escrows));
@@ -102,9 +120,9 @@ export function NotificationProvider({
     });
 
     const startPolling = () => {
-      if (intervalRef.current !== null) return;
+      if (intervalRef.current !== null || !readSessionToken()) return;
       intervalRef.current = setInterval(() => {
-        if (canUseUpdates()) {
+        if (canUseUpdates() && readSessionToken()) {
           void fetchNotifications();
         }
       }, POLL_MS);
@@ -120,15 +138,20 @@ export function NotificationProvider({
     const initialCanUpdate = canUseUpdates();
     isPausedRef.current = !initialCanUpdate;
 
-    if (initialCanUpdate) {
+    // Signed-out and paused sessions start idle (isLoading initialises false)
+    // and only an actual fetch flips the flag.
+    if (readSessionToken() && initialCanUpdate) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- subscription start; the fetch flips isLoading asynchronously
       void fetchNotifications();
       startPolling();
-    } else {
-      setIsLoading(false);
     }
 
     const handleSync = () => {
       if (!activeRef.current) return;
+      if (!readSessionToken()) {
+        stopPolling();
+        return;
+      }
       const canUpdate = canUseUpdates();
       if (!canUpdate) {
         if (!isPausedRef.current) {
@@ -144,8 +167,34 @@ export function NotificationProvider({
       }
     };
 
+    const handleAuthChange = () => {
+      if (!activeRef.current) return;
+      if (!readSessionToken()) {
+        generationRef.current += 1;
+        stopPolling();
+        setRaw([]);
+        setHasLoaded(false);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+      if (canUseUpdates()) {
+        void fetchNotifications();
+        startPolling();
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== SESSION_KEY) return;
+      handleAuthChange();
+    };
+
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", handleSync);
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleStorage);
+      window.addEventListener(SESSION_EXPIRED_EVENT, handleAuthChange);
     }
     if (typeof window !== "undefined") {
       window.addEventListener("online", handleSync);
@@ -163,9 +212,11 @@ export function NotificationProvider({
       if (typeof window !== "undefined") {
         window.removeEventListener("online", handleSync);
         window.removeEventListener("offline", handleSync);
+        window.removeEventListener("storage", handleStorage);
+        window.removeEventListener(SESSION_EXPIRED_EVENT, handleAuthChange);
       }
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, sessionToken]);
 
   const notifications: AppNotification[] = raw.map((n) => ({
     ...n,
