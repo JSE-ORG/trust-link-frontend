@@ -87,6 +87,11 @@ const nextConfig: NextConfig = {
         destination: "/tracking",
         permanent: true,
       },
+      {
+        source: "/track",
+        destination: "/tracking",
+        permanent: true,
+      },
     ];
   },
 
