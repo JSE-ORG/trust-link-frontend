@@ -138,7 +138,7 @@ Follow this checklist to verify your setup depending on your focus:
 
 #### 2. Wallet & Backend Integration (Testnet & Live Flows)
 - [ ] Copy `.env.example` to `.env.local`: `cp .env.example .env.local`.
-- [ ] Provide required blank variables in `.env.local`:
+- [ ] Review the required testnet variables in `.env.local`:
   - `NEXT_PUBLIC_CONTRACT_ID`: Soroban contract ID deployed on Stellar Testnet.
   - `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`: `"Test SDF Network ; September 2015"` for Testnet.
 - [ ] Ensure TrustLink backend is running at `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
@@ -152,10 +152,10 @@ Create a `.env.local` file at the project root:
 cp .env.example .env.local
 ```
 
-> **Note on Blank Values in `.env.example`:**
-> While basic frontend pages load with defaults, `NEXT_PUBLIC_CONTRACT_ID` and `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE` are intentionally blank in `.env.example`.
-> - For frontend-only testing or unit tests, these blank values are safe and will either fallback gracefully or use mocks.
-> - For executing actual contract transactions on Stellar Testnet, set `NEXT_PUBLIC_CONTRACT_ID` to your deployed escrow contract ID and `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"`.
+> **Note on Testnet Defaults:**
+> `.env.example` provides a public testnet contract ID and the Testnet passphrase so local development can start immediately.
+> - Update `NEXT_PUBLIC_CONTRACT_ID` and `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE` when using a custom contract deployment or network.
+> - Mock payments are enabled by default for local convenience. Set `NEXT_PUBLIC_ESCROW_MOCK_PAYMENTS=false` to submit live Testnet payments.
 
 ```env
 # Backend API
