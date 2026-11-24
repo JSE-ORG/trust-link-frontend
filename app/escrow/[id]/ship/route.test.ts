@@ -98,4 +98,12 @@ describe("PATCH /api/escrow/:id/ship", () => {
     expect(response.status).toBe(404);
     expect(body).toEqual({ message: "Escrow item not found." });
   });
+
+  it("rejects unknown keys due to strict schema validation", async () => {
+    const request = patchRequest({ trackingId: "TRACK-123", extraField: "invalid" });
+
+    const response = await PATCH(request, params);
+    expect(response.status).toBe(400);
+    expect(shipEscrow).not.toHaveBeenCalled();
+  });
 });

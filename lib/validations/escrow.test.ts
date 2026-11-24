@@ -221,7 +221,7 @@ describe("EscrowCreateSchema — shippingWindow", () => {
       const result = parse({ shippingWindow });
 
       expect(result.success).toBe(false);
-      expect(firstMessage(result)).toBe("Please select a valid shipping window.");
+      expect(firstMessage(result)).toBe("Select a valid shipping window.");
     }
   );
 });

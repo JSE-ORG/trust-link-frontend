@@ -39,7 +39,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[var(--muted-bg)]">
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#1B2A6B] to-[#7B68EE] text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-primary to-brand-accent text-white">
         {/*
           Decorative blobs:
           • pointer-events-none — never intercept clicks / hover events
@@ -67,7 +67,7 @@ export default function Home() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-white">
               Secure Escrow for
               {/* Tailwind utility keeps this span from blocking first paint */}
-              <span className="block text-[#a89eff]">
+              <span className="block text-brand-accent-soft">
                 Every Transaction
               </span>
             </h1>
@@ -79,7 +79,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/vendor/signup"
-                className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[#7B68EE] rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-brand-accent rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
               >
                 Get Started as a Vendor
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
@@ -233,7 +233,7 @@ export default function Home() {
       </section>
 
       {/* ── CTA Section ───────────────────────────────────────────────────── */}
-      <section className="py-20 sm:py-24 bg-gradient-to-br from-[#1B2A6B] to-[#7B68EE] text-white">
+      <section className="py-20 sm:py-24 bg-gradient-to-br from-brand-primary to-brand-accent text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
             Ready to Trade with Confidence?
@@ -245,14 +245,14 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/vendor/signup"
-              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-[#7B68EE] rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-brand-accent rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
             >
               Start as a Vendor
               <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
             </Link>
             <Link
               href="/verify"
-              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-[#1B2A6B] bg-white rounded-lg hover:bg-white/90 transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-brand-primary bg-white rounded-lg hover:bg-white/90 transition-all"
             >
               Verify a Link
             </Link>

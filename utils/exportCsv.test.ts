@@ -1,6 +1,6 @@
 import { afterEach, beforeEach,describe, expect, it, vi } from "vitest";
 
-import { type CsvColumn, downloadCsv, ensureCsvExtension } from "./exportCsv";
+import { type CsvColumn, downloadCsv, ensureCsvExtension, exportToCsv } from "./exportCsv";
 
 const UTF8_BOM = "\uFEFF";
 
@@ -209,5 +209,9 @@ describe("downloadCsv", () => {
     // @ts-expect-error - 'nonExistentField' is not assignable to keyof SampleData
     const invalidCols: readonly CsvColumn<SampleData>[] = [{ key: "nonExistentField", header: "Bad" }];
     expect(invalidCols).toHaveLength(1);
+  });
+
+  it("exports exportToCsv as an alias to downloadCsv", () => {
+    expect(exportToCsv).toBe(downloadCsv);
   });
 });

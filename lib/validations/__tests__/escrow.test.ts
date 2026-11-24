@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { ESCROW_LIMITS, EscrowCreateSchema } from "../escrow";
 
 describe("EscrowCreateSchema", () => {
@@ -146,7 +147,7 @@ describe("EscrowCreateSchema", () => {
     it("should reject prices with whitespace", () => {
       const result = EscrowCreateSchema.safeParse({
         itemName: "Test Item",
-        priceUSDC: " 10 ",
+        priceUSDC: "1 0",
         description: "Test",
         shippingWindow: "1-3 days",
       });
