@@ -91,8 +91,29 @@ describe("EscrowCreateForm", () => {
       render(<EscrowCreateForm />);
 
       expect(screen.queryByTestId("link-card")).not.toBeInTheDocument();
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
       expect(screen.queryByTestId("share-modal")).not.toBeInTheDocument();
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("updates the fee breakdown for valid prices and hides it for empty or invalid prices", async () => {
+      const user = userEvent.setup();
+      render(<EscrowCreateForm />);
+
+      const priceInput = screen.getByLabelText("Price (USDC)");
+      await user.type(priceInput, "100.00");
+
+      expect(screen.getByText("Item Price")).toBeInTheDocument();
+      expect(screen.getByText("TrustLink Escrow Fee (1.5%)")).toBeInTheDocument();
+      expect(screen.getByText("100.00 USDC")).toBeInTheDocument();
+      expect(screen.getByText("1.50 USDC")).toBeInTheDocument();
+      expect(screen.getByText("98.50 USDC")).toBeInTheDocument();
+
+      await user.clear(priceInput);
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
+
+      await user.type(priceInput, "0");
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
     });
 
     it("shows the markdown preview only when a description is typed", async () => {

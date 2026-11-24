@@ -286,6 +286,11 @@
     "feature3Text": "Des outils conçus pour vous aider à développer et gérer les séquestres."
   },
   "escrow": {
+    "feeBreakdown": {
+      "itemPrice": "Prix de l’article",
+      "platformFee": "Frais d’escrow TrustLink ({{percent}} %)",
+      "vendorPayout": "Paiement estimé au vendeur"
+    },
     "errors": {
       "itemNameRequired": "Le nom de l'article est requis.",
       "itemNameTooLong": "Le nom de l'article doit contenir au maximum {{max}} caractères.",
