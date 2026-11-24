@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import FetchErrorState, {
   getFetchErrorMessage,
 } from "@/components/ui/FetchErrorState";
+import Pagination from "@/components/ui/Pagination";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 import EmptyVendorState from "./EmptyVendorState";
@@ -22,7 +23,6 @@ import VendorEscrowModals from "./VendorEscrowModals";
 import VendorEscrowTable from "./VendorEscrowTable";
 import VendorListToolbar from "./VendorListToolbar";
 import VendorNoResults from "./VendorNoResults";
-import VendorPagination from "./VendorPagination";
 import VendorStatusTabs from "./VendorStatusTabs";
 
 /**
@@ -147,11 +147,10 @@ export default function VendorDashboardList({
       )}
 
       {hasFilteredResults && filters.totalPages > 1 && (
-        <VendorPagination
+        <Pagination
           currentPage={filters.currentPage}
           totalPages={filters.totalPages}
-          onPrevious={filters.goToPreviousPage}
-          onNext={filters.goToNextPage}
+          onPageChange={filters.goToPage}
         />
       )}
 

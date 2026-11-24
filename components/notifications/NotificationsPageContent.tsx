@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { useNotifications } from "@/components/providers/NotificationProvider";
+import Pagination from "@/components/ui/Pagination";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SESSION_KEY } from "@/lib/session";
 
@@ -13,7 +14,6 @@ import {
   NotificationsEmptyState,
   NotificationsSearchEmptyState,
 } from "./NotificationsEmptyState";
-import { NotificationsPagination } from "./NotificationsPagination";
 import { NotificationsSkeleton } from "./NotificationsSkeleton";
 import {
   NotificationsSearch,
@@ -110,10 +110,11 @@ function NotificationsContent() {
                     />
                   ))}
                 </div>
-                <NotificationsPagination
+                <Pagination
                   currentPage={effectivePage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
+                  hideOnSinglePage
                 />
               </>
             )}

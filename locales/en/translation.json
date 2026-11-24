@@ -305,9 +305,7 @@
     "save": "Save 20%",
     "billedAnnually": "${{amount}} billed annually",
     "perMonth": "/month"
-  }
-
-}
+  },
   "network": {
     "offlineBanner": {
       "message": "You are offline. Some features may be unavailable until your connection is restored.",
