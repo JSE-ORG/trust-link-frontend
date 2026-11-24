@@ -11,8 +11,8 @@ const meta: Meta<typeof Accordion> = {
     docs: {
       description: {
         component:
-          "Collapsible question/answer list. Only one item can be open at a time. " +
-          "Items can optionally carry a leading icon or be marked `disabled` to prevent expansion.",
+          "Collapsible question/answer list with an animated CSS grid panel and ARIA control associations. " +
+          "Only one item can be open at a time. Items can optionally carry a leading icon or be marked `disabled` to prevent expansion.",
       },
     },
   },

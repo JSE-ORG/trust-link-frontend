@@ -1,4 +1,4 @@
-import FaqAccordion from "@/components/ui/FaqAccordion";
+import { Accordion } from "@/components/ui/Accordion";
 
 const FAQ_ITEMS = [
   {
@@ -45,7 +45,7 @@ export default function HomePageFaq() {
             Everything you need to know about TrustLink
           </p>
         </div>
-        <FaqAccordion items={FAQ_ITEMS} />
+        <Accordion items={FAQ_ITEMS} />
       </div>
     </section>
   );

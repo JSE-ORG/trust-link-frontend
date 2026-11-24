@@ -1,5 +1,6 @@
 import type { Escrow } from '@/types';
 import { formatUSDC } from '@/utils/currency';
+import { truncateAddress } from "@/utils/truncateAddress";
 
 // `jspdf` and `html2canvas` are large (~100kb+ combined) and only needed when a
 // user actually triggers a PDF export, so they're dynamically imported inside
@@ -44,11 +45,12 @@ export function formatDateTime(
 /**
  * Truncates an identifier to `start…end` characters for display, leaving short
  * values untouched so an id like `abc` is never rendered as `abc...abc`.
+ *
+ * Kept as the PDF-facing name for {@link truncateAddress}, which owns the
+ * slicing logic used elsewhere in the app.
  */
 export function truncateForDisplay(value: string, start = 6, end = 6): string {
-  if (!value) return value;
-  if (value.length <= start + end) return value;
-  return `${value.slice(0, start)}...${value.slice(-end)}`;
+  return truncateAddress(value, start, end);
 }
 
 /**
