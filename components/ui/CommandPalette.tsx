@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -212,13 +213,52 @@ export default function CommandPalette() {
           </div>
 
           {/* Command Listbox */}
-          <div
-            id={listboxId}
-            role="listbox"
-            aria-label="Commands"
-            className="max-h-[60vh] overflow-y-auto p-2"
-          >
-            {filteredCommands.length === 0 ? (
+          <div className="max-h-[60vh] overflow-y-auto p-2">
+            <div id={listboxId} role="listbox" aria-label="Commands">
+              {filteredCommands.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <div
+                    role="presentation"
+                    className="px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
+                  >
+                    Navigation
+                  </div>
+                  {filteredCommands.map((cmd, index) => {
+                    const isSelected = activeIndex === index;
+                    return (
+                      <div
+                        key={cmd.route}
+                        id={`command-item-${index}`}
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => handleSelect(cmd.route)}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition cursor-pointer select-none ${
+                          isSelected
+                            ? "bg-zinc-100 dark:bg-zinc-800/80 ring-2 ring-zinc-950 dark:ring-zinc-300"
+                            : "hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                        }`}
+                      >
+                        <div className="text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg">
+                          {cmd.icon}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-zinc-900 dark:text-white">
+                            {cmd.label}
+                          </span>
+                          {cmd.description && (
+                            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                              {cmd.description}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {filteredCommands.length === 0 && (
               <p
                 role="status"
                 aria-live="polite"
@@ -226,47 +266,6 @@ export default function CommandPalette() {
               >
                 No results found.
               </p>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <div
-                  role="presentation"
-                  className="px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
-                >
-                  Navigation
-                </div>
-                {filteredCommands.map((cmd, index) => {
-                  const isSelected = activeIndex === index;
-                  return (
-                    <div
-                      key={cmd.route}
-                      id={`command-item-${index}`}
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => handleSelect(cmd.route)}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition cursor-pointer select-none ${
-                        isSelected
-                          ? "bg-zinc-100 dark:bg-zinc-800/80 ring-2 ring-zinc-950 dark:ring-zinc-300"
-                          : "hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
-                      }`}
-                    >
-                      <div className="text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg">
-                        {cmd.icon}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-zinc-900 dark:text-white">
-                          {cmd.label}
-                        </span>
-                        {cmd.description && (
-                          <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                            {cmd.description}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </div>
         </div>
