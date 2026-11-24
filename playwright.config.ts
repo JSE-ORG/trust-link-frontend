@@ -25,6 +25,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
+      ENABLE_VISUAL_TEST_ROUTES: "1",
       NEXT_PUBLIC_API_URL:
         process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3000/api",
       NEXT_PUBLIC_CONTRACT_ID:
