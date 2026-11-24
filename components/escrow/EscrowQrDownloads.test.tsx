@@ -41,7 +41,7 @@ describe("QR download actions", () => {
     const { rerender } = render(<ShareButtons url={urls[0]} />);
     for (const url of urls) {
       rerender(<ShareButtons url={url} />);
-      const svg = screen.getByRole("img", { name: `QR code for ${url}` });
+      const svg = await screen.findByRole("img", { name: `QR code for ${url}` });
       await user.click(screen.getByRole("button", { name: "Download QR" }));
       expect(downloadQrCode).toHaveBeenLastCalledWith(svg, "escrow_camera.png");
     }
