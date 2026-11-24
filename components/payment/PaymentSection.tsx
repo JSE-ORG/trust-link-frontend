@@ -54,9 +54,16 @@ export function parsePaymentInput(
     const origin =
       currentOrigin ??
       (typeof window !== "undefined" ? window.location.origin : "");
-    const configuredSite = process.env.NEXT_PUBLIC_SITE_URL
-      ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
-      : "";
+    // A malformed NEXT_PUBLIC_SITE_URL must not make every link throw; it just
+    // means there is no configured site to match against.
+    let configuredSite = "";
+    try {
+      configuredSite = process.env.NEXT_PUBLIC_SITE_URL
+        ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
+        : "";
+    } catch {
+      configuredSite = "";
+    }
 
     const isSameSite =
       (Boolean(origin) && url.origin === origin) ||

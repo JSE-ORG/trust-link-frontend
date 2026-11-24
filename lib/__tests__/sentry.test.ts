@@ -2,17 +2,17 @@ import * as Sentry from "@sentry/nextjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  DEFAULT_TRACES_SAMPLE_RATE,
-  getTracesSampleRate,
-  parseTracesSampleRate,
-} from "../sentry/sampleRate";
-import {
   captureError,
   captureWalletError,
   redactTransactionContext,
   setEscrowContext,
   setLoggerUser,
 } from "../logger";
+import {
+  DEFAULT_TRACES_SAMPLE_RATE,
+  getTracesSampleRate,
+  parseTracesSampleRate,
+} from "../sentry/sampleRate";
 
 // Mock Sentry
 vi.mock("@sentry/nextjs", () => {

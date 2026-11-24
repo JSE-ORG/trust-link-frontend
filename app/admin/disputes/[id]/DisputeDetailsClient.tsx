@@ -6,8 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import FetchErrorState from "@/components/ui/FetchErrorState";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
+import FetchErrorState from "@/components/ui/FetchErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import useWallet from "@/hooks/useWallet";
 import { ApiError, getDispute, resolveDispute } from "@/lib/api";

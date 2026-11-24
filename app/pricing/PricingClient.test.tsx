@@ -53,7 +53,8 @@ describe("PricingClient upgrade journeys", () => {
     render(<PricingClient />);
 
     expect(screen.getByText("$0")).toBeInTheDocument();
-    expect(screen.getByText("$19")).toBeInTheDocument();
+    // Pro defaults to monthly billing at $29; the annual toggle shows $23 per month.
+    expect(screen.getByText("$29")).toBeInTheDocument();
     expect(screen.getByText("Current plan")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade to Pro" })).toBeEnabled();
     expect(upgradeSubscription).not.toHaveBeenCalled();

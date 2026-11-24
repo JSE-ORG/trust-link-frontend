@@ -17,12 +17,15 @@ describe("FeaturedArtistSection", () => {
     ).toBeInTheDocument();
   });
 
-  it('renders a "View All Artists" link pointing to /vendor', () => {
+  it("does not link to a /vendor index page, which does not exist", () => {
+    // app/ has /vendor/[id] and /vendor/analytics but no /vendor page, so a
+    // "View All Artists" link to it would 404. components/ui/__tests__/navigation.test.tsx
+    // asserts the same from the other side.
     render(<FeaturedArtistSection />);
 
-    const viewAllLink = screen.getByRole("link", { name: /view all artists/i });
-    expect(viewAllLink).toBeInTheDocument();
-    expect(viewAllLink).toHaveAttribute("href", "/vendor");
+    expect(screen.queryByRole("link", { name: /view all artists/i })).not.toBeInTheDocument();
+    const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(hrefs).not.toContain("/vendor");
   });
 
   it("renders a card for every featured artist with correct details and links", () => {

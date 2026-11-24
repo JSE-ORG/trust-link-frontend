@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import React, { useSyncExternalStore } from "react";
+
+const subscribeNever = () => () => {};
 
 export interface QrCodeProps {
   value: string;
@@ -16,11 +18,9 @@ export function QrCode({
   label,
   className,
 }: QrCodeProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // False during server render and hydration, true once mounted on the client,
+  // so the QR code never causes a hydration mismatch.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
 
   if (!mounted) {
     return (

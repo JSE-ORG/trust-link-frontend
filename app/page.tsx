@@ -1,3 +1,7 @@
+import { ArrowRight, Lock, Shield, Zap } from "lucide-react";
+import Link from "next/link";
+
+import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 import HomePageContent from "@/components/home/HomePageContent";
 import { Accordion } from "@/components/ui/Accordion";
 

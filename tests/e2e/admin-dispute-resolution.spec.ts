@@ -1,8 +1,9 @@
 import { expect, test } from "next/experimental/testmode/playwright";
 
-import { authenticatePage } from "./helpers/auth";
+import { authenticatePage, restoreWalletSession } from "./helpers/auth";
 import { BUYER_KEY, VENDOR_KEY } from "./helpers/constants";
 import { type MockDispute, setupNetworkMocks } from "./helpers/mock-api";
+import { mockFreighter } from "./helpers/mock-freighter";
 
 const disputeId = "dispute-1";
 
@@ -30,6 +31,8 @@ const mockDispute: MockDispute = {
 
 test("admin can resolve a dispute and the dispute list updates", async ({ page, next }) => {
   await authenticatePage(page);
+  await restoreWalletSession(page);
+  await mockFreighter(page);
 
   // Mocked entirely through the shared options so it works identically for
   // same-origin and cross-origin API setups. The resolve POST is deliberately
@@ -43,7 +46,9 @@ test("admin can resolve a dispute and the dispute list updates", async ({ page, 
 
   await page.goto("/admin/disputes");
 
-  await expect(page.getByText("Admin Disputes")).toBeVisible();
+  // By role: the streamed page also carries a hidden copy of the heading, which a text
+  // match counts as a second element.
+  await expect(page.getByRole("heading", { name: "Admin Disputes" })).toBeVisible();
   
   // Navigate directly to the dispute details page to avoid Next.js RSC client navigation issues
   await page.goto(`/admin/disputes/${disputeId}`);
@@ -64,5 +69,6 @@ test("admin can resolve a dispute and the dispute list updates", async ({ page, 
   }).toPass({ timeout: 15_000 });
   await expect(page.getByTestId("escrow-status-badge")).toHaveText("RELEASED", { timeout: 1_000 });
 
-  await expect(page.getByText(/no open disputes right now/i)).toBeVisible({ timeout: 10_000 });
+  // The list defaults to the "All" filter, so the empty state reads "No disputes right now."
+  await expect(page.getByText(/no disputes right now/i)).toBeVisible({ timeout: 10_000 });
 });

@@ -239,7 +239,8 @@ describe("TrackingTimeline", () => {
     });
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText("We couldn't load tracking status")).toBeInTheDocument();
+    // `t` is mocked as the identity function in this file, so the title renders as its key.
+    expect(screen.getByText("tracking.loadErrorTitle")).toBeInTheDocument();
     expect(screen.getByText("Failed to fetch escrow")).toBeInTheDocument();
   });
 
