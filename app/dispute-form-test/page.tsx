@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import DisputeForm from "@/components/escrow/DisputeForm";
 
 /**
@@ -6,6 +8,15 @@ import DisputeForm from "@/components/escrow/DisputeForm";
  * This page is only used by Playwright and is not linked from the main app.
  */
 export default function DisputeFormTestPage() {
+  // Test-only harness: never reachable in a production build unless the
+  // Playwright production server explicitly opts in.
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ENABLE_VISUAL_TEST_ROUTES !== "1"
+  ) {
+    notFound();
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-2xl">

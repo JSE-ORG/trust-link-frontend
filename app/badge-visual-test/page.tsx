@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import { EscrowStatusBadge } from "@/components/escrow/EscrowStatusBadge";
 
 /**
@@ -5,6 +7,15 @@ import { EscrowStatusBadge } from "@/components/escrow/EscrowStatusBadge";
  * This page is only used by Playwright and is not linked from the main app.
  */
 export default function BadgeVisualTestPage() {
+  // Test-only harness: never reachable in a production build unless the
+  // Playwright production server explicitly opts in.
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ENABLE_VISUAL_TEST_ROUTES !== "1"
+  ) {
+    notFound();
+  }
+
   const statuses = [
     "Pending",
     "Funded",
