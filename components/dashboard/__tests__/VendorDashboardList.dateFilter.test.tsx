@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { beforeEach,describe, expect, it, vi } from "vitest";
@@ -109,6 +109,33 @@ describe("VendorDashboardList — date range filter (issue #72)", () => {
         screen.getByText(/No escrows found matching your criteria/i)
       ).toBeInTheDocument()
     );
+  });
+
+  it("applies the Last 7 Days preset to both inputs and the list (issue #1118)", async () => {
+    // 25 March 2026 → the preset covers 18–25 March, which contains only the
+    // March fixture; January and June fall outside it.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 2, 25, 12, 0, 0));
+
+    try {
+      render(<VendorDashboardList />);
+      await waitFor(() =>
+        expect(screen.getByText("March Item")).toBeInTheDocument()
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Last 7 Days" }));
+
+      expect(screen.getByLabelText("From")).toHaveValue("2026-03-18");
+      expect(screen.getByLabelText("To")).toHaveValue("2026-03-25");
+
+      await waitFor(() =>
+        expect(screen.queryByText("January Item")).not.toBeInTheDocument()
+      );
+      expect(screen.queryByText("June Item")).not.toBeInTheDocument();
+      expect(screen.getByText("March Item")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("restores the full list when the filter is cleared", async () => {

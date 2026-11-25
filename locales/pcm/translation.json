@@ -22,6 +22,12 @@
     "fromLabel": "From",
     "toLabel": "To",
     "clearDates": "Clear dates",
+    "presets": {
+      "today": "Today",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "thisMonth": "Dis month"
+    },
     "showingPage": "Showing page",
     "ofPages": "of",
     "previous": "Previous",
