@@ -83,4 +83,20 @@ describe("Breadcrumb", () => {
 
     expect(crumbs[2].querySelector('[aria-current="page"]')).not.toBeNull();
   });
+
+  it("opens external breadcrumb links safely in a new tab", () => {
+    render(
+      <Breadcrumb
+        items={[
+          { label: "External", href: "https://example.com/docs" },
+          { label: "Current" },
+        ]}
+      />
+    );
+
+    const link = screen.getByRole("link", { name: "External" });
+    expect(link).toHaveAttribute("href", "https://example.com/docs");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
 });

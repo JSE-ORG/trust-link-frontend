@@ -15,19 +15,19 @@ const { renderToString } = nodeRequire("react-dom/server") as {
 };
 
 const theme = vi.hoisted(() => ({
-  resolvedTheme: "light" as string | undefined,
+  theme: "light" as string | undefined,
   setTheme: vi.fn(),
 }));
 
 vi.mock("next-themes", () => ({
   useTheme: () => ({
-    resolvedTheme: theme.resolvedTheme,
+    theme: theme.theme,
     setTheme: theme.setTheme,
   }),
 }));
 
 beforeEach(() => {
-  theme.resolvedTheme = "light";
+  theme.theme = "light";
   theme.setTheme.mockClear();
 });
 
@@ -44,7 +44,7 @@ describe("ThemeToggle", () => {
     });
 
     it("shows the sun icon and 'switch to system theme' label on a dark theme", () => {
-      theme.resolvedTheme = "dark";
+      theme.theme = "dark";
       render(<ThemeToggle />);
 
       expect(screen.getByRole("button", { name: "Switch to system theme" })).toBeInTheDocument();
@@ -52,43 +52,57 @@ describe("ThemeToggle", () => {
       expect(document.querySelector("svg.lucide-moon")).not.toBeInTheDocument();
     });
 
-    it("treats an unresolved 'system' value as light", () => {
-      theme.resolvedTheme = "system";
+    it("shows the monitor icon and system label for system theme", () => {
+      theme.theme = "system";
       render(<ThemeToggle />);
 
-      // resolvedTheme should always be concrete once next-themes has resolved
-      // "system"; until then the component deliberately falls back to light.
-      expect(screen.getByRole("button", { name: "Switch to dark mode" })).toBeInTheDocument();
-      expect(document.querySelector("svg.lucide-moon")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Theme: System (click to switch to light)",
+        })
+      ).toBeInTheDocument();
+      expect(document.querySelector("svg.lucide-monitor")).toBeInTheDocument();
+      expect(document.querySelector("svg.lucide-moon")).not.toBeInTheDocument();
+      expect(document.querySelector("svg.lucide-sun")).not.toBeInTheDocument();
     });
 
-    it("treats a missing resolvedTheme as light", () => {
-      theme.resolvedTheme = undefined;
+    it("falls back to system for a missing theme", () => {
+      theme.theme = undefined;
       render(<ThemeToggle />);
 
-      expect(screen.getByRole("button", { name: "Switch to dark mode" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: "Theme: System (click to switch to light)",
+        })
+      ).toBeInTheDocument();
     });
   });
 
   describe("cycling", () => {
-    it("cycles light -> dark -> system -> resolved light", async () => {
+    it("cycles light -> dark -> system -> light", async () => {
       const { rerender } = render(<ThemeToggle />);
 
       await userEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
       expect(theme.setTheme).toHaveBeenLastCalledWith("dark");
 
-      theme.resolvedTheme = "dark";
+      theme.theme = "dark";
       rerender(<ThemeToggle />);
       await userEvent.click(screen.getByRole("button", { name: "Switch to system theme" }));
       expect(theme.setTheme).toHaveBeenLastCalledWith("system");
 
-      // next-themes resolves "system" to the OS preference before the next
-      // interaction, so the observable cycle continues from that value.
-      theme.resolvedTheme = "light";
+      theme.theme = "system";
       rerender(<ThemeToggle />);
-      await userEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
+      await userEvent.click(
+        screen.getByRole("button", {
+          name: "Theme: System (click to switch to light)",
+        })
+      );
 
-      expect(theme.setTheme.mock.calls).toEqual([["dark"], ["system"], ["dark"]]);
+      expect(theme.setTheme.mock.calls).toEqual([
+        ["dark"],
+        ["system"],
+        ["light"],
+      ]);
     });
 
     it("is keyboard operable", async () => {
