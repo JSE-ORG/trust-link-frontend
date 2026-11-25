@@ -121,7 +121,10 @@ export default function ProfileSettingsClient() {
           </div>
         )}
 
+        {/* noValidate: the form validates itself and announces errors, so the browser's
+            native "required" bubble must not pre-empt that and block the submit handler. */}
         <form
+          noValidate
           onSubmit={handleSubmit}
           className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
         >

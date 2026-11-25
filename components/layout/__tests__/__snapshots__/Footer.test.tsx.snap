@@ -6,47 +6,184 @@ exports[`Footer > matches snapshot 1`] = `
     class="border-t border-zinc-200 bg-white py-5 dark:border-zinc-800 dark:bg-zinc-950"
   >
     <div
-      class="mx-auto max-w-4xl px-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+      class="mx-auto max-w-6xl px-6 py-8"
     >
-      <p
-        class="text-sm text-zinc-500 dark:text-zinc-400"
-      >
-        © 
-        2026
-         
-        Trust Link. All rights reserved.
-      </p>
       <div
-        class="flex items-center gap-2"
+        class="grid grid-cols-2 gap-8 sm:grid-cols-4"
       >
-        <label
+        <nav
+          aria-label="footer.links.product"
+        >
+          <h2
+            class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+          >
+            footer.links.product
+          </h2>
+          <ul
+            class="space-y-2"
+          >
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/dashboard"
+              >
+                footer.links.dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/create"
+              >
+                footer.links.create
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/tracking"
+              >
+                footer.links.tracking
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/pricing"
+              >
+                footer.links.pricing
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <nav
+          aria-label="footer.links.resources"
+        >
+          <h2
+            class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+          >
+            footer.links.resources
+          </h2>
+          <ul
+            class="space-y-2"
+          >
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/docs"
+              >
+                footer.links.docs
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="https://stellar.expert/explorer/public"
+                rel="noreferrer"
+                target="_blank"
+              >
+                footer.links.stellarExplorer
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="https://github.com/JSE-ORG/trust-link-frontend"
+                rel="noreferrer"
+                target="_blank"
+              >
+                footer.links.github
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <nav
+          aria-label="footer.links.company"
+        >
+          <h2
+            class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+          >
+            footer.links.company
+          </h2>
+          <ul
+            class="space-y-2"
+          >
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/about"
+              >
+                footer.links.about
+              </a>
+            </li>
+            <li>
+              <a
+                class="text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white"
+                href="/contact"
+              >
+                footer.links.contact
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <nav
+          aria-label="footer.links.legal"
+        >
+          <h2
+            class="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+          >
+            footer.links.legal
+          </h2>
+          <p
+            class="max-w-48 text-sm text-zinc-500 dark:text-zinc-400"
+          >
+            footer.links.comingSoon
+          </p>
+        </nav>
+      </div>
+      <div
+        class="mt-8 flex flex-col items-start justify-between gap-3 border-t border-zinc-200 pt-5 sm:flex-row sm:items-center dark:border-zinc-800"
+      >
+        <p
           class="text-sm text-zinc-500 dark:text-zinc-400"
-          for="language-select"
         >
-          Language
-          :
-        </label>
-        <select
-          aria-label="Select language"
-          class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-          id="language-select"
+          © 
+          2026
+           
+          Trust Link. All rights reserved.
+        </p>
+        <div
+          class="flex items-center gap-2"
         >
-          <option
-            value="en"
+          <label
+            class="text-sm text-zinc-500 dark:text-zinc-400"
+            for="language-select"
           >
-            English
-          </option>
-          <option
-            value="fr"
+            Language
+            :
+          </label>
+          <select
+            aria-label="Select language"
+            class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+            id="language-select"
           >
-            Français
-          </option>
-          <option
-            value="pcm"
-          >
-            Pidgin
-          </option>
-        </select>
+            <option
+              value="en"
+            >
+              English
+            </option>
+            <option
+              value="fr"
+            >
+              Français
+            </option>
+            <option
+              value="pcm"
+            >
+              Pidgin
+            </option>
+          </select>
+        </div>
       </div>
     </div>
   </footer>

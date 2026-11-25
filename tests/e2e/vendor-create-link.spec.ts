@@ -9,8 +9,11 @@ test("vendor can connect Freighter, create an escrow link, and see the QR code",
 
   await page.goto("/create");
 
-  await page.getByRole("button", { name: /connect wallet/i }).click();
-  await expect(page.getByRole("button", { name: /GCFM4.*CDEF/i })).toBeVisible();
+  // The navbar has its own wallet button, so scope to the page body (<main>) to hit the one
+  // under test.
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: /connect wallet/i }).click();
+  await expect(main.getByRole("button", { name: /GCFM.*CDEF/i })).toBeVisible();
 
   await page.getByLabel("Item name").fill("Vintage Camera");
   await page.getByLabel("Price (USDC)").fill("249.99");
@@ -22,5 +25,6 @@ test("vendor can connect Freighter, create an escrow link, and see the QR code",
   const shareableUrl = page.getByTestId("shareable-url");
   await expect(page.getByTestId("link-card")).toBeVisible();
   await expect(shareableUrl).toHaveValue(/^https:\/\/trustlink\.example\.com\/escrow\/Vintage%20Camera$/);
-  await expect(page.getByTestId("qr-code")).toBeVisible();
+  // The share dialog renders its own QR code, so look inside the link card.
+  await expect(page.getByTestId("link-card").getByTestId("qr-code")).toBeVisible();
 });

@@ -83,7 +83,12 @@ describe("downloadQrCode", () => {
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
   });
 
-  it.each([null, new Blob([])])("does not download when PNG encoding returns %s", async (blob) => {
+  // Named cases: vitest formats a %s title by inspecting the value, and inspecting
+  // a jsdom Blob overflows the stack while the file is being collected.
+  it.each([
+    ["null", null],
+    ["an empty Blob", new Blob([])],
+  ] as const)("does not download when PNG encoding returns %s", async (_label, blob) => {
     vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation((callback) => callback(blob));
     await expect(downloadQrCode(svg, "qr.png")).rejects.toThrow("could not be encoded");
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();

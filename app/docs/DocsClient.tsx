@@ -149,6 +149,9 @@ export default function DocsClient() {
     // Sync active section with hash on load
     const hash = window.location.hash.replace("#", "");
     if (hash && DOCS_SECTIONS.some((s) => s.id === hash)) {
+      // The hash does not exist during server render, so it cannot seed the
+      // initial state without a hydration mismatch; read it once after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveSection(hash);
     }
 

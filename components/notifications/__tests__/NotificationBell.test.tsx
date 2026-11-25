@@ -219,7 +219,9 @@ describe("NotificationBell", () => {
       const dialog = screen.getByRole("dialog", { name: "Notifications" });
       expect(dialog).toBeInTheDocument();
 
-      const focusable = container.querySelectorAll(
+      // The trap lives in the dialog, so "first" means the dialog's first control. The
+      // toggle button sits outside it, and Shift+Tab from there correctly leaves.
+      const focusable = dialog.querySelectorAll(
         'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       const first = focusable[0] as HTMLElement;

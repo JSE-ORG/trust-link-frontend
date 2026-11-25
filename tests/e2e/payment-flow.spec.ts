@@ -1,15 +1,60 @@
+import type { Page } from "@playwright/test";
+import { Account, Asset, Keypair, Networks, Operation, StrKey, TransactionBuilder } from "@stellar/stellar-sdk";
 import { expect,test } from "next/experimental/testmode/playwright";
 
 import { type MockEscrow,setupNetworkMocks, setupNextOnFetch } from "./helpers/mock-api";
 import { mockFreighter } from "./helpers/mock-freighter";
 
 const TEST_ESCROW_ID = "test_escrow_e2e_001";
-const MOCK_PUBLIC_KEY = "GBTEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const MOCK_SIGNED_XDR = "AAAAAQAAAA...mock_signed_xdr";
+// Paying runs the whole pipeline (wallet, build, sign, submit, confirm), so the fixtures
+// have to be real: a valid account for the wallet, a valid contract id for the escrow, and
+// a signed transaction the SDK can parse when the app submits it.
+const MOCK_PUBLIC_KEY = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 7)).publicKey();
+const MOCK_CONTRACT_ID = StrKey.encodeContract(Buffer.alloc(32, 3));
+const MOCK_SIGNED_XDR = new TransactionBuilder(new Account(MOCK_PUBLIC_KEY, "0"), {
+  fee: "100",
+  networkPassphrase: Networks.TESTNET,
+})
+  .addOperation(Operation.payment({ destination: MOCK_PUBLIC_KEY, asset: Asset.native(), amount: "1" }))
+  .setTimeout(30)
+  .build()
+  .toXDR();
+const MOCK_TX_HASH = "ab".repeat(32);
+
+/**
+ * Answers the app's Soroban JSON-RPC calls: `sendTransaction` accepts the signed
+ * transaction and `getTransaction` reports it as included. Registered after
+ * `setupNetworkMocks`, so it takes precedence over that helper's catch-all RPC stub.
+ */
+async function mockSorobanRpc(page: Page) {
+  const ledger = { latestLedger: 100, latestLedgerCloseTime: "1700000000" };
+  await page.route(/soroban.*stellar\.org/, async (route) => {
+    const { id, method } = route.request().postDataJSON() as { id: number | string; method: string };
+    const result =
+      method === "sendTransaction"
+        ? { status: "PENDING", hash: MOCK_TX_HASH, ...ledger }
+        : {
+            status: "SUCCESS",
+            ...ledger,
+            oldestLedger: 1,
+            oldestLedgerCloseTime: "1700000000",
+            ledger: 100,
+            createdAt: "1700000000",
+            applicationOrder: 1,
+            feeBump: false,
+            envelopeXdr: MOCK_SIGNED_XDR,
+            // A TransactionResult with txSUCCESS and no operation results, and a v0 meta with no operations.
+            resultXdr: Buffer.alloc(20).toString("base64"),
+            resultMetaXdr: Buffer.alloc(8).toString("base64"),
+          };
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ jsonrpc: "2.0", id, result }) });
+  });
+}
 
 const mockEscrow: MockEscrow = {
   id: TEST_ESCROW_ID,
   vendorId: "vendor_test_1",
+  contractAddress: MOCK_CONTRACT_ID,
   // No buyer yet — the escrow is claimed when the buyer funds it.
   buyerId: undefined,
   amount: 150.0,
@@ -23,6 +68,7 @@ const mockEscrow: MockEscrow = {
 test.describe("Buyer payment flow", () => {
   test.beforeEach(async ({ page, next }) => {
     await setupNetworkMocks(page, next, { escrowId: TEST_ESCROW_ID, mockEscrow });
+    await mockSorobanRpc(page);
 
     // Inject mock Freighter wallet into window before page load
     await mockFreighter(page, MOCK_PUBLIC_KEY, MOCK_SIGNED_XDR);
@@ -50,8 +96,10 @@ test.describe("Buyer payment flow", () => {
       await emailInput.fill("buyer@example.com");
       await expect(emailInput).toHaveValue("buyer@example.com");
       await payBtn.click();
-      // After connecting and signing, the success indicator appears
-      await expect(page.getByText(/Freighter signature completed/i).first()).toBeVisible({ timeout: 5_000 });
+      // After connecting, signing, submitting and confirming, the success message and the
+      // transaction hash appear.
+      await expect(page.getByText(/Payment Confirmed!/i).first()).toBeVisible({ timeout: 5_000 });
+      await expect(page.getByText(MOCK_TX_HASH).first()).toBeVisible();
     }).toPass({ timeout: 20_000 });
   });
 

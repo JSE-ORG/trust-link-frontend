@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
@@ -9,6 +9,12 @@ import EscrowCreateForm from "../EscrowCreateForm";
 
 vi.mock("@/lib/api", () => ({
   createEscrow: vi.fn(),
+}));
+
+// The real rasteriser needs a canvas and image decoding, which jsdom does not have.
+// It has its own tests in lib/utils/downloadQrCode.test.ts.
+vi.mock("@/lib/utils/downloadQrCode", () => ({
+  downloadQrCode: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("sonner", () => ({
@@ -305,7 +311,9 @@ describe("EscrowCreateForm", () => {
 
       await user.click(screen.getByRole("button", { name: /download qr/i }));
 
-      expect(toast.success).toHaveBeenCalledWith("QR code downloaded");
+      await waitFor(() =>
+        expect(toast.success).toHaveBeenCalledWith("QR code downloaded")
+      );
     });
   });
 

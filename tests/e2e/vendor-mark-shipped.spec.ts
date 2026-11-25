@@ -1,8 +1,9 @@
 import { expect, test } from "next/experimental/testmode/playwright";
 
-import { authenticatePage } from "./helpers/auth";
+import { authenticatePage, restoreWalletSession } from "./helpers/auth";
 import { TRACKING_ID, VENDOR_KEY } from "./helpers/constants";
 import { type MockEscrow,setupNetworkMocks } from "./helpers/mock-api";
+import { mockFreighter } from "./helpers/mock-freighter";
 
 const escrowId = "escrow-ship-1";
 
@@ -20,6 +21,8 @@ const mockEscrow: MockEscrow = {
 
 test("vendor mark shipped updates vendor and buyer status", async ({ page, next }) => {
   await authenticatePage(page);
+  await restoreWalletSession(page);
+  await mockFreighter(page);
 
   const escrowsList = [{ ...mockEscrow }];
   await setupNetworkMocks(page, next, {

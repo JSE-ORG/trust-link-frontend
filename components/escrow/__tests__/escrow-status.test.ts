@@ -1,6 +1,8 @@
 import { Package } from "lucide-react";
 import { describe, expect, it } from "vitest";
 
+import { EscrowStatus } from "@/types/status";
+
 import {
   DEFAULT_STATUS_PRESENTATION,
   ESCROW_STATUS_PRESENTATION,
@@ -8,7 +10,6 @@ import {
   STATUS_BG,
   STATUS_COLORS,
 } from "../escrow-status";
-import { EscrowStatus } from "@/types/status";
 
 const allStatuses: EscrowStatus[] = [
   EscrowStatus.PENDING,

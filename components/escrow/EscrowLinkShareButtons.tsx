@@ -16,6 +16,20 @@ import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
 import { downloadQrCode } from "@/lib/utils/downloadQrCode";
 
+/**
+ * True when the user dismissed the native share sheet. Checked by name rather than
+ * `instanceof Error`: a browser DOMException is not an `Error` in every realm
+ * (jsdom, for one), and cancelling must never fall through to a fallback share.
+ */
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
+}
+
 async function copyToClipboard(text: string): Promise<void> {
   if (!navigator.clipboard || !navigator.clipboard.writeText) {
     throw new Error("Clipboard not supported");
@@ -82,7 +96,7 @@ export default function EscrowLinkShareButtons({
         await track("link_shared", { platform: "whatsapp", method: "native" });
         return;
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
+        if (isAbortError(err)) return;
         console.error("Share failed:", err);
       }
     }
@@ -103,7 +117,7 @@ export default function EscrowLinkShareButtons({
         await track("link_shared", { platform: "instagram", method: "native" });
         return;
       } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
+        if (isAbortError(err)) return;
         console.error("Share failed:", err);
       }
     }

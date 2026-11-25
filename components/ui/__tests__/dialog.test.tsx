@@ -103,6 +103,10 @@ describe("Dialog accessibility and keyboard behavior", () => {
     const input = screen.getByRole("textbox", { name: "First input" });
     const actionBtn = screen.getByRole("button", { name: "Action button" });
 
+    // The trap moves focus into the dialog on the next animation frame; wait for
+    // that, or it would steal focus back from the element focused below.
+    await waitFor(() => expect(closeBtn).toHaveFocus());
+
     // Focus last element
     actionBtn.focus();
     expect(document.activeElement).toBe(actionBtn);
