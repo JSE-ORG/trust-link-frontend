@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 import { cn } from "@/lib/utils";
@@ -34,7 +35,9 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
-          const isLink = Boolean(item.href) && !isLast;
+          const href = item.href;
+          const isLink = Boolean(href) && !isLast;
+          const isExternal = /^https?:\/\//i.test(href ?? "");
 
           const content = (
             <>
@@ -56,12 +59,23 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
                 />
               )}
               {isLink ? (
-                <a
-                  href={item.href}
-                  className="flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
-                >
-                  {content}
-                </a>
+                isExternal ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <Link
+                    href={href ?? "#"}
+                    className="flex min-w-0 items-center gap-1.5 rounded transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    {content}
+                  </Link>
+                )
               ) : (
                 <span
                   aria-current={isLast ? "page" : undefined}
