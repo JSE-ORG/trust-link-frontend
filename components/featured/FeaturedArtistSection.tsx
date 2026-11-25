@@ -118,6 +118,14 @@ export default function FeaturedArtistSection() {
                     className="w-full h-full object-cover"
                     sizes="80px"
                     /*
+                      These avatars live under /images/vendors, which is not in public/
+                      yet. Through the image optimizer every request for one logs a
+                      "not a valid image" error on the server (50 of them in one E2E
+                      run) and answers 400. Serving
+                      the path directly keeps that noise out of the optimizer.
+                    */
+                    unoptimized
+                    /*
                       First card is above-the-fold on all common viewports —
                       mark as priority so Next.js generates a <link rel="preload">
                       for it, which directly reduces LCP for this section.

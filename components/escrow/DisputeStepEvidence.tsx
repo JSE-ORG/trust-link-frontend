@@ -142,7 +142,7 @@ export function DisputeStepEvidence({
       {formData.files.length > 0 && (
         <div className="mb-5">
           <h3 className="mb-2 font-semibold text-foreground">Uploaded Files:</h3>
-          <ul className="list-none space-y-2 p-0">
+          <ul data-testid="file-list" className="list-none space-y-2 p-0">
             {formData.files.map((file, index) => (
               <li
                 key={index}

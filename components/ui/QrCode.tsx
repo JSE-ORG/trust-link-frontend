@@ -1,23 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import * as React from "react";
+import { QRCodeSVG } from "qrcode.react";
+import React, { useSyncExternalStore } from "react";
 
-import { cn } from "@/lib/utils";
-
-const QRCodeSVG = dynamic(
-  () => import("qrcode.react").then((mod) => ({ default: mod.QRCodeSVG })),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        data-testid="qr-code-skeleton"
-        className="h-[160px] w-[160px] animate-pulse rounded bg-zinc-100 dark:bg-zinc-800"
-        aria-hidden="true"
-      />
-    ),
-  }
-);
+const subscribeNever = () => () => {};
 
 export interface QrCodeProps {
   /** URL or text payload encoded into the QR code. */
@@ -32,24 +18,17 @@ export interface QrCodeProps {
   showSkeleton?: boolean;
 }
 
-/**
- * Canonical QR code primitive backed by `qrcode.react` (`QRCodeSVG`) with
- * client-only dynamic loading (`ssr: false`) to prevent hydration mismatches.
- *
- * Forwards a `div` ref so callers can reliably query the underlying `<svg>`
- * element via `ref.current?.querySelector("svg")` for PNG export.
- */
-export const QrCode = React.forwardRef<HTMLDivElement, QrCodeProps>(
-  function QrCode(
-    {
-      value,
-      size = 160,
-      label,
-      className,
-      showSkeleton = false,
-    },
-    ref
-  ) {
+export function QrCode({
+  value,
+  size = 192,
+  label,
+  className,
+}: QrCodeProps) {
+  // False during server render and hydration, true once mounted on the client,
+  // so the QR code never causes a hydration mismatch.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
+
+  if (!mounted) {
     return (
       <div
         ref={ref}

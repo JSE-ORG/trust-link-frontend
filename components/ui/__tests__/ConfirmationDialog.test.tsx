@@ -182,10 +182,11 @@ describe("ConfirmationDialog (issue #69)", () => {
     );
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveAttribute(
-      "aria-labelledby",
-      "confirmation-dialog-title"
-    );
+    // The id is generated per instance (useId), so assert the relationship to
+    // the visible title rather than a fixed string.
+    const titleId = dialog.getAttribute("aria-labelledby");
+    expect(titleId).toMatch(/^confirmation-dialog-title/);
+    expect(screen.getByRole("heading", { name: "Confirm" })).toHaveAttribute("id", titleId);
   });
 
   it("traps Tab focus within the modal (issue #566)", async () => {

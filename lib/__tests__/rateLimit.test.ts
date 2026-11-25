@@ -369,22 +369,24 @@ describe("bounded in-memory rate-limit fallback map", () => {
     __setMaxMemoryEntries(20);
 
     // Initialise active client
-    await checkRateLimit("frequent-client", 5, 60_000);
+    await checkRateLimit("frequent-client", 10, 60_000);
 
-    // Flood with unique one-time keys, periodically refreshing frequent-client
+    // Flood with 40 unique one-time keys (twice the capacity), touching the frequent
+    // client every 10 keys. With a capacity of 20 it is only ever 10 keys from the
+    // eviction end, so a touch must move it to the most-recently-used end to survive.
     for (let i = 0; i < 40; i++) {
       await checkRateLimit(`transient-${i}`, 10, 60_000);
-      if (i === 20) {
-        // Refresh frequent client position
-        await checkRateLimit("frequent-client", 5, 60_000);
+      if (i % 10 === 9) {
+        await checkRateLimit("frequent-client", 10, 60_000);
       }
     }
+    expect(__getRateLimitMemorySize()).toBeLessThanOrEqual(20);
 
-    // Frequent client should still be present with updated count (not evicted and not reset)
-    const res = await checkRateLimit("frequent-client", 5, 60_000);
+    // Frequent client should still be present with its count intact (not evicted, not reset):
+    // first call + 4 refreshes + this one = 6, so remaining is 10 - 6 = 4.
+    const res = await checkRateLimit("frequent-client", 10, 60_000);
     expect(res.success).toBe(true);
-    // Count should be 3 (first + refresh + current), so remaining is 5 - 3 = 2
-    expect(res.remaining).toBe(2);
+    expect(res.remaining).toBe(4);
   });
 
   it("pruneExpiredEntries directly prunes expired keys with bounded work", () => {

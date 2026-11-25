@@ -1,7 +1,7 @@
 "use client";
 
-import useWallet from "@/hooks/useWallet";
 import type { WalletContextType } from "@/components/providers/WalletProvider";
+import useWallet from "@/hooks/useWallet";
 
 export type WalletStatus = "loading" | "connected" | "disconnected" | "not-installed" | "error";
 

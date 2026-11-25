@@ -9,8 +9,12 @@ test("vendor onboarding wizard persists state between reloads", async ({ page, n
 
   await page.goto("/onboarding");
 
-  await page.getByRole("button", { name: "Connect Wallet", exact: true }).click();
-  await expect(page.getByText(/connected/i)).toBeVisible();
+  // The navbar has its own wallet button, so scope to the page body (<main>) to hit the one
+  // under test.
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Connect Wallet", exact: true }).click();
+  // The stepper marks the connect step as done once the wallet is connected.
+  await expect(main.getByRole("button", { name: "Connect Wallet: Completed" })).toBeVisible();
 
   await page.getByLabel("Shop name").fill("Stellar Studio");
   await page.getByLabel("Description").fill("Beautiful handcrafted space-themed prints for collectors.");

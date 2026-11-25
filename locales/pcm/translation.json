@@ -22,6 +22,12 @@
     "fromLabel": "From",
     "toLabel": "To",
     "clearDates": "Clear dates",
+    "presets": {
+      "today": "Today",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "thisMonth": "Dis month"
+    },
     "showingPage": "Showing page",
     "ofPages": "of",
     "previous": "Previous",
@@ -286,6 +292,11 @@
     "feature3Text": "Tools wey go help you grow and manage escrows."
   },
   "escrow": {
+    "feeBreakdown": {
+      "itemPrice": "Price of item",
+      "platformFee": "TrustLink escrow fee ({{percent}}%)",
+      "vendorPayout": "Wetin vendor go receive"
+    },
     "errors": {
       "itemNameRequired": "E need the item name.",
       "itemNameTooLong": "Item name no suppose pass {{max}} character.",

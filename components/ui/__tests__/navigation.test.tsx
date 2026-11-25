@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import FeaturedArtistSection from "@/components/featured/FeaturedArtistSection";
 import CommandPalette, { COMMANDS } from "@/components/ui/CommandPalette";
-import nextConfig from "@/next.config";
 
 const mockPush = vi.fn();
 
@@ -17,6 +16,13 @@ vi.mock("next/navigation", () => ({
 
 describe("Primary navigation targets and route tree integrity", () => {
   it("redirects legacy /verify route to /tracking in next.config.ts", async () => {
+    // next.config.ts refuses to load without these, so set them before importing it.
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://127.0.0.1:3000/api");
+    vi.stubEnv("NEXT_PUBLIC_CONTRACT_ID", "Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    vi.stubEnv("NEXT_PUBLIC_STELLAR_NETWORK", "testnet");
+    vi.stubEnv("NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE", "Test SDF Network ; September 2015");
+    const { default: nextConfig } = await import("@/next.config");
+
     if (typeof nextConfig.redirects === "function") {
       const redirects = await nextConfig.redirects();
       const verifyRedirect = redirects.find((r) => r.source === "/verify");
@@ -55,13 +61,13 @@ describe("Primary navigation targets and route tree integrity", () => {
     fireEvent.keyDown(document, { key: "k", metaKey: true });
 
     // Select Tracking
-    const trackingBtn = screen.getByRole("button", { name: /Tracking/i });
+    const trackingBtn = screen.getByRole("option", { name: /Tracking/i });
     await userEvent.click(trackingBtn);
     expect(mockPush).toHaveBeenCalledWith("/tracking");
 
     // Re-open palette and select Dispute Guide
     fireEvent.keyDown(document, { key: "k", metaKey: true });
-    const disputeBtn = screen.getByRole("button", { name: /Dispute Guide/i });
+    const disputeBtn = screen.getByRole("option", { name: /Dispute Guide/i });
     await userEvent.click(disputeBtn);
     expect(mockPush).toHaveBeenCalledWith("/docs");
   });

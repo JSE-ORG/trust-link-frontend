@@ -1,7 +1,8 @@
+import "../app/globals.css";
+
 import type { Decorator, Parameters } from "@storybook/react";
 import React, { useEffect } from "react";
 
-import "../app/globals.css";
 import { NetworkProvider } from "../components/providers/NetworkProvider";
 import { setupStorybookFetchMock } from "./mock-api";
 import { MockWalletProvider } from "./mock-wallet";
@@ -27,12 +28,11 @@ export const decorators: Decorator[] = [
       }
     }, [mockApiParams]);
 
-    return (
-      <NetworkProvider>
-        <MockWalletProvider {...walletParams}>
-          <Story />
-        </MockWalletProvider>
-      </NetworkProvider>
+    // This file is .ts, so it cannot contain JSX.
+    return React.createElement(
+      NetworkProvider,
+      null,
+      React.createElement(MockWalletProvider, { ...walletParams }, React.createElement(Story))
     );
   },
 ];

@@ -18,6 +18,26 @@ function authedRequest(url = "http://localhost/api/og", headers: Record<string, 
   return new Request(url, { headers: { ...authHeader(), ...headers } });
 }
 
+/**
+ * The text a React element tree renders, in order. Satori children are split into
+ * pieces ("Amount: ", the value, " USDC"), so asserting on rendered text means
+ * joining them rather than searching the serialised element. Elements are separated by
+ * newlines so that, for example, a title ending in "A" and a following "Amount:" line
+ * are not read as one run of text.
+ */
+function flattenText(node: unknown): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(flattenText).join("");
+  if (typeof node === "object" && "props" in node) {
+    // Each element is its own line, so text from neighbouring elements cannot run together.
+    return `
+${flattenText((node as { props: { children?: unknown } }).props.children)}
+`;
+  }
+  return "";
+}
+
 describe("GET /api/og", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -87,7 +107,7 @@ describe("GET /api/og", () => {
     expect(imageResp.options.height).toBe(630);
     expect(imageResp.element.props.style.backgroundColor).toBe("#1B2A6B");
 
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = flattenText(imageResp.element);
     const statusMatches = elementStr.match(/Status:\s*Funded/g);
     expect(statusMatches).toHaveLength(1);
   });
@@ -112,7 +132,7 @@ describe("GET /api/og", () => {
       }>;
     };
 
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = flattenText(imageResp.element);
 
     // Title should be truncated to MAX_TITLE_LENGTH (100)
     expect(elementStr).toContain("A".repeat(OG_BOUNDS.MAX_TITLE_LENGTH));
@@ -146,7 +166,7 @@ describe("GET /api/og", () => {
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = flattenText(imageResp.element);
     expect(elementStr).toContain(exactTitle);
     expect(elementStr).toContain(`Amount: ${exactAmount} USDC`);
     expect(elementStr).toContain(`Status: ${exactStatus}`);
@@ -166,9 +186,13 @@ describe("GET /api/og", () => {
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
-    const expectedEmojiTitle = "🛡️".repeat(OG_BOUNDS.MAX_TITLE_LENGTH);
+    const elementStr = flattenText(imageResp.element);
+    // The bound counts code points, and "🛡️" is two of them (U+1F6E1 plus the U+FE0F
+    // variation selector), so exactly MAX_TITLE_LENGTH code points is half that many emoji.
+    const expectedEmojiTitle = "🛡️".repeat(OG_BOUNDS.MAX_TITLE_LENGTH / 2);
+    expect(Array.from(expectedEmojiTitle)).toHaveLength(OG_BOUNDS.MAX_TITLE_LENGTH);
     expect(elementStr).toContain(expectedEmojiTitle);
+    expect(elementStr).not.toContain("🛡️".repeat(OG_BOUNDS.MAX_TITLE_LENGTH / 2 + 1));
   });
 
   it("falls back to default title and omits empty sections on whitespace inputs", async () => {
@@ -186,7 +210,7 @@ describe("GET /api/og", () => {
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = flattenText(imageResp.element);
     expect(elementStr).toContain("TrustLink Escrow");
     expect(elementStr).not.toContain("Amount:");
     expect(elementStr).not.toContain("Status:");

@@ -189,6 +189,15 @@ describe("ShareModal", () => {
   });
 });
 
+/**
+ * The dialog's focus trap moves focus to its first control on the next animation
+ * frame. Wait for that before tabbing, or the move lands in the middle of the
+ * sequence and the number of Tab presses needed depends on timing.
+ */
+async function focusMovesIntoDialog() {
+  await waitFor(() => expect(document.body).not.toHaveFocus());
+}
+
 describe("ShareModal keyboard accessibility", () => {
   beforeEach(() => {
     Object.defineProperty(navigator, "clipboard", {
@@ -205,8 +214,8 @@ describe("ShareModal keyboard accessibility", () => {
       value: { writeText },
     });
     render(<ShareModal {...defaultProps} />);
+    await focusMovesIntoDialog();
 
-    await user.tab();
     await user.tab();
     await user.tab();
 
@@ -226,8 +235,8 @@ describe("ShareModal keyboard accessibility", () => {
     const user = userEvent.setup();
     const openWindow = vi.spyOn(window, "open").mockImplementation(() => null);
     render(<ShareModal {...defaultProps} />);
+    await focusMovesIntoDialog();
 
-    await user.tab();
     await user.tab();
     await user.tab();
     await user.tab();

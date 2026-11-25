@@ -2,9 +2,10 @@ import { StrKey } from "@stellar/stellar-sdk";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildFundingTransactionXdr, submitTransaction } from "@/components/payment/PaymentForm";
 import { patchBuyerContact } from "@/lib/api";
 import i18n from "@/lib/i18n";
-import { connectFreighter, isFreighterInstalled } from "@/lib/stellar/freighter";
+import { connectFreighter, isFreighterInstalled, signTransaction } from "@/lib/stellar/freighter";
 import type { Escrow } from "@/types";
 import { EscrowStatusConst } from "@/types";
 
@@ -126,7 +127,11 @@ describe("PaymentEscrowClient payment eligibility", () => {
   };
 
   it("saves contact details and routes into the escrow funding pipeline", async () => {
-    render(<PaymentEscrowClient escrow={baseEscrow} escrowId={baseEscrow.id} />);
+    // The funding transaction needs a valid contract id; the escrow supplies one.
+    const contractAddress = StrKey.encodeContract(Buffer.alloc(32, 1));
+    render(
+      <PaymentEscrowClient escrow={{ ...baseEscrow, contractAddress }} escrowId={baseEscrow.id} />
+    );
 
     fireEvent.change(screen.getByLabelText(/Email address/), {
       target: { value: "buyer@example.com" },
@@ -140,8 +145,26 @@ describe("PaymentEscrowClient payment eligibility", () => {
       email: "buyer@example.com",
       emailReceipt: true,
     });
-    expect(screen.getByRole("button", { name: "Pay with Freighter" })).toBeInTheDocument();
-    expect(screen.queryByText(/Freighter signature completed/i)).not.toBeInTheDocument();
+
+    // Pay Now runs the whole pipeline: wallet, build, sign, submit.
+    expect(isFreighterInstalled).toHaveBeenCalledOnce();
+    expect(connectFreighter).toHaveBeenCalled();
+    expect(connect).toHaveBeenCalledOnce();
+    expect(buildFundingTransactionXdr).toHaveBeenCalledWith(
+      expect.objectContaining({
+        escrowId: "escrow-1",
+        escrowContractId: contractAddress,
+        sourceAccount: publicKey,
+        network: "TESTNET",
+      })
+    );
+    expect(signTransaction).toHaveBeenCalledWith("RAW_XDR_MOCK", "Test SDF Network ; September 2015");
+    expect(submitTransaction).toHaveBeenCalledWith(
+      "SIGNED_XDR_MOCK",
+      "https://soroban-testnet.stellar.org",
+      "Test SDF Network ; September 2015"
+    );
+    expect(screen.getByText(/mock_tx_hash_123456/)).toBeInTheDocument();
   });
 
   it.each(Object.values(EscrowStatusConst))(
@@ -161,8 +184,9 @@ describe("PaymentEscrowClient payment eligibility", () => {
         });
         await act(async () => { fireEvent.click(button); });
         expect(patchBuyerContact).toHaveBeenCalledOnce();
-        expect(isFreighterInstalled).not.toHaveBeenCalled();
-        expect(connectFreighter).not.toHaveBeenCalled();
+        // A pending escrow goes on to the wallet step.
+        expect(isFreighterInstalled).toHaveBeenCalledOnce();
+        expect(connectFreighter).toHaveBeenCalled();
       } else {
         expect(button).toBeDisabled();
         expect(screen.getByText(i18n.t(guidance[status]!))).toBeInTheDocument();

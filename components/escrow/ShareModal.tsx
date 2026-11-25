@@ -188,5 +188,10 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
 
 /** Returns whether a browser-share rejection represents user cancellation. */
 function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
+  // By name, not `instanceof Error`: a browser DOMException is not an Error in every realm.
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
@@ -9,6 +9,12 @@ import EscrowCreateForm from "../EscrowCreateForm";
 
 vi.mock("@/lib/api", () => ({
   createEscrow: vi.fn(),
+}));
+
+// The real rasteriser needs a canvas and image decoding, which jsdom does not have.
+// It has its own tests in lib/utils/downloadQrCode.test.ts.
+vi.mock("@/lib/utils/downloadQrCode", () => ({
+  downloadQrCode: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("sonner", () => ({
@@ -91,8 +97,29 @@ describe("EscrowCreateForm", () => {
       render(<EscrowCreateForm />);
 
       expect(screen.queryByTestId("link-card")).not.toBeInTheDocument();
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
       expect(screen.queryByTestId("share-modal")).not.toBeInTheDocument();
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("updates the fee breakdown for valid prices and hides it for empty or invalid prices", async () => {
+      const user = userEvent.setup();
+      render(<EscrowCreateForm />);
+
+      const priceInput = screen.getByLabelText("Price (USDC)");
+      await user.type(priceInput, "100.00");
+
+      expect(screen.getByText("Item Price")).toBeInTheDocument();
+      expect(screen.getByText("TrustLink Escrow Fee (1.5%)")).toBeInTheDocument();
+      expect(screen.getByText("100.00 USDC")).toBeInTheDocument();
+      expect(screen.getByText("1.50 USDC")).toBeInTheDocument();
+      expect(screen.getByText("98.50 USDC")).toBeInTheDocument();
+
+      await user.clear(priceInput);
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
+
+      await user.type(priceInput, "0");
+      expect(screen.queryByText("Estimated Vendor Payout")).not.toBeInTheDocument();
     });
 
     it("shows the markdown preview only when a description is typed", async () => {
@@ -284,7 +311,9 @@ describe("EscrowCreateForm", () => {
 
       await user.click(screen.getByRole("button", { name: /download qr/i }));
 
-      expect(toast.success).toHaveBeenCalledWith("QR code downloaded");
+      await waitFor(() =>
+        expect(toast.success).toHaveBeenCalledWith("QR code downloaded")
+      );
     });
   });
 
