@@ -44,16 +44,17 @@ describe("Primary navigation targets and route tree integrity", () => {
 
     // Replaced with valid routes
     expect(routes).toContain("/tracking");
-    expect(routes).toContain("/docs");
+    expect(routes).toContain("/admin/disputes");
 
     const trackingCommand = COMMANDS.find((c) => c.label === "Tracking");
     expect(trackingCommand?.route).toBe("/tracking");
 
-    const disputeGuide = COMMANDS.find((c) => c.label.includes("Dispute"));
-    expect(disputeGuide?.route).toBe("/docs");
+    const disputes = COMMANDS.find((c) => c.label === "Disputes");
+    expect(disputes?.route).toBe("/admin/disputes");
+    expect(disputes?.description).toBe("View and manage escrow disputes");
   });
 
-  it("navigates to /tracking and /docs when selected in CommandPalette", async () => {
+  it("navigates to /tracking and /admin/disputes when selected in CommandPalette", async () => {
     mockPush.mockClear();
     render(<CommandPalette />);
 
@@ -65,11 +66,11 @@ describe("Primary navigation targets and route tree integrity", () => {
     await userEvent.click(trackingBtn);
     expect(mockPush).toHaveBeenCalledWith("/tracking");
 
-    // Re-open palette and select Dispute Guide
+    // Re-open palette and select Disputes
     fireEvent.keyDown(document, { key: "k", metaKey: true });
-    const disputeBtn = screen.getByRole("option", { name: /Dispute Guide/i });
+    const disputeBtn = screen.getByRole("option", { name: /Disputes/i });
     await userEvent.click(disputeBtn);
-    expect(mockPush).toHaveBeenCalledWith("/docs");
+    expect(mockPush).toHaveBeenCalledWith("/admin/disputes");
   });
 
   it("does not render absent /vendor route in FeaturedArtistSection while retaining dynamic artist links", () => {

@@ -266,16 +266,15 @@ describe("CommandPalette shortcuts, filtering and dismissal", () => {
     render(<CommandPalette />);
 
     await user.keyboard("{Control>}k{/Control}");
-    // "guide" only ever appears in the Dispute Guide label, so this exercises
-    // the label arm of the filter rather than the description arm.
+    // "dispute" appears in the Disputes label, exercising the label arm.
     await user.type(
       screen.getByRole("combobox", { name: "Search commands" }),
-      "GUIDE"
+      "DISPUTE"
     );
 
     const options = screen.getAllByRole("option");
     expect(options).toHaveLength(1);
-    expect(options[0]).toHaveTextContent("Dispute Guide");
+    expect(options[0]).toHaveTextContent("Disputes");
   });
 
   it("also matches the command description, not just the label", async () => {

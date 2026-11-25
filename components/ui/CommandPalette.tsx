@@ -55,9 +55,9 @@ export const COMMANDS: Command[] = [
     icon: <Truck className="h-5 w-5" />,
   },
   {
-    label: "Dispute Guide",
-    route: "/docs",
-    description: "Learn how dispute resolution works",
+    label: "Disputes",
+    route: "/admin/disputes",
+    description: "View and manage escrow disputes",
     icon: <AlertCircle className="h-5 w-5" />,
   },
   {
