@@ -52,15 +52,15 @@ describe("parsePaymentInput", () => {
       path: "/pay/escrow-789",
     });
 
-    const prevSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    process.env.NEXT_PUBLIC_SITE_URL = "https://trustlink.app";
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://trustlink.app");
     expect(
       parsePaymentInput("https://trustlink.app/pay/escrow-abc", origin)
     ).toEqual({
       ok: true,
       path: "/pay/escrow-abc",
     });
-    process.env.NEXT_PUBLIC_SITE_URL = prevSiteUrl;
+    // Assigning `undefined` back to process.env would store the string "undefined".
+    vi.unstubAllEnvs();
   });
 
   it("rejects external payment links with actionable feedback", () => {
@@ -68,6 +68,18 @@ describe("parsePaymentInput", () => {
     const result = parsePaymentInput("https://phishing.example/pay/escrow-123", origin);
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/external payment links are not allowed/i);
+  });
+
+  it("ignores a malformed NEXT_PUBLIC_SITE_URL instead of throwing", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "not a url");
+    const origin = "http://localhost:3000";
+
+    expect(parsePaymentInput("http://localhost:3000/pay/escrow-abc", origin)).toEqual({
+      ok: true,
+      path: "/pay/escrow-abc",
+    });
+    expect(parsePaymentInput("https://other.example/pay/escrow-abc", origin).ok).toBe(false);
+    vi.unstubAllEnvs();
   });
 
   it("rejects malformed URLs, missing IDs, or wrong paths", () => {

@@ -4,8 +4,12 @@ test.describe("language and theme preferences across client navigation", () => {
   test.use({ colorScheme: "light", locale: "en-US" });
 
   test.beforeEach(async ({ page }) => {
-    // Ensure deterministic clean preference state before each run
+    // Ensure deterministic clean preference state before each run. An init script runs on
+    // every document load, so it must reset only the first one: resetting on /about and on
+    // reload would erase the very preferences this test checks for persistence.
     await page.addInitScript(() => {
+      if (window.sessionStorage.getItem("e2e-preferences-reset")) return;
+      window.sessionStorage.setItem("e2e-preferences-reset", "1");
       window.localStorage.removeItem("trustlink.language");
       window.localStorage.removeItem("theme");
     });
@@ -37,6 +41,11 @@ test.describe("language and theme preferences across client navigation", () => {
     await expect(languageSelect).toHaveAttribute("aria-label", "Choisir la langue");
 
     // Switch theme to dark using the actual theme toggle button in navbar
+    const systemThemeButton = page.getByRole("button", {
+      name: "Theme: System (click to switch to light)",
+    });
+    await expect(systemThemeButton).toBeVisible();
+    await systemThemeButton.click();
     const themeButton = page.getByRole("button", { name: "Switch to dark mode" });
     await expect(themeButton).toBeVisible();
     await themeButton.click();

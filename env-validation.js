@@ -1,4 +1,5 @@
-import { loadEnvConfig } from "@next/env";
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script run directly by node */
+const { loadEnvConfig } = require('@next/env');
 
 // Load the same .env* files used by Next.js before validating configuration.
 loadEnvConfig(process.cwd());

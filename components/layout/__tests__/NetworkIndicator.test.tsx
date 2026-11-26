@@ -7,12 +7,9 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import Navbar from "../Navbar";
 import TestnetBanner from "../TestnetBanner";
 
+// These tests are about the network indicator, not the wallet; the real button needs a WalletProvider.
 vi.mock("@/components/wallet/WalletConnectButton", () => ({
-  default: () => null,
-}));
-
-vi.mock("@/components/wallet/WalletConnectButton", () => ({
-  default: () => null,
+  default: () => <button type="button">Connect Wallet</button>,
 }));
 
 Object.defineProperty(window, "matchMedia", {

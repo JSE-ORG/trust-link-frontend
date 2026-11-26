@@ -10,6 +10,11 @@ import { getVendorEscrows } from "@/lib/api";
 import type { Escrow } from "@/types";
 import { downloadCsv } from "@/utils/exportCsv";
 
+// vitest.setup.ts replaces CurrencyProvider with a USDC-only stub for every file. This
+// suite exercises the real provider (switching currency re-renders both views), so
+// opt back in to the real module.
+vi.unmock("@/components/providers/CurrencyProvider");
+
 vi.mock("@/lib/api", () => ({
   getVendorEscrows: vi.fn(),
   cancelEscrow: vi.fn(),
@@ -130,7 +135,7 @@ describe("VendorDashboardList currency integration across Card and Table views",
       expect(screen.getByText(/£78\.00/)).toBeInTheDocument();
     });
 
-    // Switch to Table View
+    // Switch to Table View (the buttons are named by aria-label, and `t` is mocked to return the key)
     const tableButton = screen.getByRole("button", { name: "dashboard.tableView" });
     await userEvent.click(tableButton);
 

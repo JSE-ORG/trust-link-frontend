@@ -13,6 +13,10 @@ vi.mock("@/components/providers/NetworkProvider", () => ({
   }),
 }));
 
+vi.mock("@/components/wallet/WalletConnectButton", () => ({
+  default: () => <button type="button">Connect Wallet</button>,
+}));
+
 vi.mock("@/components/ui/ThemeToggle", () => ({
   default: () => <button type="button">Theme</button>,
 }));

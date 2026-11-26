@@ -16,11 +16,11 @@ const themeOrder: Record<Theme, Theme> = {
 const themeLabels: Record<Theme, string> = {
   light: "Switch to dark mode",
   dark: "Switch to system theme",
-  system: "Switch to light mode",
+  system: "Theme: System (click to switch to light)",
 };
 
 export default function ThemeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -33,7 +33,10 @@ export default function ThemeToggle() {
     );
   }
 
-  const currentTheme = (resolvedTheme === "dark" ? "dark" : "light") as Theme;
+  const currentTheme: Theme =
+    theme === "light" || theme === "dark" || theme === "system"
+      ? theme
+      : "system";
 
   const cycleTheme = () => {
     setTheme(themeOrder[currentTheme]);

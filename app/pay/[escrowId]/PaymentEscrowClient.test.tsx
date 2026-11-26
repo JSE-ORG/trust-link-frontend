@@ -2,10 +2,11 @@ import { StrKey } from "@stellar/stellar-sdk";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildFundingTransactionXdr, submitTransaction } from "@/components/payment/PaymentForm";
 import { patchBuyerContact } from "@/lib/api";
 import i18n from "@/lib/i18n";
 import { generateReceiptPDF } from "@/lib/pdf";
-import { connectFreighter, isFreighterInstalled } from "@/lib/stellar/freighter";
+import { connectFreighter, isFreighterInstalled, signTransaction } from "@/lib/stellar/freighter";
 import type { Escrow } from "@/types";
 import { EscrowStatusConst } from "@/types";
 
@@ -152,6 +153,25 @@ describe("PaymentEscrowClient payment eligibility", () => {
     });
     expect(screen.getByRole("button", { name: "Download Receipt PDF" })).toBeInTheDocument();
     expect(screen.getByText("mock_tx_hash_123456")).toBeInTheDocument();
+    // Pay Now runs the whole pipeline: wallet, build, sign, submit.
+    expect(isFreighterInstalled).toHaveBeenCalledOnce();
+    expect(connectFreighter).toHaveBeenCalled();
+    expect(connect).toHaveBeenCalledOnce();
+    expect(buildFundingTransactionXdr).toHaveBeenCalledWith(
+      expect.objectContaining({
+        escrowId: "escrow-1",
+        escrowContractId: payableEscrow.contractAddress,
+        sourceAccount: publicKey,
+        network: "TESTNET",
+      })
+    );
+    expect(signTransaction).toHaveBeenCalledWith("RAW_XDR_MOCK", "Test SDF Network ; September 2015");
+    expect(submitTransaction).toHaveBeenCalledWith(
+      "SIGNED_XDR_MOCK",
+      "https://soroban-testnet.stellar.org",
+      "Test SDF Network ; September 2015"
+    );
+    expect(screen.getByText(/mock_tx_hash_123456/)).toBeInTheDocument();
   });
 
   it.each(Object.values(EscrowStatusConst))(

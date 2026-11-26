@@ -33,7 +33,7 @@ export default function CreatePage() {
           <div className="mt-10 grid gap-4 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-3">
             <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
               <p className="font-medium text-zinc-950 dark:text-zinc-50">1. Connect</p>
-              <p className="mt-1">Mocked Freighter flow for reliable CI coverage.</p>
+              <p className="mt-1">Connect your Stellar Freighter wallet securely with one click.</p>
             </div>
             <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
               <p className="font-medium text-zinc-950 dark:text-zinc-50">2. Create</p>

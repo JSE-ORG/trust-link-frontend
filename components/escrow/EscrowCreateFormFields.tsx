@@ -1,15 +1,20 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
+
 import { FormField } from "@/components/ui/FormField";
 import { renderMarkdown } from "@/lib/markdown";
 import {
   type EscrowCreateValues,
+  priceSchema,
   shippingOptions,
   type ShippingWindow,
 } from "@/lib/validations";
+import { formatUSDC } from "@/utils/currency";
 
 const inputClassName =
   "w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-950 outline-none ring-0 transition focus:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-300";
+const PLATFORM_FEE_RATE = 0.015;
 
 interface EscrowCreateFormFieldsProps {
   values: EscrowCreateValues;
@@ -28,6 +33,11 @@ export function EscrowCreateFormFields({
   disabled,
   onChange,
 }: EscrowCreateFormFieldsProps) {
+  const { t } = useTranslation();
+  const parsedPrice = priceSchema.safeParse(values.priceUSDC);
+  const price = parsedPrice.success ? Number(parsedPrice.data) : null;
+  const feeAmount = price === null ? null : price * PLATFORM_FEE_RATE;
+
   return (
     <>
       <FormField label="Item name" id="itemName" error={errors.itemName}>
@@ -56,6 +66,38 @@ export function EscrowCreateFormFields({
           className={inputClassName}
         />
       </FormField>
+      {price !== null && feeAmount !== null && (
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+          <dl className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-zinc-600 dark:text-zinc-400">
+                {t("escrow.feeBreakdown.itemPrice")}
+              </dt>
+              <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                {formatUSDC(price)}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-zinc-600 dark:text-zinc-400">
+                {t("escrow.feeBreakdown.platformFee", {
+                  percent: PLATFORM_FEE_RATE * 100,
+                })}
+              </dt>
+              <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                {formatUSDC(feeAmount)}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-zinc-200 pt-3 dark:border-zinc-700">
+              <dt className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {t("escrow.feeBreakdown.vendorPayout")}
+              </dt>
+              <dd className="font-bold text-zinc-900 dark:text-zinc-100">
+                {formatUSDC(price - feeAmount)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
 
       <FormField
         label="Description"

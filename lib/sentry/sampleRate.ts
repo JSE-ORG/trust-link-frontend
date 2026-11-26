@@ -22,11 +22,13 @@ export function parseTracesSampleRate(
     return fallback;
   }
 
+  // Number("") and Number("   ") are 0, which would silently turn tracing off for an
+  // empty env var instead of using the default.
   if (typeof value === "string" && value.trim() === "") {
     return fallback;
   }
 
-  const num = typeof value === "number" ? value : Number(String(value).trim());
+  const num = typeof value === "number" ? value : Number(value.trim());
 
   if (Number.isFinite(num) && num >= 0 && num <= 1) {
     return num;

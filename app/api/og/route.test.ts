@@ -31,6 +31,26 @@ function authedRequest(url = "http://localhost/api/og", headers: Record<string, 
   return new Request(url, { headers: { ...authHeader(), ...headers } });
 }
 
+/**
+ * The text a React element tree renders, in order. Satori children are split into
+ * pieces ("Amount: ", the value, " USDC"), so asserting on rendered text means
+ * joining them rather than searching the serialised element. Elements are separated by
+ * newlines so that, for example, a title ending in "A" and a following "Amount:" line
+ * are not read as one run of text.
+ */
+function flattenText(node: unknown): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(flattenText).join("");
+  if (typeof node === "object" && "props" in node) {
+    // Each element is its own line, so text from neighbouring elements cannot run together.
+    return `
+${flattenText((node as { props: { children?: unknown } }).props.children)}
+`;
+  }
+  return "";
+}
+
 describe("GET /api/og", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -201,7 +221,7 @@ describe("GET /api/og", () => {
         children: React.ReactNode[];
       }>;
     };
-    const elementStr = JSON.stringify(imageResp.element);
+    const elementStr = flattenText(imageResp.element);
     expect(elementStr).toContain("TrustLink Escrow");
     expect(elementStr).not.toContain("Amount:");
     expect(elementStr).not.toContain("Status:");
