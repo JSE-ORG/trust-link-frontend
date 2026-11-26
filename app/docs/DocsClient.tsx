@@ -19,10 +19,9 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 
 import { Accordion, type AccordionItem } from "@/components/ui/Accordion";
-import { Button } from "@/components/ui/button";
 
 const DOCS_SECTIONS = [
   {
@@ -60,6 +59,18 @@ const DOCS_SECTIONS = [
     badge: "Protection",
   },
 ];
+
+function getActiveSectionFromHash(): string {
+  const sectionId = window.location.hash.slice(1);
+  return DOCS_SECTIONS.some(({ id }) => id === sectionId)
+    ? sectionId
+    : "getting-started";
+}
+
+function subscribeToHashChange(onChange: () => void): () => void {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
 
 const GETTING_STARTED_FAQS: AccordionItem[] = [
   {
@@ -142,32 +153,14 @@ const DISPUTE_FAQS: AccordionItem[] = [
 ];
 
 export default function DocsClient() {
-  const [activeSection, setActiveSection] = useState<string>("getting-started");
+  const activeSection = useSyncExternalStore(
+    subscribeToHashChange,
+    getActiveSectionFromHash,
+    () => "getting-started"
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-  useEffect(() => {
-    // Sync active section with hash on load
-    const hash = window.location.hash.replace("#", "");
-    if (hash && DOCS_SECTIONS.some((s) => s.id === hash)) {
-      // The hash does not exist during server render, so it cannot seed the
-      // initial state without a hydration mismatch; read it once after mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveSection(hash);
-    }
-
-    const handleHashChange = () => {
-      const current = window.location.hash.replace("#", "");
-      if (current && DOCS_SECTIONS.some((s) => s.id === current)) {
-        setActiveSection(current);
-      }
-    };
-
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
-
-  const handleNavClick = (id: string) => {
-    setActiveSection(id);
+  const handleNavClick = () => {
     setMobileMenuOpen(false);
   };
 
@@ -227,7 +220,7 @@ export default function DocsClient() {
                   <a
                     key={sec.id}
                     href={`#${sec.id}`}
-                    onClick={() => handleNavClick(sec.id)}
+                    onClick={handleNavClick}
                     className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition ${
                       active
                         ? "bg-brand-primary/10 text-brand-primary dark:bg-brand-primary/20 dark:text-brand-primary-light"
@@ -294,7 +287,7 @@ export default function DocsClient() {
                     <a
                       key={sec.id}
                       href={`#${sec.id}`}
-                      onClick={() => handleNavClick(sec.id)}
+                      onClick={handleNavClick}
                       className={`group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                         active
                           ? "bg-brand-primary/10 font-semibold text-brand-primary dark:bg-brand-primary/20 dark:text-brand-primary-light"

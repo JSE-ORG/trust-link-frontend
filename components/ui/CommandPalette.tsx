@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -12,7 +11,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import FocusTrap from "./FocusTrap";
 
@@ -86,20 +85,29 @@ export default function CommandPalette() {
   const listboxId = useId();
   const titleId = useId();
 
+  const closePalette = useCallback(() => {
+    setIsOpen(false);
+    setSearch("");
+    setActiveIndex(0);
+  }, []);
+
   // Toggle Command Palette with keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        // Start every open (and close) from a clean list.
-        setSearch("");
-        setActiveIndex(0);
-        setIsOpen((open) => !open);
+        if (isOpen) {
+          closePalette();
+        } else {
+          setSearch("");
+          setActiveIndex(0);
+          setIsOpen(true);
+        }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [closePalette, isOpen]);
 
   const filteredCommands = filterCommands(search);
 
@@ -120,7 +128,7 @@ export default function CommandPalette() {
     }
   }, [activeIndex]);
 
-  // Body scroll lock while the palette is open
+  // Keep the background from scrolling while the palette is open.
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "auto";
     return () => {
@@ -131,7 +139,7 @@ export default function CommandPalette() {
   if (!isOpen) return null;
 
   const handleSelect = (route: string) => {
-    setIsOpen(false);
+    closePalette();
     router.push(route);
   };
 
@@ -168,11 +176,11 @@ export default function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] sm:pt-[20vh] bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => setIsOpen(false)}
+      onClick={closePalette}
     >
       <FocusTrap
         active={isOpen}
-        onEscape={() => setIsOpen(false)}
+        onEscape={closePalette}
         initialFocusRef={inputRef}
       >
         <div

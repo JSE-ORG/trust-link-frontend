@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildFundingTransactionXdr, submitTransaction } from "@/components/payment/PaymentForm";
 import { patchBuyerContact } from "@/lib/api";
 import i18n from "@/lib/i18n";
+import { generateReceiptPDF } from "@/lib/pdf";
 import { connectFreighter, isFreighterInstalled, signTransaction } from "@/lib/stellar/freighter";
 import type { Escrow } from "@/types";
 import { EscrowStatusConst } from "@/types";
@@ -41,6 +42,10 @@ vi.mock("@/lib/api", () => ({
   patchBuyerContact: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/pdf", () => ({
+  generateReceiptPDF: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/stellar/freighter", () => ({
   connectFreighter: vi.fn().mockResolvedValue("GBTESTPUBLICKEYXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
   isFreighterInstalled: vi.fn().mockResolvedValue(true),
@@ -65,6 +70,11 @@ const baseEscrow: Escrow = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   history: [],
+};
+
+const payableEscrow: Escrow = {
+  ...baseEscrow,
+  contractAddress: StrKey.encodeContract(Buffer.alloc(32, 3)),
 };
 
 describe("PaymentEscrowClient i18n", () => {
@@ -127,11 +137,7 @@ describe("PaymentEscrowClient payment eligibility", () => {
   };
 
   it("saves contact details and routes into the escrow funding pipeline", async () => {
-    // The funding transaction needs a valid contract id; the escrow supplies one.
-    const contractAddress = StrKey.encodeContract(Buffer.alloc(32, 1));
-    render(
-      <PaymentEscrowClient escrow={{ ...baseEscrow, contractAddress }} escrowId={baseEscrow.id} />
-    );
+    render(<PaymentEscrowClient escrow={payableEscrow} escrowId={baseEscrow.id} />);
 
     fireEvent.change(screen.getByLabelText(/Email address/), {
       target: { value: "buyer@example.com" },
@@ -145,7 +151,8 @@ describe("PaymentEscrowClient payment eligibility", () => {
       email: "buyer@example.com",
       emailReceipt: true,
     });
-
+    expect(screen.getByRole("button", { name: "Download Receipt PDF" })).toBeInTheDocument();
+    expect(screen.getByText("mock_tx_hash_123456")).toBeInTheDocument();
     // Pay Now runs the whole pipeline: wallet, build, sign, submit.
     expect(isFreighterInstalled).toHaveBeenCalledOnce();
     expect(connectFreighter).toHaveBeenCalled();
@@ -153,7 +160,7 @@ describe("PaymentEscrowClient payment eligibility", () => {
     expect(buildFundingTransactionXdr).toHaveBeenCalledWith(
       expect.objectContaining({
         escrowId: "escrow-1",
-        escrowContractId: contractAddress,
+        escrowContractId: payableEscrow.contractAddress,
         sourceAccount: publicKey,
         network: "TESTNET",
       })
@@ -172,7 +179,11 @@ describe("PaymentEscrowClient payment eligibility", () => {
     async (status) => {
       render(
         <PaymentEscrowClient
-          escrow={{ ...baseEscrow, status, expiresAt: new Date(Date.now() + 60_000).toISOString() }}
+          escrow={{
+            ...(status === EscrowStatusConst.PENDING ? payableEscrow : baseEscrow),
+            status,
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+          }}
           escrowId={baseEscrow.id}
         />
       );
@@ -184,9 +195,9 @@ describe("PaymentEscrowClient payment eligibility", () => {
         });
         await act(async () => { fireEvent.click(button); });
         expect(patchBuyerContact).toHaveBeenCalledOnce();
-        // A pending escrow goes on to the wallet step.
         expect(isFreighterInstalled).toHaveBeenCalledOnce();
-        expect(connectFreighter).toHaveBeenCalled();
+        expect(connectFreighter).toHaveBeenCalledOnce();
+        expect(screen.getByRole("button", { name: "Download Receipt PDF" })).toBeInTheDocument();
       } else {
         expect(button).toBeDisabled();
         expect(screen.getByText(i18n.t(guidance[status]!))).toBeInTheDocument();
@@ -259,6 +270,73 @@ describe("PaymentEscrowClient payment eligibility", () => {
     );
     expect(screen.getByRole("button", { name: "Pay Now" })).toBeDisabled();
     expect(screen.getByText(i18n.t("payment.expiredMessage"))).toBeInTheDocument();
+  });
+});
+
+describe("PaymentEscrowClient receipt download", () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await i18n.changeLanguage("en");
+  });
+
+  it("downloads a receipt with payment details and buyer contact after settlement", async () => {
+    render(<PaymentEscrowClient escrow={payableEscrow} escrowId={baseEscrow.id} />);
+    fireEvent.change(screen.getByLabelText(/Email address/), {
+      target: { value: "buyer@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pay Now" }));
+    });
+
+    const downloadButton = screen.getByRole("button", { name: "Download Receipt PDF" });
+    let finishGeneration!: () => void;
+    vi.mocked(generateReceiptPDF).mockImplementationOnce(
+      () => new Promise((resolve) => {
+        finishGeneration = resolve;
+      })
+    );
+    fireEvent.click(downloadButton);
+    expect(downloadButton).toBeDisabled();
+    expect(screen.getByText("Preparing receipt...")).toBeInTheDocument();
+
+    await act(async () => {
+      finishGeneration();
+    });
+
+    expect(generateReceiptPDF).toHaveBeenCalledWith(
+      {
+        escrowId: "escrow-1",
+        itemName: "Vintage Camera",
+        amount: 100,
+        protocolFee: 1.5,
+        total: 101.5,
+        buyerContact: "buyer@example.com",
+        txHash: "mock_tx_hash_123456",
+      },
+      "receipt-escrow-1.pdf"
+    );
+    expect(downloadButton).toBeEnabled();
+    const { toast } = await import("sonner");
+    expect(toast.success).toHaveBeenCalledWith("Receipt download started");
+  });
+
+  it("announces receipt generation failures", async () => {
+    vi.mocked(generateReceiptPDF).mockRejectedValueOnce(new Error("PDF failed"));
+    render(<PaymentEscrowClient escrow={payableEscrow} escrowId={baseEscrow.id} />);
+    fireEvent.change(screen.getByLabelText(/Email address/), {
+      target: { value: "buyer@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pay Now" }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Download Receipt PDF" }));
+    });
+
+    const { toast } = await import("sonner");
+    expect(toast.error).toHaveBeenCalledWith("PDF failed");
   });
 });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Download, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +14,7 @@ import TrackingTimelineSkeleton from "@/components/tracking/TrackingTimelineSkel
 import useWallet from "@/hooks/useWallet";
 import { patchBuyerContact } from "@/lib/api";
 import { renderMarkdown } from "@/lib/markdown";
+import { generateReceiptPDF } from "@/lib/pdf";
 import { isValidContractId } from "@/lib/stellar/contract";
 import { connectFreighter, isFreighterInstalled, signTransaction } from "@/lib/stellar/freighter";
 import { Escrow, EscrowStatusConst } from "@/types";
@@ -70,6 +72,7 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
   const [contactErrors, setContactErrors] = useState<ContactErrors>({});
   const [hasExpired, setHasExpired] = useState(false);
   const [paymentStage, setPaymentStage] = useState<"idle" | "authenticating" | "submitting" | "settled">("idle");
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const amount = escrow.amount;
   const fee = useMemo(() => Number(((amount * PLATFORM_FEE_PERCENT) / 100).toFixed(2)), [amount]);
@@ -96,6 +99,32 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
   const statusMessage = statusMessages[escrow.status];
 
   const handleExpire = useCallback(() => setHasExpired(true), []);
+
+  const handleDownloadReceipt = async () => {
+    if (!txHash || isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      await generateReceiptPDF(
+        {
+          escrowId,
+          itemName: escrow.item,
+          amount,
+          protocolFee: fee,
+          total,
+          buyerContact: [email.trim(), phone.trim()].filter(Boolean).join(" / "),
+          txHash,
+        },
+        `receipt-${escrowId}.pdf`
+      );
+      toast.success("Receipt download started");
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Failed to generate receipt";
+      toast.error(message);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePayNow = async () => {
     // Recheck the deadline at invocation: the countdown may not have ticked yet.
@@ -357,9 +386,31 @@ export function PaymentEscrowClient({ escrow, escrowId }: PaymentEscrowClientPro
         <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
           <p className="font-medium">{t("payment.confirmationTitle") || "Payment successful"}</p>
           {txHash ? (
-            <p className="mt-1 break-all font-mono text-xs">
-              {txHash}
-            </p>
+            <>
+              <p className="mt-1 break-all font-mono text-xs">
+                {txHash}
+              </p>
+              {paymentStage === "settled" ? (
+                <button
+                  type="button"
+                  onClick={handleDownloadReceipt}
+                  disabled={isDownloading}
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span aria-live="polite">Preparing receipt...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Download Receipt PDF
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
       ) : null}

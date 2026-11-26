@@ -21,6 +21,14 @@ vi.mock("@/components/ui/ThemeToggle", () => ({
   default: () => <button type="button">Theme</button>,
 }));
 
+vi.mock("@/components/wallet/WalletConnectButton", () => ({
+  default: () => null,
+}));
+
+vi.mock("@/components/wallet/WalletConnectButton", () => ({
+  default: () => null,
+}));
+
 describe("Navbar", () => {
   beforeEach(() => {
     vi.clearAllMocks();

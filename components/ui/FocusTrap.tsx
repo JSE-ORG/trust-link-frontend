@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type KeyboardEvent,
   type ReactNode,
   type RefObject,
   useEffect,
@@ -95,6 +94,27 @@ export default function FocusTrap({
       if (event.key === "Escape") {
         event.preventDefault();
         onEscape?.();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = getFocusableElements(containerRef.current);
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) {
+        event.preventDefault();
+        return;
+      }
+
+      const focused = document.activeElement;
+      const focusIsInside = containerRef.current?.contains(focused) ?? false;
+      if (event.shiftKey && (focused === first || !focusIsInside)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (focused === last || !focusIsInside)) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onDocumentKeyDown);
@@ -112,42 +132,9 @@ export default function FocusTrap({
     };
   }, [active, initialFocusRef, onEscape]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (!active) return;
-
-    if (e.key !== "Tab") return;
-
-    const focusable = getFocusableElements(containerRef.current);
-    if (focusable.length === 0) {
-      e.preventDefault();
-      return;
-    }
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    // Use a distinct variable name to avoid shadowing the `active` prop,
-    // which would create a Temporal Dead Zone and throw a ReferenceError
-    // before the `const` binding is initialised.
-    const focused = document.activeElement;
-
-    if (e.shiftKey) {
-      // Shift+Tab: if focus is on the first element, wrap to the last.
-      if (focused === first) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (focused === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  };
-
   return (
     <div
       ref={containerRef}
-      onKeyDown={handleKeyDown}
       className={className ? `${className} outline-none` : "outline-none"}
       // Ensure the container itself is not in the natural tab order.
       tabIndex={-1}

@@ -366,6 +366,7 @@ describe('PDF Export Utility', () => {
       itemName: 'Electronics Item',
       amount: 100,
       protocolFee: 5,
+      buyerContact: 'buyer@example.com',
       txHash: 'abc123',
       timestamp: '2024-01-15T10:30:00Z',
     };
@@ -381,12 +382,14 @@ describe('PDF Export Utility', () => {
       expect(textCalls).toContain('Transaction Details');
       expect(textCalls).toContain('Escrow ID:');
       expect(textCalls).toContain('Item:');
+      expect(textCalls).toContain('Buyer Contact:');
       expect(textCalls).toContain('Paid At:');
       expect(textCalls).toContain('Transaction Hash:');
 
       // Escrow ID and Item values rendered
       expect(textCalls).toContainEqual(['escrow-1']);
       expect(textCalls).toContainEqual(['Electronics Item']);
+      expect(textCalls).toContainEqual(['buyer@example.com']);
       expect(textCalls).toContainEqual(['1/15/2024, 10:30:00 AM']);
       expect(textCalls).toContainEqual(['abc123']);
 

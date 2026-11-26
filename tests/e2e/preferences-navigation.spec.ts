@@ -41,6 +41,11 @@ test.describe("language and theme preferences across client navigation", () => {
     await expect(languageSelect).toHaveAttribute("aria-label", "Choisir la langue");
 
     // Switch theme to dark using the actual theme toggle button in navbar
+    const systemThemeButton = page.getByRole("button", {
+      name: "Theme: System (click to switch to light)",
+    });
+    await expect(systemThemeButton).toBeVisible();
+    await systemThemeButton.click();
     const themeButton = page.getByRole("button", { name: "Switch to dark mode" });
     await expect(themeButton).toBeVisible();
     await themeButton.click();
