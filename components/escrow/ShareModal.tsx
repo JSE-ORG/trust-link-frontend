@@ -4,7 +4,7 @@ import { Check, Copy, MessageCircle, Share2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import QRCodeComponent from "@/components/ui/QRCodeComponent";
+import { QrCode } from "@/components/ui/QrCode";
 import { track } from "@/lib/analytics";
 
 /** Props for the escrow link sharing dialog. */
@@ -108,7 +108,11 @@ export default function ShareModal({ isOpen, onClose, url }: ShareModalProps) {
         </DialogHeader>
 
         <div className="mt-4 flex flex-col items-center gap-6">
-          <QRCodeComponent value={url} size={200} />
+          <QrCode
+            value={url}
+            size={200}
+            className="rounded-3xl border border-zinc-100 bg-white p-4 shadow-inner dark:border-zinc-800"
+          />
 
           <div className="w-full space-y-4">
             <div className="relative">

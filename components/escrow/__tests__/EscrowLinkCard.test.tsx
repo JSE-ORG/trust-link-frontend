@@ -69,7 +69,7 @@ describe('EscrowLinkCard Component', () => {
     expect(screen.getByText(secondLink.title)).toBeInTheDocument();
     expect(screen.getByText('FUNDED')).toBeInTheDocument();
     expect(screen.getByText('650.00 USDC')).toBeInTheDocument();
-    expect(screen.getByTestId('qr-code')).toHaveAttribute('data-value', secondLink.url);
+    expect(await screen.findByTestId('qr-code')).toHaveAttribute('data-value', secondLink.url);
     await userEvent.click(screen.getByRole('button', { name: /copy url/i }));
     expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(secondLink.url);
     await userEvent.click(screen.getByRole('button', { name: /share on whatsapp/i }));

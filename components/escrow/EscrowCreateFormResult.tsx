@@ -82,12 +82,11 @@ export function EscrowCreateFormResult({
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3">
-        <div
+        <QrCode
           ref={qrRef}
+          value={resultUrl}
           className="rounded-3xl border border-zinc-200 bg-white p-3 shadow-inner dark:border-zinc-800"
-        >
-          <QrCode value={resultUrl} />
-        </div>
+        />
         <button
           type="button"
           onClick={onDownloadQR}

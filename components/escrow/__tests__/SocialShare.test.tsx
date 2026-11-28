@@ -8,7 +8,7 @@ import { track } from "@/lib/analytics";
 import EscrowLinkShareButtons from "../EscrowLinkShareButtons";
 import ShareModal from "../ShareModal";
 
-vi.mock("@/components/ui/QRCodeComponent", () => ({ default: () => null }));
+vi.mock("@/components/ui/QrCode", () => ({ QrCode: () => null }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 

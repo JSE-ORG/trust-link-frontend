@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
 
-vi.mock("@/components/ui/QRCodeComponent", () => ({
-  default: ({ value }: { value: string }) => (
+vi.mock("@/components/ui/QrCode", () => ({
+  QrCode: ({ value }: { value: string }) => (
     <div data-testid="qr-code" data-value={value} />
   ),
 }));

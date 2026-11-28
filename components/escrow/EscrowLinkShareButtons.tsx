@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import type { RefObject } from "react";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,6 @@ export default function EscrowLinkShareButtons({
   onNativeShare,
   qrRef,
 }: EscrowLinkShareButtonsProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const copyErrorId = useId();
   const [failedCopy, setFailedCopy] = useState<{
     platform: "instagram" | "twitter";
